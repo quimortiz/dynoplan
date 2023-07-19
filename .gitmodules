@@ -1,0 +1,3 @@
+[submodule "dynobench"]
+	path = dynobench
+	url = https://github.com/quimortiz/dynobench
