@@ -23,7 +23,7 @@ jobs:
     
     
     - name: install system dependencies
-      run: sudo apt install libboost-all-dev libfcl-dev cmake libeigen3-dev
+      run: sudo apt install libboost-all-dev libfcl-dev cmake libeigen3-dev libyaml-cpp-dev
       
     - name: install latest ompl
       run: |
