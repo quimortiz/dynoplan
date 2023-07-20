@@ -25,6 +25,16 @@ jobs:
     - name: install system dependencies
       run: sudo apt install libboost-all-dev libfcl-dev cmake libeigen3-dev libyaml-cpp-dev
       
+    - name: install crocoddyl
+      run: | 
+        sudo tee /etc/apt/sources.list.d/robotpkg.list << EOF
+        deb [arch=amd64] http://robotpkg.openrobots.org/packages/debian/pub $(lsb_release -sc) robotpkg
+        EOF
+
+        curl http://robotpkg.openrobots.org/packages/debian/robotpkg.key | sudo apt-key add -
+        sudo apt update
+        sudo apt install robotpkg-py38-crocoddyl
+      
     - name: install latest ompl
       run: |
         mkdir __local
