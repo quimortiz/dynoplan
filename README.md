@@ -38,7 +38,7 @@ Yes, you need OMPL 1.6 for planners RRT + TO and  SST  . You will need OMPL 1.6 
 
 ## Motion Primitives
 
-You will find a small set of motion primitives for each system in  [dynobench[(https://github.com/quimortiz/dynobench).
+You will find a small set of motion primitives for each system in  [dynobench](https://github.com/quimortiz/dynobench).
 I you want more primitives, e.g. to run our planner, use
 wget ... 
 
