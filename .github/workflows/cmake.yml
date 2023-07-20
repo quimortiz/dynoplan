@@ -23,7 +23,7 @@ jobs:
     
     
     - name: install system dependencies
-      run: apt install libboost-all-dev libfcl-dev libompl-dev
+      run: sudo apt install libboost-all-dev libfcl-dev libompl-dev
 
 
     - name: Configure CMake
