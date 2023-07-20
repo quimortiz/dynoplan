@@ -6,7 +6,7 @@ The first version [kinodynamic-motion-planning-benchmark](https://github.com/imr
 
 ## Robots and Problem Description 
 
-Kinodynamic motion planning problem are defined in (dynobench)[https://github.com/quimortiz/dynobench]
+Kinodynamic motion planning problem are defined in [dynobench[(https://github.com/quimortiz/dynobench)
 
 ## How to use
 
@@ -28,15 +28,19 @@ Check the tests to learn how to use the code!
 
 Dependencies:
 
-fcl (we use   )
+fcl (0.7)
 yaml-cpp
 Eigen 3
-Crocoddyl (we use 1.8)
+Crocoddyl (1.8)
+OMPL (1.6)
 
-
-You will need OMPL 1.6 -- we recommend to install OMPL in a local directory with -DCMAKE_INSTALL_PREFIX, and use -DCMAKE_PREFIX_PATH here
+Yes, you need OMPL 1.6 for planners RRT + TO and  SST  . You will need OMPL 1.6 -- we recommend to install OMPL in a local directory with -DCMAKE_INSTALL_PREFIX, and use -DCMAKE_PREFIX_PATH here
 
 ## Motion Primitives
+
+You will find a small set of motion primitives for each system in  [dynobench[(https://github.com/quimortiz/dynobench).
+I you want more primitives, e.g. to run our planner, use
+wget ... 
 
 
 ## Benchmark 
