@@ -1,12 +1,27 @@
 # Dynoplan 🦖
 
+
+
+<p align="center">
+<img src="assets/example1.png" width=60% height=auto>
+</p >
+
 By Joaquim Ortiz-Haro and Wolfgang Honnig
+
+
+
 
 The first version [kinodynamic-motion-planning-benchmark](https://github.com/imrCLab/kinodynamic-motion-planning-benchmark) is now deprecated. 
 
 ## Robots and Problem Description 
 
 Kinodynamic motion planning problem are defined in [Dynobench](https://github.com/quimortiz/dynobench)
+
+
+<p align="center">
+<img src="assets/dynobench.png" width=30% height=auto>
+</p >
+
 
 ## How to use
 
