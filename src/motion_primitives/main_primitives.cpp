@@ -18,6 +18,9 @@ enum class PRIMITIVE_MODE {
   sort_with_rand_config = 13,
 };
 
+using namespace dynobench;
+using namespace dynoplan;
+
 int main(int argc, const char *argv[]) {
 
   std::cout << "seed with time " << std::endl;
@@ -74,13 +77,13 @@ int main(int argc, const char *argv[]) {
 
   PRIMITIVE_MODE mode = static_cast<PRIMITIVE_MODE>(mode_gen_id);
 
-  std::shared_ptr<Model_robot> robot_model =
-      robot_factory((options_primitives.models_base_path +
-                     robot_type_to_path(options_primitives.dynamics))
-                        .c_str());
+  std::shared_ptr<dynobench::Model_robot> robot_model =
+      dynobench::robot_factory(
+          (options_primitives.models_base_path + options_primitives.dynamics)
+              .c_str());
 
   if (mode == PRIMITIVE_MODE::make_canonical) {
-    Trajectories trajectories, trajectories_out;
+    dynobench::Trajectories trajectories, trajectories_out;
 
     trajectories.load_file_boost(in_file.c_str());
 
@@ -105,7 +108,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == PRIMITIVE_MODE::generate_rand) {
-    Trajectories trajectories;
+    dynobench::Trajectories trajectories;
 
     generate_primitives_random(options_primitives, trajectories);
 
@@ -115,7 +118,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == PRIMITIVE_MODE::bintoyaml) {
-    Trajectories trajectories;
+    dynobench::Trajectories trajectories;
     trajectories.load_file_boost(in_file.c_str());
 
     // Should I partition?
@@ -128,7 +131,7 @@ int main(int argc, const char *argv[]) {
 
     for (size_t i = 0; i < num_files; i++) {
 
-      Trajectories tt;
+      dynobench::Trajectories tt;
       size_t start_index = i * max_primitives_per_file;
       size_t end_index =
           std::min((i + 1) * max_primitives_per_file, trajectories.data.size());
@@ -139,7 +142,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == PRIMITIVE_MODE::generate) {
-    Trajectories trajectories;
+    dynobench::Trajectories trajectories;
 
     generate_primitives(options_trajopt, options_primitives, trajectories);
 
@@ -149,7 +152,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == PRIMITIVE_MODE::improve) {
-    Trajectories trajectories, trajectories_out;
+    dynobench::Trajectories trajectories, trajectories_out;
 
     trajectories.load_file_boost(in_file.c_str());
 
@@ -188,7 +191,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == PRIMITIVE_MODE::split) {
-    Trajectories trajectories, trajectories_out;
+    dynobench::Trajectories trajectories, trajectories_out;
     trajectories.load_file_boost(in_file.c_str());
 
     if (startsWith(options_primitives.dynamics, "quad3d")) {
@@ -205,7 +208,7 @@ int main(int argc, const char *argv[]) {
                             trajectories_out, options_primitives);
 
     // std::vector<bool> valid(trajectories_out.data.size(), true);
-    Trajectories __trajectories_out;
+    dynobench::Trajectories __trajectories_out;
     for (size_t i = 0; i < trajectories_out.data.size(); i++) {
       auto &traj = trajectories_out.data.at(i);
       // traj.check(robot_model, true);
@@ -231,7 +234,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == PRIMITIVE_MODE::sort) {
-    Trajectories trajectories, trajectories_out;
+    dynobench::Trajectories trajectories, trajectories_out;
     trajectories.load_file_boost(in_file.c_str());
     CSTR_(trajectories.data.size());
 
@@ -250,7 +253,7 @@ int main(int argc, const char *argv[]) {
 
     const bool debug = false;
     if (debug) {
-      Trajectories trajectories_out_debug;
+      dynobench::Trajectories trajectories_out_debug;
       sort_motion_primitives(
           trajectories, trajectories_out_debug,
           [&](const auto &x, const auto &y) {
@@ -293,7 +296,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == PRIMITIVE_MODE::sort_with_rand_config) {
-    Trajectories trajectories, trajectories_out;
+    dynobench::Trajectories trajectories, trajectories_out;
     trajectories.load_file_boost(in_file.c_str());
     CSTR_(trajectories.data.size());
 
@@ -303,8 +306,9 @@ int main(int argc, const char *argv[]) {
     //   trajectories.data.resize(options_primitives.max_num_primitives);
     // }
 
-    std::shared_ptr<Model_robot> robot_model =
-        robot_factory(robot_type_to_path(options_primitives.dynamics).c_str());
+    std::shared_ptr<dynobench::Model_robot> robot_model =
+        dynobench::robot_factory(
+            dynobench::robot_type_to_path(options_primitives.dynamics).c_str());
 
     sort_motion_primitives_rand_config(trajectories, trajectories_out,
                                        robot_model,
@@ -334,7 +338,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == PRIMITIVE_MODE::check) {
-    Trajectories trajectories;
+    dynobench::Trajectories trajectories;
     trajectories.load_file_boost(in_file.c_str());
     CSTR_(trajectories.data.size());
 
@@ -348,7 +352,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == PRIMITIVE_MODE::cut) {
-    Trajectories trajectories;
+    dynobench::Trajectories trajectories;
     trajectories.load_file_boost(in_file.c_str());
     CSTR_(trajectories.data.size());
 
@@ -364,7 +368,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == PRIMITIVE_MODE::stats) {
-    Trajectories trajectories;
+    dynobench::Trajectories trajectories;
     trajectories.load_file_boost(in_file.c_str());
     if (options_primitives.max_num_primitives > 0 &&
         options_primitives.max_num_primitives < trajectories.data.size())
@@ -381,7 +385,7 @@ int main(int argc, const char *argv[]) {
   }
 
   if (mode == PRIMITIVE_MODE::shuffle) {
-    Trajectories trajectories;
+    dynobench::Trajectories trajectories;
     trajectories.load_file_boost(in_file.c_str());
     if (options_primitives.max_num_primitives > 0 &&
         options_primitives.max_num_primitives < trajectories.data.size())
@@ -408,4 +412,6 @@ int main(int argc, const char *argv[]) {
   log << "time: " << get_time_stamp() << std::endl;
   log << "options_primitives:" << std::endl;
   options_primitives.print(log, "  ");
+
+  return 0;
 }

@@ -2,9 +2,11 @@
 #include "idbastar/nigh_custom_spaces.hpp"
 #include "idbastar/optimization/ocp.hpp"
 
-namespace ob = ompl::base;
 namespace oc = ompl::control;
 
+namespace dynoplan {
+
+using dynobench::FMT;
 struct SST_public_interface : public oc::SST {
 
   SST_public_interface(const oc::SpaceInformationPtr &si) : oc::SST(si) {}
@@ -24,7 +26,7 @@ struct SST_public_interface : public oc::SST {
   };
 
   void setNearestNeighbors(const std::string &name,
-                           const std::shared_ptr<RobotOmpl> &robot) {
+                           const std::shared_ptr<dynoplan::RobotOmpl> &robot) {
     auto t = nigh_factory<oc::SST::Motion *>(name, robot);
     auto t2 = nigh_factory<oc::SST::Motion *>(name, robot);
     nn_.reset(t);
@@ -34,9 +36,11 @@ struct SST_public_interface : public oc::SST {
   ompl::base::Cost get_prevSolutionCost_() const { return prevSolutionCost_; }
 };
 
-void solve_sst(const Problem &problem, const Options_sst &options_ompl_sst,
-               const Options_trajopt &options_trajopt, Trajectory &traj_out,
-               Info_out &info_out_omplsst) {
+void solve_sst(const dynobench::Problem &problem,
+               const Options_sst &options_ompl_sst,
+               const Options_trajopt &options_trajopt,
+               dynobench::Trajectory &traj_out,
+               dynobench::Info_out &info_out_omplsst) {
 
   std::string random_id = gen_random(6);
 
@@ -158,7 +162,7 @@ void solve_sst(const Problem &problem, const Options_sst &options_ompl_sst,
             get_time_stamp_ms() - int(use_non_counter_time) * non_counter_time;
         {
 
-          Trajectory traj_sst;
+          dynobench::Trajectory traj_sst;
           traj_sst.start = start_eigen;
           traj_sst.goal = goal_eigen;
           traj_sst.time_stamp = tt;
@@ -243,7 +247,7 @@ void solve_sst(const Problem &problem, const Options_sst &options_ompl_sst,
 
           if (options_ompl_sst.reach_goal_with_opt) {
             Result_opti result;
-            Trajectory traj_opt;
+            dynobench::Trajectory traj_opt;
             std::cout << "*** Sart optimization ***" << std::endl;
 
             // NOTE: I don't consider the time spent in optimization,
@@ -324,7 +328,7 @@ void solve_sst(const Problem &problem, const Options_sst &options_ompl_sst,
   CSTR_(solved);
 
   {
-    Trajectory traj_sst;
+    dynobench::Trajectory traj_sst;
     std::vector<ompl::base::PlannerSolution> solutions = pdef->getSolutions();
     CSTR_(solutions.size());
     if (solutions.size()) {
@@ -443,3 +447,4 @@ void solve_sst(const Problem &problem, const Options_sst &options_ompl_sst,
     std::cout << "No solution found" << std::endl;
   }
 }
+} // namespace dynoplan

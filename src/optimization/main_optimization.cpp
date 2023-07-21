@@ -1,6 +1,7 @@
 #include "crocoddyl/core/utils/timer.hpp"
 #include "idbastar/optimization/ocp.hpp"
 
+using namespace dynoplan;
 int main(int argc, const char *argv[]) {
 
   srand(time(0));
@@ -44,10 +45,10 @@ int main(int argc, const char *argv[]) {
   options_trajopt.print(std::cout);
   std::cout << "***" << std::endl;
 
-  Problem problem(env_file.c_str());
+  dynobench::Problem problem(env_file.c_str());
   problem.models_base_path = models_base_path;
-  Trajectory traj_out;
-  Trajectory traj_db;
+  dynobench::Trajectory traj_out;
+  dynobench::Trajectory traj_db;
   traj_db.read_from_yaml(init_file.c_str());
 
   Result_opti result;

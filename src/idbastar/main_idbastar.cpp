@@ -5,8 +5,8 @@
 #include <iostream>
 #include <limits>
 
-#include <flann/flann.hpp>
-#include <msgpack.hpp>
+// #include <flann/flann.hpp>
+// #include <msgpack.hpp>
 #include <ompl/base/spaces/SE2StateSpace.h>
 #include <yaml-cpp/yaml.h>
 
@@ -25,22 +25,34 @@
 #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
 
 #include "idbastar/ompl/robots.h"
+#include "idbastar/optimization/ocp.hpp"
 #include "ompl/base/ScopedState.h"
 
 #include "dynobench/general_utils.hpp"
 #include "idbastar/dbastar/dbastar.hpp"
+#include "idbastar/idbastar/idbastar.hpp"
+
+// this is the complete algorithm: idbA*
 
 using namespace dynoplan;
 int main(int argc, char *argv[]) {
 
+  srand(time(0));
+
+  Options_idbAStar options_idbastar;
   Options_dbastar options_dbastar;
+  Options_trajopt options_trajopt;
+  std::string env_file = "";
+  std::string cfg_file = "";
+  std::string results_file = "";
+
   po::options_description desc("Allowed options");
+  options_idbastar.add_options(desc);
   options_dbastar.add_options(desc);
-  std::string cfg_file, results_file, env_file, models_base_path;
-  set_from_boostop(desc, VAR_WITH_NAME(models_base_path));
+  options_trajopt.add_options(desc);
+  set_from_boostop(desc, VAR_WITH_NAME(env_file));
   set_from_boostop(desc, VAR_WITH_NAME(cfg_file));
   set_from_boostop(desc, VAR_WITH_NAME(results_file));
-  set_from_boostop(desc, VAR_WITH_NAME(env_file));
 
   try {
     po::variables_map vm;
@@ -59,37 +71,41 @@ int main(int argc, char *argv[]) {
 
   if (cfg_file != "") {
     options_dbastar.read_from_yaml(cfg_file.c_str());
+    options_idbastar.read_from_yaml(cfg_file.c_str());
+    options_trajopt.read_from_yaml(cfg_file.c_str());
   }
 
-  dynobench::Problem problem(env_file.c_str());
-  problem.models_base_path = models_base_path;
-  dynobench::Trajectory traj;
-  Out_info_db out_db;
+  std::cout << "*** options_idbastar ***" << std::endl;
+  options_idbastar.print(std::cout);
+  std::cout << "***" << std::endl;
 
   std::cout << "*** options_dbastar ***" << std::endl;
   options_dbastar.print(std::cout);
   std::cout << "***" << std::endl;
 
-  dbastar(problem, options_dbastar, traj, out_db);
-
-  std::cout << "*** inout_db *** " << std::endl;
-  out_db.write_yaml(std::cout);
+  std::cout << "*** options_trajopt ***" << std::endl;
+  options_trajopt.print(std::cout);
   std::cout << "***" << std::endl;
 
-  CSTR_(results_file);
-  std::ofstream results(results_file);
-  results << "alg: dbastar" << std::endl;
-  results << "time_stamp: " << get_time_stamp() << std::endl;
-  results << "env_file: " << env_file << std::endl;
-  results << "cfg_file: " << cfg_file << std::endl;
-  results << "results_file: " << results_file << std::endl;
-  results << "options dbastar:" << std::endl;
-  options_dbastar.print(results, "  ");
-  out_db.write_yaml(results);
+  dynobench::Problem problem(env_file.c_str());
+  dynobench::Trajectory traj_out;
+  Info_out_idbastar info_out_idbastar;
 
-  if (out_db.solved) {
-    return EXIT_SUCCESS;
-  } else {
-    return EXIT_FAILURE;
+  idbA(problem, options_idbastar, options_dbastar, options_trajopt, traj_out,
+       info_out_idbastar);
+
+  std::cout << "*** info_out_dbastar   *** " << std::endl;
+  info_out_idbastar.print(std::cout);
+  std::cout << "***" << std::endl;
+
+  write_results_idbastar(results_file.c_str(), problem, options_idbastar,
+                         options_dbastar, options_trajopt, info_out_idbastar);
+
+  info_out_idbastar.print_trajs(results_file.c_str());
+
+  if (traj_out.states.size() && traj_out.actions.size()) {
+    std::string file = results_file + ".traj-sol.yaml";
+    std::ofstream out(file);
+    traj_out.to_yaml_format(out);
   }
 }

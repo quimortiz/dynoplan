@@ -26,6 +26,9 @@
 
 #define DYNOBENCH_BASE "../../dynobench/"
 
+using namespace dynoplan;
+using namespace dynobench;
+
 BOOST_AUTO_TEST_CASE(test_uni1_bugtrap_with_opt) {
 
   int argc = boost::unit_test::framework::master_test_suite().argc;

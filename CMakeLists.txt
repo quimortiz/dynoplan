@@ -23,6 +23,10 @@ find_package(yaml-cpp REQUIRED)
 find_package(crocoddyl REQUIRED)
 find_package(Eigen3 REQUIRED)
 
+message(STATUS "FCL_INCLUDE_DIRS: ${FCL_INCLUDE_DIRS}")
+message(STATUS "FCL_LIBRARIES: ${FCL_LIBRARIES}")
+message(STATUS "FCL_VERSION: ${FCL_VERSION}")
+
 # TODO: check why this is necessary
 message(STATUS "Finding LZ4 libraries...")
 find_library(
@@ -49,6 +53,7 @@ add_executable(main_sst ./src/ompl/main_sst.cpp)
 add_executable(main_optimization ./src/optimization/main_optimization.cpp)
 
 add_executable(main_dbastar ./src/dbastar/main_dbastar.cpp)
+add_executable(main_idbastar ./src/idbastar/main_idbastar.cpp)
 add_executable(main_dbrrt ./src/dbrrt/main_dbrrt.cpp)
 
 # target_compile_options(main PRIVATE -Wall -Wextra)
@@ -157,7 +162,13 @@ target_link_libraries(
 
 target_link_libraries(
   main_dbastar
-  PUBLIC dbastar Eigen3::Eigen
+  PUBLIC Eigen3::Eigen dbastar
+  PRIVATE fcl dynobench::dynobench ${OMPL_LIBRARIES} Boost::program_options
+          Boost::serialization ${LZ4_LIBRARIES})
+
+target_link_libraries(
+  main_idbastar
+  PUBLIC Eigen3::Eigen idbastar
   PRIVATE fcl dynobench::dynobench ${OMPL_LIBRARIES} Boost::program_options
           Boost::serialization ${LZ4_LIBRARIES})
 

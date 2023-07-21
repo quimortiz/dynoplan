@@ -22,6 +22,16 @@
 
 #include "idbastar/ompl/fclHelper.hpp"
 
+#include "dynobench/acrobot.hpp"
+#include "dynobench/car.hpp"
+#include "dynobench/planar_rotor.hpp"
+#include "dynobench/planar_rotor_pole.hpp"
+#include "dynobench/quadrotor.hpp"
+#include "dynobench/unicycle1.hpp"
+#include "dynobench/unicycle2.hpp"
+
+namespace dynoplan {
+
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 
@@ -93,8 +103,8 @@ double clamp(double val, double min, double max) {
 // /run_0_out.yaml.cfg.yaml
 
 struct ControlSamplerMixer : public oc::ControlSampler {
-  std::shared_ptr<Model_quad3d> model;
-  ControlSamplerMixer(const std::shared_ptr<Model_quad3d> &model,
+  std::shared_ptr<dynobench::Model_quad3d> model;
+  ControlSamplerMixer(const std::shared_ptr<dynobench::Model_quad3d> &model,
                       const oc::ControlSpace *space, double mean, double stddev)
       : oc::ControlSampler(space), model(model), mean_(mean), stddev_(stddev) {}
 
@@ -314,7 +324,7 @@ double distance_angle(double a, double b) {
   return result;
 }
 
-RobotOmpl::RobotOmpl(std::shared_ptr<Model_robot> diff_model)
+RobotOmpl::RobotOmpl(std::shared_ptr<dynobench::Model_robot> diff_model)
     : diff_model(diff_model), nx(diff_model->nx), nx_pr(diff_model->nx_pr),
       nu(diff_model->nu) {
 
@@ -398,7 +408,8 @@ class RobotUnicycleFirstOrder : public RobotOmpl {
 public:
   virtual ~RobotUnicycleFirstOrder() {}
 
-  RobotUnicycleFirstOrder(std::shared_ptr<Model_unicycle1> diff_model)
+  RobotUnicycleFirstOrder(
+      std::shared_ptr<dynobench::Model_unicycle1> diff_model)
       : RobotOmpl(diff_model) {
 
     auto space(std::make_shared<StateSpace>());
@@ -506,7 +517,7 @@ class RobotUnicycleSecondOrder : public RobotOmpl {
 public:
   virtual ~RobotUnicycleSecondOrder() {}
 
-  RobotUnicycleSecondOrder(std::shared_ptr<Model_unicycle2> model)
+  RobotUnicycleSecondOrder(std::shared_ptr<dynobench::Model_unicycle2> model)
       : RobotOmpl(model) {
 
     auto space(std::make_shared<StateSpace>(model->distance_weights));
@@ -1236,7 +1247,7 @@ class Quad2dPole : public RobotOmpl {
 public:
   virtual ~Quad2dPole() {}
 
-  Quad2dPole(std::shared_ptr<Model_quad2dpole> t_diff_model)
+  Quad2dPole(std::shared_ptr<dynobench::Model_quad2dpole> t_diff_model)
       : RobotOmpl(t_diff_model) {
 
     CSTR_V(t_diff_model->distance_weights);
@@ -1521,7 +1532,8 @@ class Quad2d : public RobotOmpl {
 public:
   virtual ~Quad2d() {}
 
-  Quad2d(std::shared_ptr<Model_quad2d> t_diff_model) : RobotOmpl(t_diff_model) {
+  Quad2d(std::shared_ptr<dynobench::Model_quad2d> t_diff_model)
+      : RobotOmpl(t_diff_model) {
 
     CSTR_V(t_diff_model->distance_weights);
     auto space(std::make_shared<StateSpace>(t_diff_model->distance_weights));
@@ -2132,7 +2144,7 @@ class Acrobot : public RobotOmpl {
 
 public:
   virtual ~Acrobot() {}
-  Acrobot(std::shared_ptr<Model_acrobot> t_diff_model)
+  Acrobot(std::shared_ptr<dynobench::Model_acrobot> t_diff_model)
       : RobotOmpl(t_diff_model) {
 
     auto space(std::make_shared<StateSpace>(t_diff_model->distance_weights));
@@ -2331,7 +2343,8 @@ public:
   virtual ~RobotCarFirstOrderWithTrailers() {}
   Eigen::VectorXd hitch_lengths_;
   size_t num_trailers = 0;
-  RobotCarFirstOrderWithTrailers(std::shared_ptr<Model_car_with_trailers> model)
+  RobotCarFirstOrderWithTrailers(
+      std::shared_ptr<dynobench::Model_car_with_trailers> model)
       : RobotOmpl(model) {
 
     hitch_lengths_ = model->params.hitch_lengths;
@@ -2580,7 +2593,8 @@ class RobotQuadrotor : public RobotOmpl {
 
 public:
   virtual ~RobotQuadrotor() {}
-  RobotQuadrotor(std::shared_ptr<Model_quad3d> t_model) : RobotOmpl(t_model) {
+  RobotQuadrotor(std::shared_ptr<dynobench::Model_quad3d> t_model)
+      : RobotOmpl(t_model) {
 
     auto space(std::make_shared<StateSpace>(t_model->distance_weights));
 
@@ -2634,7 +2648,8 @@ public:
 
     // check if it is force control or no.
 
-    auto p_derived = std::dynamic_pointer_cast<Model_quad3d>(diff_model);
+    auto p_derived =
+        std::dynamic_pointer_cast<dynobench::Model_quad3d>(diff_model);
 
     if (p_derived) {
       if (p_derived->params.motor_control) {
@@ -2946,7 +2961,10 @@ bool RobotStateValidityChecker::isValid(const ompl::base::State *state) const {
   return robot->diff_model->collision_check(x_eigen);
 }
 
-std::shared_ptr<RobotOmpl> robot_factory_ompl(const Problem &problem) {
+std::shared_ptr<RobotOmpl>
+robot_factory_ompl(const dynobench::Problem &problem) {
+
+  using namespace dynobench;
 
   // std::string base_path = "../models/";
   std::string suffix = ".yaml";
@@ -3041,7 +3059,7 @@ void load_motion_primitives_new(const std::string &motionsFile,
     NOT_IMPLEMENTED;
   }
 
-  Trajectories trajs;
+  dynobench::Trajectories trajs;
 
   trajs.load_file_boost(motionsFile.c_str());
 
@@ -3121,7 +3139,7 @@ void load_motion_primitives_new(const std::string &motionsFile,
   CSTR_V(trajs.data.front().states.front());
 }
 
-void traj_to_motion(const Trajectory &traj, RobotOmpl &robot,
+void traj_to_motion(const dynobench::Trajectory &traj, RobotOmpl &robot,
                     Motion &motion_out, bool compute_col) {
 
   auto si = robot.getSpaceInformation();
@@ -3173,3 +3191,5 @@ void compute_col_shape(Motion &m, RobotOmpl &robot) {
       new ShiftableDynamicAABBTreeCollisionManager<double>());
   m.collision_manager->registerObjects(m.collision_objects);
 };
+
+} // namespace dynoplan

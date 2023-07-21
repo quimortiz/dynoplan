@@ -28,6 +28,9 @@
 
 #define DYNOBENCH_BASE "../../dynobench/"
 
+using namespace dynoplan;
+using namespace dynobench;
+
 BOOST_AUTO_TEST_CASE(t_generate) {
 
   Options_trajopt options_trajopt;

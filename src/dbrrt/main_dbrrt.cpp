@@ -30,6 +30,9 @@
 #include "dynobench/general_utils.hpp"
 #include "idbastar/dbrrt/dbrrt.hpp"
 
+using namespace dynobench;
+using namespace dynoplan;
+
 int main(int argc, char *argv[]) {
 
   Options_trajopt options_trajopt;

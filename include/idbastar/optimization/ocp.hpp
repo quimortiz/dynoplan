@@ -20,6 +20,8 @@
 
 #include "crocoddyl/core/action-base.hpp"
 
+namespace dynoplan {
+
 struct Options_trajopt {
 
   bool soft_control_bounds = false;
@@ -112,12 +114,12 @@ struct Generate_params {
   size_t N;
   Eigen::VectorXd goal;
   Eigen::VectorXd start;
-  std::shared_ptr<Model_robot> model_robot;
+  std::shared_ptr<dynobench::Model_robot> model_robot;
   std::vector<Eigen::VectorXd> states = {};
   std::vector<Eigen::VectorXd> states_weights = {};
   std::vector<Eigen::VectorXd> actions = {};
   bool contour_control = false;
-  ptr<Interpolator> interpolator = nullptr;
+  ptr<dynobench::Interpolator> interpolator = nullptr;
   double max_alpha = 100.;
   bool linear_contour = true;
   bool goal_cost = true;
@@ -153,10 +155,6 @@ struct File_parser_inout {
   void read_from_yaml(const char *file);
 };
 
-Eigen::VectorXd enforce_bounds(const Eigen::VectorXd &us,
-                               const Eigen::VectorXd &lb,
-                               const Eigen::VectorXd &ub);
-
 void read_from_file(File_parser_inout &inout);
 
 void convert_traj_with_variable_time(const std::vector<Eigen::VectorXd> &xs,
@@ -185,27 +183,33 @@ struct Result_opti {
 };
 
 std::vector<Eigen::VectorXd>
-smooth_traj(const std::vector<Eigen::VectorXd> &xs_init, const StateQ &state);
+smooth_traj(const std::vector<Eigen::VectorXd> &xs_init,
+            const dynobench::StateQ &state);
 
-void __trajectory_optimization(const Problem &problem,
-                               std::shared_ptr<Model_robot> &model_robot,
-                               const Trajectory &init_guess,
-                               const Options_trajopt &options_trajopt,
-                               Trajectory &traj, Result_opti &opti_out);
+void __trajectory_optimization(
+    const dynobench::Problem &problem,
+    std::shared_ptr<dynobench::Model_robot> &model_robot,
+    const dynobench::Trajectory &init_guess,
+    const Options_trajopt &options_trajopt, dynobench::Trajectory &traj,
+    Result_opti &opti_out);
 
 // void trajectory_optimization(Problem &problem, File_parser_inout
 // &file_inout,
 //                              Result_opti &opti_out);
 
-void trajectory_optimization(const Problem &problem,
-                             const Trajectory &init_guess,
+void trajectory_optimization(const dynobench::Problem &problem,
+                             const dynobench::Trajectory &init_guess,
                              const Options_trajopt &opti_parms,
-                             Trajectory &traj, Result_opti &opti_out);
+                             dynobench::Trajectory &traj,
+                             Result_opti &opti_out);
 
 std::vector<Eigen::VectorXd>
-smooth_traj2(const std::vector<Eigen::VectorXd> &xs_init, const StateQ &state);
+smooth_traj2(const std::vector<Eigen::VectorXd> &xs_init,
+             const dynobench::StateQ &state);
 
 bool check_problem(ptr<crocoddyl::ShootingProblem> problem,
                    ptr<crocoddyl::ShootingProblem> problem2,
                    const std::vector<Eigen::VectorXd> &xs,
                    const std::vector<Eigen::VectorXd> &us);
+
+} // namespace dynoplan

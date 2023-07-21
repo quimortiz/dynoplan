@@ -20,6 +20,8 @@
 #include "idbastar/ompl/robots.h"
 #include "idbastar/ompl/sst.hpp"
 
+using namespace dynoplan;
+
 int main(int argc, char *argv[]) {
 
   srand(time(0));
@@ -69,10 +71,10 @@ int main(int argc, char *argv[]) {
   options_trajopt.print(std::cout);
   std::cout << "***" << std::endl;
 
-  Problem problem(env_file.c_str());
+  dynobench::Problem problem(env_file.c_str());
   problem.models_base_path = models_base_path;
-  Trajectory traj_out;
-  Info_out info_out;
+  dynobench::Trajectory traj_out;
+  dynobench::Info_out info_out;
 
   solve_sst(problem, options_ompl_sst, options_trajopt, traj_out, info_out);
 

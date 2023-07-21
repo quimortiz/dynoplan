@@ -1,5 +1,7 @@
 #include "idbastar/idbastar/idbastar.hpp"
 
+namespace dynoplan {
+
 // int main(int argc, char *argv[]) {
 //     srand((unsigned)time(NULL) * getpid());
 //     std::cout << gen_random(12) << "\n";
@@ -10,9 +12,11 @@
 // give options to load primitives and heuristic map only once.
 // cli to create and store a heuristic map for a robot in an environment.
 
-void idbA(const Problem &problem, const Options_idbAStar &options_idbas,
+void idbA(const dynobench::Problem &problem,
+          const Options_idbAStar &options_idbas,
           const Options_dbastar &options_dbastar,
-          const Options_trajopt &options_trajopt, Trajectory &traj_out,
+          const Options_trajopt &options_trajopt,
+          dynobench::Trajectory &traj_out,
           Info_out_idbastar &info_out_idbastar) {
 
   bool finished = false;
@@ -116,7 +120,7 @@ void idbA(const Problem &problem, const Options_idbAStar &options_idbas,
 
     std::cout << "*** Running DB-astar ***" << std::endl;
 
-    Trajectory traj_db, traj;
+    dynobench::Trajectory traj_db, traj;
     Out_info_db out_info_db;
 
     std::string id_db = gen_random(6);
@@ -200,12 +204,12 @@ void idbA(const Problem &problem, const Options_idbAStar &options_idbas,
           // lets generate primitives
           size_t number_of_cuts = 5;
 
-          Trajectories new_trajectories =
+          dynobench::Trajectories new_trajectories =
               cut_trajectory(traj, number_of_cuts, robot->diff_model);
 
           auto &rr = robot->diff_model;
 
-          Trajectories trajs_canonical;
+          dynobench::Trajectories trajs_canonical;
 
           make_trajs_canonical(*robot->diff_model, new_trajectories.data,
                                trajs_canonical.data);
@@ -290,7 +294,8 @@ void idbA(const Problem &problem, const Options_idbAStar &options_idbas,
             << static_cast<int>(info_out_idbastar.exit_criteria) << std::endl;
 }
 
-void write_results_idbastar(const char *results_file, const Problem &problem,
+void write_results_idbastar(const char *results_file,
+                            const dynobench::Problem &problem,
                             const Options_idbAStar &options_idbastar,
                             const Options_dbastar &options_dbastar,
                             const Options_trajopt &options_trajopt,
@@ -314,3 +319,5 @@ void write_results_idbastar(const char *results_file, const Problem &problem,
 
   info_out_idbastar.to_yaml(results);
 }
+
+} // namespace dynoplan

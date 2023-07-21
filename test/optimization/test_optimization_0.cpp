@@ -25,6 +25,9 @@
 
 #define dynobench_base "../../dynobench/"
 
+using namespace dynoplan;
+using namespace dynobench;
+
 BOOST_AUTO_TEST_CASE(second_order_park_traj_opt) {
 
   Options_trajopt options_trajopt;

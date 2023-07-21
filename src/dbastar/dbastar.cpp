@@ -38,6 +38,12 @@
 
 #include "idbastar/nigh_custom_spaces.hpp"
 
+namespace dynoplan {
+
+using dynobench::Trajectory;
+
+using dynobench::FMT;
+
 namespace ob = ompl::base;
 namespace oc = ompl::control;
 namespace po = boost::program_options;
@@ -153,6 +159,7 @@ void get_distance_all_vertices(const EdgeList &edge_list,
   }
 }
 
+#if 0
 using Edge = std::pair<int, int>;
 void backward_tree_with_dynamics(const std::vector<std::vector<double>> &data,
                                  std::vector<Motion> &primitives,
@@ -343,6 +350,7 @@ void backward_tree_with_dynamics(const std::vector<std::vector<double>> &data,
 
   // it seems I am doing too nn: 2293399
 }
+#endif
 
 // std::vector<double>;
 // std::vector<double>;
@@ -415,7 +423,7 @@ void compute_heuristic_map(const EdgeList &edge_list,
   }
 }
 
-#if 0 
+#if 0
 void build_heuristic_motions(
     const std::vector<Sample> &batch_samples /* goal should be last */,
     std::vector<SampleNode> &heuristic_map, std::vector<Motion> &motions,
@@ -458,10 +466,9 @@ void write_heuristic_map(
 // ]
 
 // true = no collision
-bool check_edge_at_resolution_new(const Eigen::VectorXd &start,
-                                  const Eigen::VectorXd &goal,
-                                  std::shared_ptr<Model_robot> &robot,
-                                  double resolution) {
+bool check_edge_at_resolution_new(
+    const Eigen::VectorXd &start, const Eigen::VectorXd &goal,
+    std::shared_ptr<dynobench::Model_robot> &robot, double resolution) {
 
   using Segment = std::pair<Eigen::VectorXd, Eigen::VectorXd>;
 
@@ -531,7 +538,7 @@ bool check_edge_at_resolution(const Sample_ *start, const Sample_ *goal,
 
 void build_heuristic_distance_new(
     const std::vector<Eigen::VectorXd> &batch_samples,
-    std::shared_ptr<Model_robot> &robot,
+    std::shared_ptr<dynobench::Model_robot> &robot,
     std::vector<Heuristic_node> &heuristic_map, double distance_threshold,
     double resolution) {
 
@@ -1248,7 +1255,7 @@ void Motion::print(std::ostream &out,
   STRY(disabled, out, "", ": ");
 }
 
-void generate_heuristic_map(const Problem &problem,
+void generate_heuristic_map(const dynobench::Problem &problem,
                             std::shared_ptr<RobotOmpl> robot_ompl,
                             const Options_dbastar &options_dbastar,
                             std::vector<Heuristic_node> &heu_map) {
@@ -1354,8 +1361,9 @@ Heu_roadmap::Heu_roadmap(std::shared_ptr<RobotOmpl> robot,
 // optimization 3d quadcopter model of OMPL app. 2d quadcopter with pole.
 
 // continue here: cost lower bound for the quadcopter
-void dbastar(const Problem &problem, const Options_dbastar &options_dbastar,
-             Trajectory &traj_out, Out_info_db &out_info_db) {
+void dbastar(const dynobench::Problem &problem,
+             const Options_dbastar &options_dbastar, Trajectory &traj_out,
+             Out_info_db &out_info_db) {
 
   // TODO:
   // - disable motions should not be on the search tree!
@@ -2220,7 +2228,7 @@ void dbastar(const Problem &problem, const Options_dbastar &options_dbastar,
 
     nearest_motion_timed(fakeMotion, neighbors_m);
 
-#if 0 
+#if 0
     std::cout << "current state state " << std::endl;
     si->printState(fakeMotion.states.front());
     std::cout << "reporting distances" << std::endl;
@@ -2783,7 +2791,7 @@ void dbastar(const Problem &problem, const Options_dbastar &options_dbastar,
 
   if (options_dbastar_local.debug) {
     if (options_dbastar_local.heuristic == 1) {
-#if 0 
+#if 0
       out << "batch:" << std::endl;
       auto fun_d = static_cast<Heu_roadmap *>(h_fun.get());
       for (auto &x : fun_d->batch_samples) {
@@ -3386,3 +3394,5 @@ void load_heu_map(const char *file, std::vector<Heuristic_node> &heu_map) {
     ERROR_WITH_INFO("missing map key");
   }
 }
+
+} // namespace dynoplan

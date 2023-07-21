@@ -1,6 +1,7 @@
 #include "idbastar/optimization/croco_models.hpp"
 #include "dynobench/croco_macros.hpp"
 #include "dynobench/math_utils.hpp"
+#include "idbastar/ompl/robots.h"
 #include <Eigen/src/Core/Matrix.h>
 #include <filesystem>
 
@@ -11,7 +12,9 @@ using V4d = Eigen::Vector4d;
 using Vxd = Eigen::VectorXd;
 using V1d = Eigen::Matrix<double, 1, 1>;
 
-Eigen::VectorXd derivate_wrt_time(Model_robot &robot_model,
+namespace dynoplan {
+
+Eigen::VectorXd derivate_wrt_time(dynobench::Model_robot &robot_model,
                                   const Eigen::VectorXd &x,
                                   const Eigen::VectorXd &u, double dt) {
   double epsilon = 1e-5;
@@ -25,8 +28,9 @@ Eigen::VectorXd derivate_wrt_time(Model_robot &robot_model,
   return dd;
 };
 
-ptr<Dynamics> create_dynamics(std::shared_ptr<Model_robot> model_robot,
-                              const Control_Mode &control_mode) {
+ptr<Dynamics>
+create_dynamics(std::shared_ptr<dynobench::Model_robot> model_robot,
+                const Control_Mode &control_mode) {
   return mk<Dynamics>(model_robot, control_mode);
 }
 
@@ -354,7 +358,8 @@ void finite_diff_cost(ptr<Cost> cost, Eigen::Ref<Eigen::MatrixXd> Jx,
   }
 }
 
-Contour_cost_x::Contour_cost_x(size_t nx, size_t nu, ptr<Interpolator> path)
+Contour_cost_x::Contour_cost_x(size_t nx, size_t nu,
+                               ptr<dynobench::Interpolator> path)
     : Cost(nx, nu, nx - 1), path(path),
       last_query(std::numeric_limits<double>::lowest()), last_out(nx - 1),
       last_J(nx - 1), __Jx(nr, nx), __r(nr) {
@@ -426,7 +431,8 @@ void Contour_cost_x::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
   // Lxx(nx - 1, nx - 1) += weight * last_J.transpose() * last_J;
 }
 
-Contour_cost::Contour_cost(size_t nx, size_t nu, ptr<Interpolator> path)
+Contour_cost::Contour_cost(size_t nx, size_t nu,
+                           ptr<dynobench::Interpolator> path)
     : Cost(nx, nu, nx + 1), path(path), last_query(-1.), last_out(nx - 1),
       last_J(nx - 1) {
   name = "contour";
@@ -494,7 +500,7 @@ void Contour_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
 }
 
 Col_cost::Col_cost(size_t nx, size_t nu, size_t nr,
-                   std::shared_ptr<Model_robot> model, double weight)
+                   std::shared_ptr<dynobench::Model_robot> model, double weight)
     : Cost(nx, nu, nr), model(model), weight(weight) {
   last_x = Vxd::Ones(nx);
   name = "collision";
@@ -799,8 +805,8 @@ void Control_bounds::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
 //       (x - ub).cwiseProduct(weight).array() >= 0;
 //   // std::cout << " x " << x.format(FMT) << std::endl;
 //   // std::cout << " ub " << ub.format(FMT) << std::endl;
-//   // std::cout << " result " << result.cast<double>().format(FMT) <<
-//   std::endl; Jx.diagonal() = (result.cast<double>()).cwiseProduct(weight);
+//   // std::cout << " result " << result.cast<double>().format(FMT)
+//   << std::endl; Jx.diagonal() = (result.cast<double>()).cwiseProduct(weight);
 // }
 
 State_cost::State_cost(size_t nx, size_t nu, size_t nr, const Vxd &x_weight,
@@ -1142,7 +1148,7 @@ void check_dyn(boost::shared_ptr<Dynamics> dyn, double eps, Vxd x, Vxd u,
   xnext.setZero();
   dyn->calc(xnext, x, u);
   std::cout << "xnext\n" << std::endl;
-  std::cout << xnext.format(FMT) << std::endl;
+  std::cout << xnext.format(dynobench::FMT) << std::endl;
   for (size_t i = 0; i < nx; i++) {
     Eigen::MatrixXd xe;
     xe = x;
@@ -1271,7 +1277,7 @@ void Quaternion_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
 }
 
 Quad3d_acceleration_cost::Quad3d_acceleration_cost(
-    const std::shared_ptr<Model_robot> &model_robot)
+    const std::shared_ptr<dynobench::Model_robot> &model_robot)
     : Cost(13, 4, 6), model(model_robot) {
   name = "accel_quad3d";
 
@@ -1369,7 +1375,8 @@ void Acceleration_cost_acrobot::calcDiff(
 }
 
 Acceleration_cost_quad2d::Acceleration_cost_quad2d(
-    const std::shared_ptr<Model_robot> &model_robot, size_t nx, size_t nu)
+    const std::shared_ptr<dynobench::Model_robot> &model_robot, size_t nx,
+    size_t nu)
     : Cost(nx, nu, 3), model(model_robot) {
   name = "acceleration";
   acc_u.setZero();
@@ -1411,7 +1418,7 @@ void Acceleration_cost_quad2d::calcDiff(
   Lxu += k_acc2 * acc_x.transpose() * acc_u;
 }
 
-Dynamics::Dynamics(std::shared_ptr<Model_robot> robot_model,
+Dynamics::Dynamics(std::shared_ptr<dynobench::Model_robot> robot_model,
                    const Control_Mode &control_mode)
     : robot_model(robot_model), control_mode(control_mode) {
   CHECK(robot_model, AT);
@@ -1439,9 +1446,9 @@ Dynamics::Dynamics(std::shared_ptr<Model_robot> robot_model,
     nu++;
     nx++;
 
-    state_croco =
-        boost::make_shared<StateCrocoQ>(std::make_shared<CompoundState2>(
-            robot_model->state, std::make_shared<Rn>(1)));
+    state_croco = boost::make_shared<StateCrocoQ>(
+        std::make_shared<dynobench::CompoundState2>(
+            robot_model->state, std::make_shared<dynobench::Rn>(1)));
 
   }
 
@@ -1449,9 +1456,9 @@ Dynamics::Dynamics(std::shared_ptr<Model_robot> robot_model,
     nu++;
     nx++;
 
-    state_croco =
-        boost::make_shared<StateCrocoQ>(std::make_shared<CompoundState2>(
-            robot_model->state, std::make_shared<Rn>(1)));
+    state_croco = boost::make_shared<StateCrocoQ>(
+        std::make_shared<dynobench::CompoundState2>(
+            robot_model->state, std::make_shared<dynobench::Rn>(1)));
   }
 
   CHECK_EQ(state_croco->get_nx(), nx, AT);
@@ -1563,8 +1570,8 @@ void Dynamics::calcDiff(Eigen::Ref<Eigen::MatrixXd> Fx,
 // }
 
 State_cost_model::State_cost_model(
-    const std::shared_ptr<Model_robot> &model_robot, size_t nx, size_t nu,
-    const Eigen::VectorXd &x_weight, const Eigen::VectorXd &ref)
+    const std::shared_ptr<dynobench::Model_robot> &model_robot, size_t nx,
+    size_t nu, const Eigen::VectorXd &x_weight, const Eigen::VectorXd &ref)
     : Cost(nx, nu, model_robot->state->ndx), ref(ref), x_weight(x_weight),
       nx_effective(model_robot->state->nx), model_robot(model_robot) {
 
@@ -1635,7 +1642,7 @@ void State_cost_model::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
   model_robot->state_diff(__r, ref, x.head(nx_effective));
   model_robot->state_diffDiff(Jx0, Jx1, ref, x.head(nx_effective));
 
-  bool Jx1_is_diagonal = is_diagonal(Jx1);
+  bool Jx1_is_diagonal = dynobench::is_diagonal(Jx1);
 
   // CSTR_V(ref);
   // CSTR_V(__r);
@@ -1709,8 +1716,9 @@ void Min_time_linear::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
   ERROR_WITH_INFO("should not be here");
 }
 
-Diff_angle_cost::Diff_angle_cost(size_t nx, size_t nu,
-                                 std::shared_ptr<Model_car_with_trailers> car)
+Diff_angle_cost::Diff_angle_cost(
+    size_t nx, size_t nu,
+    std::shared_ptr<dynobench::Model_car_with_trailers> car)
     : Cost(nx, nu, 2), car(car) {}
 
 void Diff_angle_cost::calc(Eigen::Ref<Eigen::VectorXd> r,
@@ -1756,3 +1764,5 @@ void Diff_angle_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
                                const Eigen::Ref<const Eigen::VectorXd> &u) {
   calcDiff(Lx, Lxx, x);
 }
+
+} // namespace dynoplan

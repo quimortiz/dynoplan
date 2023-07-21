@@ -22,6 +22,8 @@
 
 namespace po = boost::program_options;
 
+namespace dynoplan {
+
 struct Options_sst {
   // use -1 to say: default in OMPL
 
@@ -142,6 +144,10 @@ struct Inout_sst {
   }
 };
 
-void solve_sst(const Problem &problem, const Options_sst &options_ompl_sst,
-               const Options_trajopt &options_trajopt, Trajectory &traj_out,
-               Info_out &info_out_omplsst);
+void solve_sst(const dynobench::Problem &problem,
+               const Options_sst &options_ompl_sst,
+               const Options_trajopt &options_trajopt,
+               dynobench::Trajectory &traj_out,
+               dynobench::Info_out &info_out_omplsst);
+
+} // namespace dynoplan

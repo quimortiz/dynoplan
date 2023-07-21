@@ -3,8 +3,11 @@
 #include "idbastar/nigh_custom_spaces.hpp"
 #include "idbastar/optimization/ocp.hpp"
 
-namespace ob = ompl::base;
 namespace og = ompl::geometric;
+
+namespace dynoplan {
+
+using dynobench::FMT;
 
 struct RRTstar_public_interface : public og::RRTstar {
 
@@ -22,10 +25,11 @@ struct RRTstar_public_interface : public og::RRTstar {
   }
 };
 
-void solve_ompl_geometric(const Problem &problem,
+void solve_ompl_geometric(const dynobench::Problem &problem,
                           const Options_geo &options_geo,
                           const Options_trajopt &options_trajopt,
-                          Trajectory &traj_out, Info_out &info_out_omplgeo) {
+                          dynobench::Trajectory &traj_out,
+                          dynobench::Info_out &info_out_omplgeo) {
 
   std::shared_ptr<RobotOmpl> robot = robot_factory_ompl(problem);
 
@@ -89,8 +93,8 @@ void solve_ompl_geometric(const Problem &problem,
   pdef->setIntermediateSolutionCallback(
       [&](const ob::Planner *, const std::vector<const ob::State *> &states,
           const ob::Cost cost) {
-        Trajectory traj;
-        Trajectory traj_geo;
+        dynobench::Trajectory traj;
+        dynobench::Trajectory traj_geo;
         traj_geo.time_stamp =
             get_time_stamp_ms() - int(use_non_counter_time) * non_counter_time;
 
@@ -267,3 +271,5 @@ void solve_ompl_geometric(const Problem &problem,
     std::cout << "No solution found" << std::endl;
   }
 }
+
+} // namespace dynoplan

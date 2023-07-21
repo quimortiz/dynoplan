@@ -31,6 +31,8 @@
 #include "dynobench/general_utils.hpp"
 #include "idbastar/dbastar/dbastar.hpp"
 
+namespace dynoplan {
+
 enum class EXIT_CRITERIA {
   max_it,
   time_limit,
@@ -38,7 +40,7 @@ enum class EXIT_CRITERIA {
   none,
 };
 
-struct Info_out_idbastar : Info_out {
+struct Info_out_idbastar : dynobench::Info_out {
   EXIT_CRITERIA exit_criteria = EXIT_CRITERIA::none;
 };
 
@@ -116,15 +118,20 @@ struct Options_idbAStar {
 // give options to load primitives and heuristic map only once.
 // cli to create and store a heuristic map for a robot in an environment.
 
-void idbA(const Problem &problem, const Options_idbAStar &options_idbas,
+void idbA(const dynobench::Problem &problem,
+          const Options_idbAStar &options_idbas,
           const Options_dbastar &options_dbastar,
-          const Options_trajopt &options_trajopt, Trajectory &traj_out,
+          const Options_trajopt &options_trajopt,
+          dynobench::Trajectory &traj_out,
           Info_out_idbastar &info_out_idbastar);
 
 // are you here?
 
-void write_results_idbastar(const char *results_file, const Problem &problem,
+void write_results_idbastar(const char *results_file,
+                            const dynobench::Problem &problem,
                             const Options_idbAStar &options_idbastar,
                             const Options_dbastar &options_dbastar,
                             const Options_trajopt &options_trajopt,
                             const Info_out_idbastar &info_out_idbastar);
+
+} // namespace dynoplan

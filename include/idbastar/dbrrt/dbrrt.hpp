@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+namespace dynoplan {
+
 struct Options_dbrrt {
 
   double prob_expand_forward = 0.5;
@@ -100,16 +102,22 @@ struct Options_dbrrt {
   }
 };
 
-void dbrrt(const Problem &problem, const Options_dbrrt &options_dbrrt,
-           const Options_trajopt &options_trajopt, Trajectory &traj_out,
-           Info_out &out_info_db);
+void dbrrt(const dynobench::Problem &problem,
+           const Options_dbrrt &options_dbrrt,
+           const Options_trajopt &options_trajopt,
+           dynobench::Trajectory &traj_out, dynobench::Info_out &out_info_db);
 
-void from_solution_to_yaml_and_traj(Model_robot &robot,
+void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     const std::vector<Motion> &motions,
-                                    AStarNode *solution, const Problem &problem,
-                                    Trajectory &traj_out,
+                                    AStarNode *solution,
+                                    const dynobench::Problem &problem,
+                                    dynobench::Trajectory &traj_out,
                                     std::ofstream *out = nullptr);
 
-void dbrrtConnect(const Problem &problem, const Options_dbrrt &options_dbrrt,
-                  const Options_trajopt &options_trajopt, Trajectory &traj_out,
-                  Info_out &info_out);
+void dbrrtConnect(const dynobench::Problem &problem,
+                  const Options_dbrrt &options_dbrrt,
+                  const Options_trajopt &options_trajopt,
+                  dynobench::Trajectory &traj_out,
+                  dynobench::Info_out &info_out);
+
+} // namespace dynoplan

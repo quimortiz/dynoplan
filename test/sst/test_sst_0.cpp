@@ -28,6 +28,9 @@
 
 #define DYNOBENCH_BASE "../../dynobench/"
 
+using namespace dynoplan;
+using namespace dynobench;
+
 BOOST_AUTO_TEST_CASE(parallel_park_1) {
 
   Options_sst options_ompl_sst;

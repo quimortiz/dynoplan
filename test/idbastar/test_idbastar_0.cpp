@@ -25,6 +25,9 @@
 
 #define DYNOBENCH_BASE "../../dynobench/"
 
+using namespace dynoplan;
+using namespace dynobench;
+
 BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {
 
   Problem problem(DYNOBENCH_BASE +

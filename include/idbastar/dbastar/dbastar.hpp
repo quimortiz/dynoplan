@@ -7,7 +7,7 @@
 #include <iostream>
 #include <limits>
 //
-#include <flann/flann.hpp>
+// #include <flann/flann.hpp>
 // #include <msgpack.hpp>
 #include <ompl/base/spaces/SE2StateSpace.h>
 #include <yaml-cpp/yaml.h>
@@ -32,8 +32,9 @@
 #include "ompl/base/ScopedState.h"
 #include <fcl/fcl.h>
 
+namespace dynoplan {
+
 namespace ob = ompl::base;
-namespace oc = ompl::control;
 namespace po = boost::program_options;
 
 using Sample = std::vector<double>;
@@ -55,6 +56,7 @@ void add(const double *a, const double *b, size_t n, double s, double *out);
 void add2(const double *a, const double *b, const double *c, size_t n,
           double sb, double sc, double *out);
 
+#if 0
 template <class T> struct L2Q {
   typedef bool is_kdtree_distance;
 
@@ -110,6 +112,7 @@ public:
 protected:
   const typename ompl::NearestNeighbors<_T>::DistanceFunction &distFun_;
 };
+#endif
 
 struct HeuNodeWithIndex {
 
@@ -164,7 +167,7 @@ struct AStarNode {
   const Eigen::VectorXd &getStateEig() { return state_eig; }
 
   void write(std::ostream &out) {
-    out << state_eig.format(FMT) << std::endl;
+    out << state_eig.format(dynobench::FMT) << std::endl;
     out << "fScore: " << fScore << " gScore: " << gScore
         << " hScore: " << hScore << std::endl;
     out << " used_motion: " << used_motion
@@ -215,7 +218,7 @@ void compute_heuristic_map(const EdgeList &edge_list,
                            const std::vector<Sample_ *> &batch_samples,
                            std::vector<SampleNode> &heuristic_map);
 
-#if 0 
+#if 0
 void build_heuristic_motions(
     const std::vector<Sample> &batch_samples /* goal should be last */,
     std::vector<SampleNode> &heuristic_map, std::vector<Motion> &motions,
@@ -594,17 +597,17 @@ struct Heu_roadmap : Heu_fun {
 
 void build_heuristic_distance_new(
     const std::vector<Eigen::VectorXd> &batch_samples,
-    std::shared_ptr<Model_robot> &robot,
+    std::shared_ptr<dynobench::Model_robot> &robot,
     std::vector<Heuristic_node> &heuristic_map, double distance_threshold,
     double resolution);
 
-bool check_edge_at_resolution_new(const Eigen::VectorXd &start,
-                                  const Eigen::VectorXd &goal,
-                                  std::shared_ptr<Model_robot> &robot,
-                                  double resolution);
+bool check_edge_at_resolution_new(
+    const Eigen::VectorXd &start, const Eigen::VectorXd &goal,
+    std::shared_ptr<dynobench::Model_robot> &robot, double resolution);
 
-void dbastar(const Problem &problem, const Options_dbastar &options_dbastar,
-             Trajectory &traj_out, Out_info_db &out_info_db);
+void dbastar(const dynobench::Problem &problem,
+             const Options_dbastar &options_dbastar,
+             dynobench::Trajectory &traj_out, Out_info_db &out_info_db);
 
 void write_heu_map(const std::vector<Heuristic_node> &heu_map, const char *file,
                    const char *header = nullptr);
@@ -612,10 +615,10 @@ void write_heu_map(const std::vector<Heuristic_node> &heu_map, const char *file,
 struct LazyTraj {
 
   Eigen::VectorXd offset;
-  Model_robot *robot;
+  dynobench::Model_robot *robot;
   Motion *motion;
 
-  void compute(Trajectory &tmp_traj, bool forward = true) {
+  void compute(dynobench::Trajectory &tmp_traj, bool forward = true) {
     assert(offset.size());
     assert(robot);
     assert(motion);
@@ -634,7 +637,7 @@ struct LazyTraj {
 
 struct Expander {
 
-  Model_robot *robot;
+  dynobench::Model_robot *robot;
   ompl::NearestNeighbors<Motion *> *T_m;
   Eigen::VectorXd canonical_state;
   Eigen::VectorXd offset;
@@ -647,7 +650,7 @@ struct Expander {
   double total_times_ms = 0;
   bool verbose = false;
 
-  Expander(Model_robot *robot, ompl::NearestNeighbors<Motion *> *T_m,
+  Expander(dynobench::Model_robot *robot, ompl::NearestNeighbors<Motion *> *T_m,
            double delta)
       : robot(robot), T_m(T_m), delta(delta) {
     canonical_state.resize(robot->nx);
@@ -674,7 +677,8 @@ struct Expander {
 
     if (!neighbors_m.size() && verbose) {
 
-      std::cout << "no neighours for state " << x.format(FMT) << std::endl;
+      std::cout << "no neighours for state " << x.format(dynobench::FMT)
+                << std::endl;
 
       std::cout << "close state is  " << std::endl;
       auto close_motion = T_m->nearest(&fakeMotion);
@@ -706,7 +710,8 @@ struct Expander {
 };
 
 inline void plot_search_tree(std::vector<AStarNode *> nodes,
-                             std::vector<Motion> motions, Model_robot &robot,
+                             std::vector<Motion> motions,
+                             dynobench::Model_robot &robot,
                              const char *filename) {
 
   std::cout << "plotting search tree to: " << filename << std::endl;
@@ -717,7 +722,7 @@ inline void plot_search_tree(std::vector<AStarNode *> nodes,
   const std::string indent6 = "      ";
   for (auto &n : nodes) {
     out << indent2 << "-" << std::endl;
-    out << indent4 << "x: " << n->state_eig.format(FMT) << std::endl;
+    out << indent4 << "x: " << n->state_eig.format(dynobench::FMT) << std::endl;
     out << indent4 << "fScore: " << n->fScore << std::endl;
     out << indent4 << "gScore: " << n->gScore << std::endl;
     out << indent4 << "hScore: " << n->hScore << std::endl;
@@ -727,9 +732,11 @@ inline void plot_search_tree(std::vector<AStarNode *> nodes,
   // for (auto &n : nodes) {
   //   if (n->came_from) {
   //     std::cout << indent2 << "-" << std::endl;
-  //     out << indent4 << "from:" << n->came_from->state_eig.format(FMT)
+  //     out << indent4 << "from:" <<
+  //     n->came_from->state_eig.format(FMT)
   //         << std::endl;
-  //     out << indent4 << "to:" << n->state_eig.format(FMT) << std::endl;
+  //     out << indent4 << "to:" << n->state_eig.format(FMT) <<
+  //     std::endl;
   //   }
   // }
   out << "edges:" << std::endl;
@@ -737,9 +744,11 @@ inline void plot_search_tree(std::vector<AStarNode *> nodes,
   for (auto &n : nodes) {
     if (n->came_from) {
       out << indent2 << "-" << std::endl;
-      out << indent4 << "from: " << n->came_from->state_eig.format(FMT)
+      out << indent4
+          << "from: " << n->came_from->state_eig.format(dynobench::FMT)
           << std::endl;
-      out << indent4 << "to: " << n->state_eig.format(FMT) << std::endl;
+      out << indent4 << "to: " << n->state_eig.format(dynobench::FMT)
+          << std::endl;
       // get the motion
 
       LazyTraj lazy_traj;
@@ -748,19 +757,21 @@ inline void plot_search_tree(std::vector<AStarNode *> nodes,
       lazy_traj.robot = &robot;
       lazy_traj.motion = &motions.at(n->used_motion);
 
-      Trajectory traj;
+      dynobench::Trajectory traj;
       traj.states = lazy_traj.motion->traj.states;
       traj.actions = lazy_traj.motion->traj.actions;
       lazy_traj.compute(traj);
       out << indent4 << "traj:" << std::endl;
       for (auto &s : traj.states) {
-        out << indent6 << "- " << s.format(FMT) << std::endl;
+        out << indent6 << "- " << s.format(dynobench::FMT) << std::endl;
       }
     }
   }
 }
 
-void generate_heuristic_map(const Problem &problem,
+void generate_heuristic_map(const dynobench::Problem &problem,
                             std::shared_ptr<RobotOmpl> robot_ompl,
                             const Options_dbastar &options_dbastar,
                             std::vector<Heuristic_node> &heu_map);
+
+} // namespace dynoplan

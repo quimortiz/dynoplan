@@ -23,9 +23,15 @@ using V4d = Eigen::Vector4d;
 using Vxd = Eigen::VectorXd;
 using V1d = Eigen::Matrix<double, 1, 1>;
 
-namespace crocoddyl {
+using dynobench::Trajectory;
 
-class CallbackVerboseQ : public CallbackAbstract {
+namespace dynoplan {
+
+using dynobench::check_equal;
+using dynobench::enforce_bounds;
+using dynobench::FMT;
+
+class CallbackVerboseQ : public crocoddyl::CallbackAbstract {
 public:
   using Traj =
       std::pair<std::vector<Eigen::VectorXd>, std::vector<Eigen::VectorXd>>;
@@ -34,7 +40,7 @@ public:
   explicit CallbackVerboseQ() = default;
   ~CallbackVerboseQ() override = default;
 
-  void operator()(SolverAbstract &solver) override {
+  void operator()(crocoddyl::SolverAbstract &solver) override {
     std::cout << "adding trajectory" << std::endl;
     trajs.push_back(std::make_pair(solver.get_xs(), solver.get_us()));
   }
@@ -46,7 +52,7 @@ public:
 
     for (size_t i = 0; i < trajs.size(); i++) {
       auto &traj = trajs.at(i);
-      Trajectory tt;
+      dynobench::Trajectory tt;
       tt.states = traj.first;
       tt.actions = traj.second;
 
@@ -57,8 +63,6 @@ public:
     }
   }
 };
-
-} // namespace crocoddyl
 
 void Options_trajopt::add_options(po::options_description &desc) {
 
@@ -383,8 +387,9 @@ generate_problem(const Generate_params &gen_args,
 
     if (startsWith(gen_args.name, "car1")) {
 
-      auto ptr_derived = std::dynamic_pointer_cast<Model_car_with_trailers>(
-          gen_args.model_robot);
+      auto ptr_derived =
+          std::dynamic_pointer_cast<dynobench::Model_car_with_trailers>(
+              gen_args.model_robot);
 
       CHECK(ptr_derived, AT);
       std::cout << "adding diff angle cost" << std::endl;
@@ -937,7 +942,7 @@ void convert_traj_with_variable_time(const std::vector<Vxd> &xs,
                                      const std::vector<Vxd> &us,
                                      std::vector<Vxd> &xs_out,
                                      std::vector<Vxd> &us_out, const double &dt,
-                                     const StateQ &state) {
+                                     const dynobench::StateQ &state) {
   CHECK(xs.size(), AT);
   CHECK(us.size(), AT);
   CHECK_EQ(xs.size(), us.size() + 1, AT);
@@ -1147,11 +1152,12 @@ bool check_problem(ptr<crocoddyl::ShootingProblem> problem,
 
 void write_states_controls(const std::vector<Eigen::VectorXd> &xs,
                            const std::vector<Eigen::VectorXd> &us,
-                           std::shared_ptr<Model_robot> model_robot,
-                           const Problem &problem, const char *filename) {
+                           std::shared_ptr<dynobench::Model_robot> model_robot,
+                           const dynobench::Problem &problem,
+                           const char *filename) {
 
   // store the init guess:
-  Trajectory __traj;
+  dynobench::Trajectory __traj;
   __traj.actions = us;
   __traj.states = xs;
 
@@ -1199,11 +1205,12 @@ void write_states_controls(const std::vector<Eigen::VectorXd> &xs,
   __traj.to_yaml_format(init_guess);
 }
 
-void __trajectory_optimization(const Problem &problem,
-                               std::shared_ptr<Model_robot> &model_robot,
-                               const Trajectory &init_guess,
-                               const Options_trajopt &options_trajopt,
-                               Trajectory &traj, Result_opti &opti_out) {
+void __trajectory_optimization(
+    const dynobench::Problem &problem,
+    std::shared_ptr<dynobench::Model_robot> &model_robot,
+    const dynobench::Trajectory &init_guess,
+    const Options_trajopt &options_trajopt, dynobench::Trajectory &traj,
+    Result_opti &opti_out) {
 
   const bool modify_to_match_goal_start = false;
   const bool store_iterations = false;
@@ -1218,10 +1225,10 @@ void __trajectory_optimization(const Problem &problem,
       << std::endl;
   opti_out.data.clear();
 
-  auto callback_quim = mk<crocoddyl::CallbackVerboseQ>();
+  auto callback_quim = mk<CallbackVerboseQ>();
 
   {
-    Trajectory __init_guess = init_guess;
+    dynobench::Trajectory __init_guess = init_guess;
     __init_guess.start = problem.start;
     __init_guess.goal = problem.goal;
     std::cout << "checking traj input of __trajectory_optimization "
@@ -1400,7 +1407,7 @@ void __trajectory_optimization(const Problem &problem,
     }
 
     for (size_t i = 0; i < num_smooth_iterations; i++) {
-      us_init = smooth_traj2(us_init, Rn(us_init.front().size()));
+      us_init = smooth_traj2(us_init, dynobench::Rn(us_init.front().size()));
     }
 
     // store the smooth traj
@@ -1473,10 +1480,10 @@ void __trajectory_optimization(const Problem &problem,
 
     double max_alpha = times(times.size() - 1);
 
-    ptr<Interpolator> path =
-        mk<Interpolator>(times, xs_init, model_robot->state);
-    ptr<Interpolator> path_u =
-        mk<Interpolator>(times.head(times.size() - 1), us_init);
+    ptr<dynobench::Interpolator> path =
+        mk<dynobench::Interpolator>(times, xs_init, model_robot->state);
+    ptr<dynobench::Interpolator> path_u =
+        mk<dynobench::Interpolator>(times.head(times.size() - 1), us_init);
 
     std::vector<Vxd> xs;
     std::vector<Vxd> us;
@@ -2049,7 +2056,7 @@ void __trajectory_optimization(const Problem &problem,
 
         std::string filename_raw =
             folder_tmptraj + "opt_" + random_id + ".raw.yaml";
-        Trajectory traj;
+        dynobench::Trajectory traj;
         traj.states = ddp.get_xs();
         traj.actions = ddp.get_us();
         traj.to_yaml_format(filename_raw.c_str());
@@ -2682,8 +2689,14 @@ void __trajectory_optimization(const Problem &problem,
 
     traj.check(model_robot, true);
     std::cout << "Final CHECK -- DONE" << std::endl;
-    traj.update_feasibility(traj_tol, goal_tol, col_tol, x_bound_tol,
-                            u_bound_tol);
+
+    dynobench::Feasibility_thresholds thresholds{.traj_tol = traj_tol,
+                                                 .goal_tol = goal_tol,
+                                                 .col_tol = col_tol,
+                                                 .x_bound_tol = x_bound_tol,
+                                                 .u_bound_tol = u_bound_tol};
+
+    traj.update_feasibility(thresholds);
 
     opti_out.feasible = traj.feasible;
 
@@ -2712,7 +2725,7 @@ void __trajectory_optimization(const Problem &problem,
   }
 }
 
-void trajectory_optimization(const Problem &problem,
+void trajectory_optimization(const dynobench::Problem &problem,
                              const Trajectory &init_guess,
                              const Options_trajopt &options_trajopt,
                              Trajectory &traj, Result_opti &opti_out) {
@@ -2721,8 +2734,9 @@ void trajectory_optimization(const Problem &problem,
   Stopwatch watch;
   Options_trajopt options_trajopt_local = options_trajopt;
 
-  std::shared_ptr<Model_robot> model_robot = robot_factory(
-      (problem.models_base_path + problem.robotType + ".yaml").c_str());
+  std::shared_ptr<dynobench::Model_robot> model_robot =
+      dynobench::robot_factory(
+          (problem.models_base_path + problem.robotType + ".yaml").c_str());
 
   load_env_quim(*model_robot, problem);
 
@@ -2733,8 +2747,8 @@ void trajectory_optimization(const Problem &problem,
   Trajectory tmp_solution;
 
   if (options_trajopt_local.welf_format) {
-    std::shared_ptr<Model_quad3d> robot_derived =
-        std::dynamic_pointer_cast<Model_quad3d>(model_robot);
+    std::shared_ptr<dynobench::Model_quad3d> robot_derived =
+        std::dynamic_pointer_cast<dynobench::Model_quad3d>(model_robot);
     tmp_init_guess = from_welf_to_quim(init_guess, robot_derived->u_nominal);
   }
 
@@ -3026,8 +3040,8 @@ void trajectory_optimization(const Problem &problem,
       // create an interpolator
       // I need a state to interpolate :)
       // CONTINUE HERE!!
-      Interpolator interp_x(times_2, xs_init, model_robot->state);
-      Interpolator interp_u(times_2.head(us_init.size()), us_init);
+      dynobench::Interpolator interp_x(times_2, xs_init, model_robot->state);
+      dynobench::Interpolator interp_u(times_2.head(us_init.size()), us_init);
 
       int new_n = std::ceil(rate * original_n);
 
@@ -3302,8 +3316,8 @@ void trajectory_optimization(const Problem &problem,
 
   if (options_trajopt_local.welf_format) {
     Trajectory traj_welf;
-    std::shared_ptr<Model_quad3d> robot_derived =
-        std::dynamic_pointer_cast<Model_quad3d>(model_robot);
+    std::shared_ptr<dynobench::Model_quad3d> robot_derived =
+        std::dynamic_pointer_cast<dynobench::Model_quad3d>(model_robot);
     traj_welf = from_quim_to_welf(traj, robot_derived->u_nominal);
     traj = traj_welf;
   }
@@ -3435,7 +3449,8 @@ void File_parser_inout::print(std::ostream &out) {
 // }
 
 std::vector<Eigen::VectorXd>
-smooth_traj2(const std::vector<Eigen::VectorXd> &xs_init, const StateQ &state) {
+smooth_traj2(const std::vector<Eigen::VectorXd> &xs_init,
+             const dynobench::StateQ &state) {
   size_t n = xs_init.front().size();
   size_t ndx = state.ndx;
   CHECK_EQ(n, state.nx, AT);
@@ -3467,7 +3482,8 @@ smooth_traj2(const std::vector<Eigen::VectorXd> &xs_init, const StateQ &state) {
 }
 
 std::vector<Eigen::VectorXd>
-smooth_traj(const std::vector<Eigen::VectorXd> &xs_init, const StateQ &state) {
+smooth_traj(const std::vector<Eigen::VectorXd> &xs_init,
+            const dynobench::StateQ &state) {
   size_t n = xs_init.front().size();
   size_t ndx = state.ndx;
   CHECK_EQ(n, state.nx, AT);
@@ -3492,8 +3508,9 @@ smooth_traj(const std::vector<Eigen::VectorXd> &xs_init, const StateQ &state) {
   for (size_t i = 0; i < static_cast<size_t>(diffs.size()); i++) {
     for (size_t j = 0; j < static_cast<size_t>(kernel.size()); j++) {
       diffs_smooth.at(i) +=
-          kernel(j) * diffs.at(inside_bounds(int(i - kernel.size() / 2 + j),
-                                             int(0), int(diffs.size() - 1)));
+          kernel(j) *
+          diffs.at(dynobench::inside_bounds(int(i - kernel.size() / 2 + j),
+                                            int(0), int(diffs.size() - 1)));
     }
   }
 
@@ -3509,3 +3526,4 @@ smooth_traj(const std::vector<Eigen::VectorXd> &xs_init, const StateQ &state) {
 
   return xs_out;
 }
+} // namespace dynoplan

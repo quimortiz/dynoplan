@@ -1,6 +1,8 @@
 #include "idbastar/ompl/rrt_to.hpp"
 #include "idbastar/optimization/ocp.hpp"
 
+using namespace dynoplan;
+
 int main(int argc, char *argv[]) {
 
   srand(time(0));
@@ -46,11 +48,11 @@ int main(int argc, char *argv[]) {
   options_trajopt.print(std::cout);
   std::cout << "***" << std::endl;
 
-  Problem problem(env_file.c_str());
+  dynobench::Problem problem(env_file.c_str());
   problem.models_base_path = models_base_path;
 
-  Info_out info_out_omplgeo;
-  Trajectory traj_out;
+  dynobench::Info_out info_out_omplgeo;
+  dynobench::Trajectory traj_out;
 
   solve_ompl_geometric(problem, options_geo, options_trajopt, traj_out,
                        info_out_omplgeo);

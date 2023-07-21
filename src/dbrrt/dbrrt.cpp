@@ -40,10 +40,16 @@
 
 #include "idbastar/nigh_custom_spaces.hpp"
 
-void from_solution_to_yaml_and_traj(Model_robot &robot,
+namespace dynoplan {
+
+using dynobench::FMT;
+
+void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     const std::vector<Motion> &motions,
-                                    AStarNode *solution, const Problem &problem,
-                                    Trajectory &traj_out, std::ofstream *out) {
+                                    AStarNode *solution,
+                                    const dynobench::Problem &problem,
+                                    dynobench::Trajectory &traj_out,
+                                    std::ofstream *out) {
   std::vector<const AStarNode *> result;
 
   CHECK(solution, AT);
@@ -195,9 +201,10 @@ void from_solution_to_yaml_and_traj(Model_robot &robot,
   }
 };
 
-void from_solution_to_yaml_and_traj_bwd(Model_robot &robot, AStarNode *solution,
+void from_solution_to_yaml_and_traj_bwd(dynobench::Model_robot &robot,
+                                        AStarNode *solution,
                                         const std::vector<Motion> &motions,
-                                        Trajectory &traj_out,
+                                        dynobench::Trajectory &traj_out,
                                         std::ofstream *out) {
 
   bool debug = true;
@@ -212,7 +219,7 @@ void from_solution_to_yaml_and_traj_bwd(Model_robot &robot, AStarNode *solution,
   if (result.size() == 1) {
     std::cout << "single node in the bwd tree" << std::endl;
     std::cout << "return an empyt traj " << std::endl;
-    traj_out = Trajectory();
+    traj_out = dynobench::Trajectory();
     return;
   }
 
@@ -226,8 +233,8 @@ void from_solution_to_yaml_and_traj_bwd(Model_robot &robot, AStarNode *solution,
 
   Eigen::VectorXd __offset = Eigen::VectorXd::Zero(robot.get_offset_dim());
 
-  std::vector<Trajectory> trajs_original;
-  std::vector<Trajectory> trajs_reverse;
+  std::vector<dynobench::Trajectory> trajs_original;
+  std::vector<dynobench::Trajectory> trajs_reverse;
 
   for (size_t i = 0; i < result.size() - 1; i++) {
     auto &motion = motions.at(result.at(i)->used_motion);
@@ -244,7 +251,7 @@ void from_solution_to_yaml_and_traj_bwd(Model_robot &robot, AStarNode *solution,
 
     robot.offset(parent->state_eig, __offset);
     // move the primitive with the parent
-    Trajectory traj;
+    dynobench::Trajectory traj;
     traj.actions = motion.traj.actions;
     traj.states = motion.traj.states;
     robot.transform_primitive(__offset, motion.traj.states, motion.traj.actions,
@@ -252,7 +259,7 @@ void from_solution_to_yaml_and_traj_bwd(Model_robot &robot, AStarNode *solution,
     std::cout << "after transformation" << std::endl;
     traj.to_yaml_format(std::cout);
 
-    Trajectory traj_original;
+    dynobench::Trajectory traj_original;
     traj_original = traj;
     std::reverse(traj_original.states.begin(), traj_original.states.end());
     std::reverse(traj_original.actions.begin(), traj_original.actions.end());
@@ -292,10 +299,11 @@ void from_solution_to_yaml_and_traj_bwd(Model_robot &robot, AStarNode *solution,
 }
 
 void from_fwd_bwd_solution_to_yaml_and_traj(
-    Model_robot &robot, const std::vector<Motion> &motions,
+    dynobench::Model_robot &robot, const std::vector<Motion> &motions,
     const std::vector<Motion> &motions_rev, AStarNode *solution_fwd,
-    AStarNode *solution_bwd, const Problem &problem, Trajectory &traj_out,
-    Trajectory &traj_out_fwd, Trajectory &traj_out_bwd, std::ofstream *out) {
+    AStarNode *solution_bwd, const dynobench::Problem &problem,
+    dynobench::Trajectory &traj_out, dynobench::Trajectory &traj_out_fwd,
+    dynobench::Trajectory &traj_out_bwd, std::ofstream *out) {
 
   std::ofstream *out_fwd = nullptr;
   std::ofstream *out_bwd = nullptr;
@@ -333,7 +341,8 @@ void from_fwd_bwd_solution_to_yaml_and_traj(
   delete out_bwd;
 }
 
-auto is_motion_collision_free(Trajectory &traj, Model_robot &robot,
+auto is_motion_collision_free(dynobench::Trajectory &traj,
+                              dynobench::Model_robot &robot,
                               bool use_collision_shape) {
   bool motionValid = true;
   if (use_collision_shape) {
@@ -469,7 +478,8 @@ void add_state_timed(AStarNode *node, ompl::NearestNeighbors<AStarNode *> *T_n,
   time_bench.time_nearestNode_add += out.second;
 };
 
-void reverse_motions(std::vector<Motion> &motions_rev, Model_robot &robot,
+void reverse_motions(std::vector<Motion> &motions_rev,
+                     dynobench::Model_robot &robot,
                      const std::vector<Motion> &motions) {
   CHECK_EQ(motions_rev.size(), 0, AT);
   motions_rev.reserve(motions.size());
@@ -484,7 +494,7 @@ void reverse_motions(std::vector<Motion> &motions_rev, Model_robot &robot,
 
     // robot->canonical_state(m.traj.states.back(), xf_canonical);
     robot.offset(m.traj.states.back(), offset);
-    Trajectory traj_new;
+    dynobench::Trajectory traj_new;
     traj_new.states = m.traj.states;
     traj_new.actions = m.traj.actions;
 
@@ -501,17 +511,19 @@ void reverse_motions(std::vector<Motion> &motions_rev, Model_robot &robot,
   }
 }
 
-void dbrrtConnect(const Problem &problem, const Options_dbrrt &options_dbrrt,
-                  const Options_trajopt &options_trajopt, Trajectory &traj_out,
-                  Info_out &info_out) {
+void dbrrtConnect(const dynobench::Problem &problem,
+                  const Options_dbrrt &options_dbrrt,
+                  const Options_trajopt &options_trajopt,
+                  dynobench::Trajectory &traj_out,
+                  dynobench::Info_out &info_out) {
 
   std::cout << "options dbrrt" << std::endl;
   options_dbrrt.print(std::cout);
   std::cout << "***" << std::endl;
 
-  std::shared_ptr<Model_robot> robot =
-      robot_factory(robot_type_to_path(problem.robotType).c_str(), problem.p_lb,
-                    problem.p_ub);
+  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+      dynobench::robot_type_to_path(problem.robotType).c_str(), problem.p_lb,
+      problem.p_ub);
   load_env_quim(*robot, problem);
   const int nx = robot->nx;
 
@@ -597,8 +609,8 @@ void dbrrtConnect(const Problem &problem, const Options_dbrrt &options_dbrrt,
 
   std::vector<Eigen::VectorXd> rand_nodes;
   std::vector<Eigen::VectorXd> near_nodes;
-  std::vector<Trajectory> trajs;
-  std::vector<Trajectory> chosen_trajs;
+  std::vector<dynobench::Trajectory> trajs;
+  std::vector<dynobench::Trajectory> chosen_trajs;
 
   std::mt19937 g = std::mt19937{std::random_device()()};
 
@@ -625,7 +637,7 @@ void dbrrtConnect(const Problem &problem, const Options_dbrrt &options_dbrrt,
       options_dbrrt.cost_bound; //  std::numeric_limits<double>::infinity();
 
   double best_cost_opt = std::numeric_limits<double>::infinity();
-  Trajectory best_traj_opt;
+  dynobench::Trajectory best_traj_opt;
 
   // SEARCH STARTS HERE
   Stopwatch watch;
@@ -638,7 +650,7 @@ void dbrrtConnect(const Problem &problem, const Options_dbrrt &options_dbrrt,
 
   bool expand_forward = true;
 
-  std::vector<Trajectory> chosen_trajs_fwd, chosen_trajs_bwd;
+  std::vector<dynobench::Trajectory> chosen_trajs_fwd, chosen_trajs_bwd;
 
   std::cout << "example motions " << std::endl;
   motions.front().traj.to_yaml_format(std::cout);
@@ -727,7 +739,7 @@ void dbrrtConnect(const Problem &problem, const Options_dbrrt &options_dbrrt,
 
     double min_distance = std::numeric_limits<double>::max();
     int best_index = -1;
-    Trajectory chosen_traj, tmp_traj;
+    dynobench::Trajectory chosen_traj, tmp_traj;
     LazyTraj chosen_lazy_traj;
 
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
@@ -866,7 +878,7 @@ void dbrrtConnect(const Problem &problem, const Options_dbrrt &options_dbrrt,
         std::ofstream file_debug("/tmp/dbastar/db_rrt_debug_" +
                                  std::to_string(info_out.trajs_raw.size()) +
                                  ".yaml");
-        Trajectory traj_db, traj_out_fwd, traj_out_bwd;
+        dynobench::Trajectory traj_db, traj_out_fwd, traj_out_bwd;
 
         from_fwd_bwd_solution_to_yaml_and_traj(
             *robot, motions, motions_rev, solution_fwd, solution_bwd, problem,
@@ -888,7 +900,7 @@ void dbrrtConnect(const Problem &problem, const Options_dbrrt &options_dbrrt,
 
         if (options_dbrrt.do_optimization) {
           Stopwatch sw;
-          Trajectory traj_opt;
+          dynobench::Trajectory traj_opt;
           Result_opti result;
 
           trajectory_optimization(problem, traj_db, options_trajopt, traj_opt,
@@ -1108,16 +1120,18 @@ void dbrrtConnect(const Problem &problem, const Options_dbrrt &options_dbrrt,
   }
 }
 
-void dbrrt(const Problem &problem, const Options_dbrrt &options_dbrrt,
-           const Options_trajopt &options_trajopt, Trajectory &traj_out,
-           Info_out &info_out) {
+void dbrrt(const dynobench::Problem &problem,
+           const Options_dbrrt &options_dbrrt,
+           const Options_trajopt &options_trajopt,
+           dynobench::Trajectory &traj_out, dynobench::Info_out &info_out) {
 
   std::cout << "options dbrrt" << std::endl;
   options_dbrrt.print(std::cout);
   std::cout << "***" << std::endl;
 
-  std::shared_ptr<Model_robot> robot = robot_factory(
-      (problem.models_base_path + robot_type_to_path(problem.robotType))
+  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+      (problem.models_base_path +
+       dynobench::robot_type_to_path(problem.robotType))
           .c_str(),
       problem.p_lb, problem.p_ub);
   const int nx = robot->nx;
@@ -1186,8 +1200,8 @@ void dbrrt(const Problem &problem, const Options_dbrrt &options_dbrrt,
 
   std::vector<Eigen::VectorXd> rand_nodes;
   std::vector<Eigen::VectorXd> near_nodes;
-  std::vector<Trajectory> trajs;
-  std::vector<Trajectory> chosen_trajs;
+  std::vector<dynobench::Trajectory> trajs;
+  std::vector<dynobench::Trajectory> chosen_trajs;
 
   std::mt19937 g = std::mt19937{std::random_device()()};
 
@@ -1213,7 +1227,7 @@ void dbrrt(const Problem &problem, const Options_dbrrt &options_dbrrt,
       options_dbrrt.cost_bound; //  std::numeric_limits<double>::infinity();
 
   double best_cost_opt = std::numeric_limits<double>::infinity();
-  Trajectory best_traj_opt;
+  dynobench::Trajectory best_traj_opt;
 
   // SEARCH STARTS HERE
   Stopwatch watch;
@@ -1287,7 +1301,7 @@ void dbrrt(const Problem &problem, const Options_dbrrt &options_dbrrt,
 
     double min_distance = std::numeric_limits<double>::max();
     int best_index = -1;
-    Trajectory chosen_traj, tmp_traj;
+    dynobench::Trajectory chosen_traj, tmp_traj;
     LazyTraj chosen_lazy_traj;
 
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
@@ -1425,7 +1439,7 @@ void dbrrt(const Problem &problem, const Options_dbrrt &options_dbrrt,
         std::ofstream file_debug("/tmp/dbastar/db_rrt_debug_" +
                                  std::to_string(info_out.trajs_raw.size()) +
                                  ".yaml");
-        Trajectory traj_db;
+        dynobench::Trajectory traj_db;
         from_solution_to_yaml_and_traj(*robot, motions, solution, problem,
                                        traj_db, &file_debug);
 
@@ -1437,7 +1451,7 @@ void dbrrt(const Problem &problem, const Options_dbrrt &options_dbrrt,
 
         if (options_dbrrt.do_optimization) {
           Stopwatch sw;
-          Trajectory traj_opt;
+          dynobench::Trajectory traj_opt;
           Result_opti result;
 
           trajectory_optimization(problem, traj_db, options_trajopt, traj_opt,
@@ -1460,9 +1474,9 @@ void dbrrt(const Problem &problem, const Options_dbrrt &options_dbrrt,
             if (options_dbrrt.extract_primitives) {
               // ADD motions to the end of the list, and rebuild the tree.
               size_t number_of_cuts = 5;
-              Trajectories new_trajectories =
+              dynobench::Trajectories new_trajectories =
                   cut_trajectory(traj_opt, number_of_cuts, robot);
-              Trajectories trajs_canonical;
+              dynobench::Trajectories trajs_canonical;
               make_trajs_canonical(*robot, new_trajectories.data,
                                    trajs_canonical.data);
 
@@ -1640,7 +1654,7 @@ void dbrrt(const Problem &problem, const Options_dbrrt &options_dbrrt,
     from_solution_to_yaml_and_traj(*robot, motions, solution, problem, traj_out,
                                    &out);
 
-    std::vector<Trajectory> trajs_out(all_solutions_raw.size());
+    std::vector<dynobench::Trajectory> trajs_out(all_solutions_raw.size());
 
     for (size_t i = 0; i < all_solutions_raw.size(); i++) {
 
@@ -1693,3 +1707,4 @@ void dbrrt(const Problem &problem, const Options_dbrrt &options_dbrrt,
             ->cost;
   }
 }
+} // namespace dynoplan

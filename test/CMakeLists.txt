@@ -14,17 +14,16 @@ add_executable(
   test_dbastar dbastar/test_dbastar_base.cpp dbastar/test_dbastar_0.cpp
                dbastar/test_dbastar_cli.cpp)
 
-add_executable(
-  test_sst sst/test_sst_base.cpp sst/test_sst_0.cpp
-               sst/test_sst_cli.cpp)
-
-
+add_executable(test_sst sst/test_sst_base.cpp sst/test_sst_0.cpp
+                        sst/test_sst_cli.cpp)
 
 add_executable(test_dbrrt dbrrt/test_dbrrt_base.cpp dbrrt/test_dbrrt_0.cpp
                           dbrrt/test_dbrrt_cli.cpp)
 
-add_executable(test_primitives primitives/test_primitives_base.cpp primitives/test_primitives_0.cpp
-                          primitives/test_primitives_cli.cpp)
+add_executable(
+  test_primitives
+  primitives/test_primitives_base.cpp primitives/test_primitives_0.cpp
+  primitives/test_primitives_cli.cpp)
 
 add_executable(
   test_idbastar idbastar/test_idbastar_base.cpp idbastar/test_idbastar_0.cpp
@@ -38,7 +37,8 @@ target_link_libraries(test_idbastar idbastar::idbastar
 
 target_link_libraries(test_sst idbastar::sst Boost::unit_test_framework)
 
-target_link_libraries(test_primitives idbastar::motion_primitives Boost::unit_test_framework)
+target_link_libraries(test_primitives idbastar::motion_primitives
+                      Boost::unit_test_framework)
 target_link_libraries(test_optimization idbastar::optimization
                       Boost::unit_test_framework)
 target_link_libraries(test_dbastar idbastar::dbastar Boost::unit_test_framework)
@@ -48,7 +48,6 @@ target_link_libraries(test_rrt_to idbastar::rrt_to Boost::unit_test_framework
 
 target_link_libraries(test_dbrrt idbastar::dbrrt Boost::unit_test_framework
                       ${OMPL_LIBRARIES} ${LZ4_LIBRARIES})
-
 
 add_test(NAME test_sst COMMAND test_sst)
 add_test(NAME test_rrt_to COMMAND test_rrt_to)

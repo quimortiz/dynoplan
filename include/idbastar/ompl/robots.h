@@ -16,7 +16,9 @@
 
 #include "ompl/control/StatePropagator.h"
 
-struct Model_robot;
+namespace dynoplan {
+
+// struct Model_robot;
 
 ompl::base::State *
 _allocAndFillState(std::shared_ptr<ompl::control::SpaceInformation> si,
@@ -60,8 +62,8 @@ void control_from_eigen(const Eigen::VectorXd &out,
 
 struct RobotOmpl {
 
-  std::shared_ptr<Model_robot> diff_model;
-  RobotOmpl(std::shared_ptr<Model_robot> diff_model);
+  std::shared_ptr<dynobench::Model_robot> diff_model;
+  RobotOmpl(std::shared_ptr<dynobench::Model_robot> diff_model);
 
   virtual ~RobotOmpl() {
     // TODO: erase state and goal!
@@ -161,7 +163,8 @@ struct RobotStateValidityChecker : public ompl::base::StateValidityChecker {
   bool virtual isValid(const ompl::base::State *state) const override;
 };
 
-std::shared_ptr<RobotOmpl> robot_factory_ompl(const Problem &problem);
+std::shared_ptr<RobotOmpl>
+robot_factory_ompl(const dynobench::Problem &problem);
 
 class RobotOmplStatePropagator : public ompl::control::StatePropagator {
 public:
@@ -202,6 +205,8 @@ std::ostream &printAction(std::ostream &stream,
 
 class Motion {
 
+  using Trajectory = dynobench::Trajectory;
+
 public:
   std::vector<ompl::base::State *> states;
   std::vector<ompl::control::Control *> actions;
@@ -238,7 +243,9 @@ void load_motion_primitives(const std::string &motionsFile, RobotOmpl &robot,
                             std::vector<Motion> &motions, int max_motions,
                             bool cut_actions, bool shuffle);
 
-void traj_to_motion(const Trajectory &traj, RobotOmpl &robot,
+void traj_to_motion(const dynobench::Trajectory &traj, RobotOmpl &robot,
                     Motion &motion_out, bool compute_col);
 
 void compute_col_shape(Motion &m, RobotOmpl &robot);
+
+} // namespace dynoplan

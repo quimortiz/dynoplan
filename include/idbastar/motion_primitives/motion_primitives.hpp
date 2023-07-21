@@ -4,6 +4,8 @@
 #include "dynobench/motions.hpp"
 #include "idbastar/optimization/ocp.hpp"
 
+namespace dynoplan {
+
 struct Options_primitives {
 
   double time_limit = 1000;    // in seconds
@@ -52,32 +54,34 @@ struct Options_primitives {
 };
 
 void sort_motion_primitives(
-    const Trajectories &trajs, Trajectories &trajs_out,
+    const dynobench::Trajectories &trajs, dynobench::Trajectories &trajs_out,
     std::function<double(const Eigen::VectorXd &, const Eigen::VectorXd &)>
         distance_fun,
     int top_k = -1, bool naive = false);
 
-void sort_motion_primitives_rand_config(const Trajectories &__trajs,
-                                        Trajectories &trajs_out,
-                                        std::shared_ptr<Model_robot> robot,
-                                        int top_k);
+void sort_motion_primitives_rand_config(
+    const dynobench::Trajectories &__trajs, dynobench::Trajectories &trajs_out,
+    std::shared_ptr<dynobench::Model_robot> robot, int top_k);
 
-void split_motion_primitives(const Trajectories &in,
-                             const std::string &dynamics, Trajectories &out,
+void split_motion_primitives(const dynobench::Trajectories &in,
+                             const std::string &dynamics,
+                             dynobench::Trajectories &out,
                              const Options_primitives &options_primitives);
 
 void improve_motion_primitives(const Options_trajopt &options_trajopt,
-                               const Trajectories &trajs_in,
+                               const dynobench::Trajectories &trajs_in,
                                const std::string &dynamics,
-                               Trajectories &trajs_out,
+                               dynobench::Trajectories &trajs_out,
                                const Options_primitives &options_primitives);
 
 void generate_primitives(const Options_trajopt &options_trajopt,
                          const Options_primitives &options_primitives,
-                         Trajectories &trajectories);
+                         dynobench::Trajectories &trajectories);
 
 void generate_primitives_random(const Options_primitives &options_primitives,
-                                Trajectories &trajectories);
-void make_canonical(const Trajectories &trajectories,
-                    Trajectories &trajectories_out,
+                                dynobench::Trajectories &trajectories);
+void make_canonical(const dynobench::Trajectories &trajectories,
+                    dynobench::Trajectories &trajectories_out,
                     const std::string &dynamics);
+
+} // namespace dynoplan

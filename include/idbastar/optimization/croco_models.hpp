@@ -20,10 +20,15 @@
 #include "crocoddyl/core/utils/callbacks.hpp"
 #include "crocoddyl/core/utils/timer.hpp"
 
+#include "dynobench/acrobot.hpp"
+#include "dynobench/car.hpp"
 #include "dynobench/croco_macros.hpp"
 #include "dynobench/general_utils.hpp"
 #include "dynobench/math_utils.hpp"
+#include "dynobench/quadrotor.hpp"
 #include "dynobench/robot_models.hpp"
+
+namespace dynoplan {
 
 enum class Control_Mode {
   default_mode,
@@ -112,8 +117,8 @@ public:
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
   bool use_pin = true;
-  std::shared_ptr<StateQ> state;
-  explicit StateCrocoQ(const std::shared_ptr<StateQ> &state)
+  std::shared_ptr<dynobench::StateQ> state;
+  explicit StateCrocoQ(const std::shared_ptr<dynobench::StateQ> &state)
       : StateAbstractTpl<Scalar>(state->nx, state->ndx), state(state){};
 
   virtual ~StateCrocoQ() {}
@@ -184,13 +189,13 @@ struct Dynamics {
   typedef crocoddyl::MathBaseTpl<double> MathBase;
   typedef typename MathBase::VectorXs VectorXs;
 
-  std::shared_ptr<Model_robot> robot_model;
+  std::shared_ptr<dynobench::Model_robot> robot_model;
   double dt = 0;
   Control_Mode control_mode;
   boost::shared_ptr<StateCrocoQ> state_croco;
   Eigen::VectorXd __v; // data
 
-  Dynamics(std::shared_ptr<Model_robot> robot_model = nullptr,
+  Dynamics(std::shared_ptr<dynobench::Model_robot> robot_model = nullptr,
            const Control_Mode &control_mode = Control_Mode::default_mode);
 
   std::shared_ptr<crocoddyl::StateAbstractTpl<double>> state;
@@ -413,9 +418,9 @@ struct Diff_angle_cost : Cost {
   Eigen::Matrix<double, 2, 4> Jx = Eigen::Matrix<double, 2, 4>::Zero();
   Eigen::Matrix<double, 2, 2> Ju = Eigen::Matrix<double, 2, 2>::Zero();
 
-  std::shared_ptr<Model_car_with_trailers> car;
+  std::shared_ptr<dynobench::Model_car_with_trailers> car;
   Diff_angle_cost(size_t nx, size_t nu,
-                  std::shared_ptr<Model_car_with_trailers> car);
+                  std::shared_ptr<dynobench::Model_car_with_trailers> car);
 
   virtual ~Diff_angle_cost() = default;
 
@@ -445,7 +450,7 @@ struct Quad3d_acceleration_cost : Cost {
   using Vector13d = Eigen::Matrix<double, 13, 1>;
   using Vector12d = Eigen::Matrix<double, 12, 1>;
 
-  std::shared_ptr<Model_robot> model;
+  std::shared_ptr<dynobench::Model_robot> model;
 
   double k_acc = 1;
   Vector12d f;
@@ -456,7 +461,8 @@ struct Quad3d_acceleration_cost : Cost {
   Eigen::Matrix<double, 12, 13> Jv_x;
   Eigen::Matrix<double, 12, 4> Jv_u;
 
-  Quad3d_acceleration_cost(const std::shared_ptr<Model_robot> &model_robot);
+  Quad3d_acceleration_cost(
+      const std::shared_ptr<dynobench::Model_robot> &model_robot);
 
   virtual void calc(Eigen::Ref<Eigen::VectorXd> r,
                     const Eigen::Ref<const Eigen::VectorXd> &x,
@@ -475,7 +481,7 @@ struct Quad3d_acceleration_cost : Cost {
 
 struct Acceleration_cost_acrobot : Cost {
 
-  Model_acrobot model;
+  dynobench::Model_acrobot model;
 
   double k_acc = .1;
   Eigen::Vector4d f;
@@ -505,7 +511,7 @@ struct Acceleration_cost_acrobot : Cost {
 
 struct Acceleration_cost_quad2d : Cost {
 
-  std::shared_ptr<Model_robot> model;
+  std::shared_ptr<dynobench::Model_robot> model;
 
   double k_acc = .01;
   Eigen::Matrix<double, 6, 1> f;
@@ -516,8 +522,9 @@ struct Acceleration_cost_quad2d : Cost {
   Eigen::Matrix<double, 6, 6> Jv_x;
   Eigen::Matrix<double, 6, 2> Jv_u;
 
-  Acceleration_cost_quad2d(const std::shared_ptr<Model_robot> &model_robot,
-                           size_t nx, size_t nu);
+  Acceleration_cost_quad2d(
+      const std::shared_ptr<dynobench::Model_robot> &model_robot, size_t nx,
+      size_t nu);
 
   virtual ~Acceleration_cost_quad2d() = default;
 
@@ -641,7 +648,7 @@ void finite_diff_cost(ptr<Cost> cost, Eigen::Ref<Eigen::MatrixXd> Jx,
 
 struct Contour_cost_x : Cost {
 
-  ptr<Interpolator> path;
+  ptr<dynobench::Interpolator> path;
   double weight = 20.;
   bool use_finite_diff = false;
 
@@ -652,7 +659,7 @@ struct Contour_cost_x : Cost {
   Eigen::MatrixXd __Jx;
   Eigen::VectorXd __r;
 
-  Contour_cost_x(size_t nx, size_t nu, ptr<Interpolator> path);
+  Contour_cost_x(size_t nx, size_t nu, ptr<dynobench::Interpolator> path);
 
   virtual void calc(Eigen::Ref<Eigen::VectorXd> r,
                     const Eigen::Ref<const Eigen::VectorXd> &x,
@@ -676,7 +683,7 @@ struct Contour_cost_x : Cost {
 
 struct Contour_cost : Cost {
 
-  ptr<Interpolator> path;
+  ptr<dynobench::Interpolator> path;
   double ref_alpha = 1.;
   double weight_alpha = 2.;
   double weight_diff = 20.;
@@ -688,7 +695,7 @@ struct Contour_cost : Cost {
   Eigen::VectorXd last_out;
   Eigen::VectorXd last_J;
 
-  Contour_cost(size_t nx, size_t nu, ptr<Interpolator> path);
+  Contour_cost(size_t nx, size_t nu, ptr<dynobench::Interpolator> path);
 
   virtual ~Contour_cost() = default;
 
@@ -715,13 +722,13 @@ struct Contour_cost : Cost {
 
 struct Col_cost : Cost {
 
-  std::shared_ptr<Model_robot> model;
+  std::shared_ptr<dynobench::Model_robot> model;
   double margin = .03;
   double last_raw_d = 0;
   double weight;
   Eigen::VectorXd last_x;
   Eigen::VectorXd last_grad;
-  CollisionOut cinfo;
+  dynobench::CollisionOut cinfo;
   Eigen::MatrixXd Jx;
   Eigen::VectorXd v__; //  data
 
@@ -734,8 +741,8 @@ struct Col_cost : Cost {
   // returns 0 gradient if distance is > than THIS.
   double epsilon = 1e-3; // finite diff
 
-  Col_cost(size_t nx, size_t nu, size_t nr, std::shared_ptr<Model_robot> model,
-           double weight = 100.);
+  Col_cost(size_t nx, size_t nu, size_t nr,
+           std::shared_ptr<dynobench::Model_robot> model, double weight = 100.);
 
   virtual ~Col_cost() = default;
 
@@ -935,10 +942,10 @@ struct State_cost_model : Cost {
   Eigen::VectorXd __r;
   Eigen::VectorXd x_weight_sq;
 
-  std::shared_ptr<Model_robot> model_robot;
+  std::shared_ptr<dynobench::Model_robot> model_robot;
 
-  State_cost_model(const std::shared_ptr<Model_robot> &model_robot, size_t nx,
-                   size_t nu, const Eigen::VectorXd &x_weight,
+  State_cost_model(const std::shared_ptr<dynobench::Model_robot> &model_robot,
+                   size_t nx, size_t nu, const Eigen::VectorXd &x_weight,
                    const Eigen::VectorXd &ref);
 
   virtual ~State_cost_model() = default;
@@ -1043,13 +1050,12 @@ void check_dyn(boost::shared_ptr<Dynamics> dyn, double eps,
                Eigen::VectorXd x = Eigen::VectorXd(),
                Eigen::VectorXd u = Eigen::VectorXd(), double margin_rate = 10);
 
-bool check_equal(Eigen::MatrixXd A, Eigen::MatrixXd B, double rtol,
-                 double atol);
-
 ptr<Dynamics>
-create_dynamics(std::shared_ptr<Model_robot> model_robot,
+create_dynamics(std::shared_ptr<dynobench::Model_robot> model_robot,
                 const Control_Mode &control_mode = Control_Mode::default_mode);
 
 std::vector<ReportCost>
 get_report(ptr<ActionModelQ> p,
            std::function<void(ptr<Cost>, Eigen::Ref<Eigen::VectorXd>)> fun);
+
+} // namespace dynoplan

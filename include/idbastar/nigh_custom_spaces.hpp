@@ -18,6 +18,8 @@
 #include "dynobench/general_utils.hpp"
 #include "idbastar/ompl/robots.h"
 
+namespace dynoplan {
+
 namespace nigh = unc::robotics::nigh;
 namespace ob = ompl::base;
 
@@ -372,7 +374,8 @@ ompl::NearestNeighbors<_T> *nigh_factory(
 
 template <typename _T>
 ompl::NearestNeighbors<_T> *nigh_factory2(
-    const std::string &name, const std::shared_ptr<Model_robot> &robot,
+    const std::string &name,
+    const std::shared_ptr<dynobench::Model_robot> &robot,
     std::function<const Eigen::VectorXd(_T)> fun =
         [](_T m) { return m->getStateEig(); },
     double cost_scale = -1) {
@@ -524,3 +527,5 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
   CHECK(out, AT);
   return out;
 }
+
+} // namespace dynoplan

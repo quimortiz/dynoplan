@@ -19,6 +19,8 @@
 #include "idbastar/ompl/robots.h"
 #include "idbastar/optimization/ocp.hpp"
 
+namespace dynoplan {
+
 struct Options_geo {
   std::string planner = "rrt*";
   double timelimit = 10; // TODO: which unit?
@@ -74,7 +76,10 @@ struct Options_geo {
   }
 };
 
-void solve_ompl_geometric(const Problem &problem,
+void solve_ompl_geometric(const dynobench::Problem &problem,
                           const Options_geo &options_geo,
                           const Options_trajopt &options_trajopt,
-                          Trajectory &traj_out, Info_out &info_out_omplgeo);
+                          dynobench::Trajectory &traj_out,
+                          dynobench::Info_out &info_out_omplgeo);
+
+} // namespace dynoplan

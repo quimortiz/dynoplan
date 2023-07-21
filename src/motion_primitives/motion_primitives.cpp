@@ -4,12 +4,15 @@
 #include "idbastar/optimization/ocp.hpp"
 #include <thread>
 
-void sort_motion_primitives_rand_config(const Trajectories &__trajs,
-                                        Trajectories &trajs_out,
-                                        std::shared_ptr<Model_robot> robot,
-                                        int top_k) {
+namespace dynoplan {
 
-  Trajectories trajs = __trajs;
+void sort_motion_primitives_rand_config(
+    const dynobench::Trajectories &__trajs,
+
+    dynobench::Trajectories &trajs_out,
+    std::shared_ptr<dynobench::Model_robot> robot, int top_k) {
+
+  dynobench::Trajectories trajs = __trajs;
 
   for (auto &t : trajs.data) {
     if (!t.start.size()) {
@@ -138,12 +141,12 @@ void sort_motion_primitives_rand_config(const Trajectories &__trajs,
 }
 
 void sort_motion_primitives(
-    const Trajectories &__trajs, Trajectories &trajs_out,
+    const dynobench::Trajectories &__trajs, dynobench::Trajectories &trajs_out,
     std::function<double(const Eigen::VectorXd &, const Eigen::VectorXd &)>
         distance_fun,
     int top_k, bool naive) {
 
-  Trajectories trajs = __trajs;
+  dynobench::Trajectories trajs = __trajs;
 
   for (auto &t : trajs.data) {
     if (!t.start.size()) {
@@ -169,10 +172,12 @@ void sort_motion_primitives(
     CHECK_LEQ((traj.states.back() - traj.goal).norm(), 1e-8, AT);
   }
 
-  auto goal_dist = [&](const Trajectory &a, const Trajectory &b) {
+  auto goal_dist = [&](const dynobench::Trajectory &a,
+                       const dynobench::Trajectory &b) {
     return distance_fun(a.goal, b.goal);
   };
-  auto start_dist = [&](const Trajectory &a, const Trajectory &b) {
+  auto start_dist = [&](const dynobench::Trajectory &a,
+                        const dynobench::Trajectory &b) {
     return distance_fun(a.start, b.start);
   };
 
@@ -284,13 +289,15 @@ void sort_motion_primitives(
   }
 }
 
-void split_motion_primitives(const Trajectories &in,
-                             const std::string &dynamics, Trajectories &out,
+void split_motion_primitives(const dynobench::Trajectories &in,
+                             const std::string &dynamics,
+                             dynobench::Trajectories &out,
                              const Options_primitives &options_primitives) {
 
-  auto robot = robot_factory(
-      (options_primitives.models_base_path + robot_type_to_path(dynamics))
-          .c_str());
+  auto robot =
+      dynobench::robot_factory((options_primitives.models_base_path +
+                                dynobench::robot_type_to_path(dynamics))
+                                   .c_str());
 
   std::random_device rd;  // a seed for the random number engine
   std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
@@ -326,7 +333,7 @@ void split_motion_primitives(const Trajectories &in,
         start = T - length;
       }
 
-      Trajectory new_traj;
+      dynobench::Trajectory new_traj;
       std::cout << "i: " << i << " "
                 << "start: " << start << " length:" << length << std::endl;
       new_traj.states = std::vector<Eigen::VectorXd>{
@@ -353,16 +360,17 @@ void split_motion_primitives(const Trajectories &in,
 }
 
 void improve_motion_primitives(const Options_trajopt &options_trajopt,
-                               const Trajectories &__trajs_in,
+                               const dynobench::Trajectories &__trajs_in,
                                const std::string &dynamics,
-                               Trajectories &trajs_out,
+                               dynobench::Trajectories &trajs_out,
                                const Options_primitives &options_primitives) {
 
-  auto robot_model = robot_factory(
-      (options_primitives.models_base_path + robot_type_to_path(dynamics))
-          .c_str());
+  auto robot_model =
+      dynobench::robot_factory((options_primitives.models_base_path +
+                                dynobench::robot_type_to_path(dynamics))
+                                   .c_str());
 
-  Trajectories trajs_in = __trajs_in;
+  dynobench::Trajectories trajs_in = __trajs_in;
   std::atomic_int num_improves = 0;
 
   trajs_out.data.resize(trajs_in.data.size());
@@ -376,8 +384,8 @@ void improve_motion_primitives(const Options_trajopt &options_trajopt,
                     auto &num_improves) {
     auto &traj = trajs_in.data.at(i);
 
-    auto __model =
-        std::shared_ptr<Model_robot>(robot_model.get(), [](Model_robot *) {});
+    auto __model = std::shared_ptr<dynobench::Model_robot>(
+        robot_model.get(), [](dynobench::Model_robot *) {});
 
     traj.check(__model, true);
     traj.update_feasibility();
@@ -391,8 +399,8 @@ void improve_motion_primitives(const Options_trajopt &options_trajopt,
       traj.cost = robot_model->traj_cost(traj.states, traj.actions);
     }
 
-    Problem problem;
-    Trajectory traj_out;
+    dynobench::Problem problem;
+    dynobench::Trajectory traj_out;
     CHECK(traj.states.size(), AT);
     CHECK(traj.actions.size(), AT);
     traj.to_yaml_format(std::cout);
@@ -450,11 +458,12 @@ void improve_motion_primitives(const Options_trajopt &options_trajopt,
   std::cout << "num improves: " << num_improves << std::endl;
 }
 
-void make_canonical(const Trajectories &trajectories,
-                    Trajectories &trajectories_out,
+void make_canonical(const dynobench::Trajectories &trajectories,
+                    dynobench::Trajectories &trajectories_out,
                     const std::string &dynamics) {
 
-  auto robot_model = robot_factory(robot_type_to_path(dynamics).c_str());
+  auto robot_model =
+      dynobench::robot_factory(dynobench::robot_type_to_path(dynamics).c_str());
 
   //
   Eigen::VectorXd offset(robot_model->get_offset_dim());
@@ -469,7 +478,7 @@ void make_canonical(const Trajectories &trajectories,
     std::vector<Eigen::VectorXd> xx = traj.states;
     robot_model->rollout(x0, traj.actions, xx);
 
-    Trajectory &traj_out = trajectories_out.data.at(i);
+    dynobench::Trajectory &traj_out = trajectories_out.data.at(i);
     traj_out.actions = traj.actions;
     traj_out.states = xx;
     traj_out.goal = traj_out.states.back();
@@ -478,10 +487,10 @@ void make_canonical(const Trajectories &trajectories,
 }
 
 void generate_primitives_random(const Options_primitives &options_primitives,
-                                Trajectories &trajectories) {
+                                dynobench::Trajectories &trajectories) {
 
-  auto robot_model =
-      robot_factory(robot_type_to_path(options_primitives.dynamics).c_str());
+  auto robot_model = dynobench::robot_factory(
+      dynobench::robot_type_to_path(options_primitives.dynamics).c_str());
 
   size_t num_translation = robot_model->get_translation_invariance();
   if (num_translation) {
@@ -529,7 +538,7 @@ void generate_primitives_random(const Options_primitives &options_primitives,
                                     Eigen::VectorXd::Zero(robot_model->nx));
     robot_model->rollout(start, us, xs);
 
-    Trajectory traj;
+    dynobench::Trajectory traj;
     traj.start = start;
     traj.states = xs;
     traj.actions = us;
@@ -560,7 +569,7 @@ void generate_primitives_random(const Options_primitives &options_primitives,
 
 void generate_primitives(const Options_trajopt &options_trajopt,
                          const Options_primitives &options_primitives,
-                         Trajectories &trajectories) {
+                         dynobench::Trajectories &trajectories) {
 
   // generate an empty problem
   //
@@ -569,9 +578,10 @@ void generate_primitives(const Options_trajopt &options_trajopt,
 
   int num_primitives = 0;
 
-  auto robot_model = robot_factory((options_primitives.models_base_path +
-                                    options_primitives.dynamics + ".yaml")
-                                       .c_str());
+  auto robot_model =
+      dynobench::robot_factory((options_primitives.models_base_path +
+                                options_primitives.dynamics + ".yaml")
+                                   .c_str());
 
   size_t num_translation = robot_model->get_translation_invariance();
   if (num_translation) {
@@ -633,7 +643,7 @@ void generate_primitives(const Options_trajopt &options_trajopt,
     CSTR_V(start);
     CSTR_V(goal);
 
-    Problem problem;
+    dynobench::Problem problem;
     problem.models_base_path = options_primitives.models_base_path;
     problem.goal = goal;
     problem.start = start;
@@ -645,13 +655,13 @@ void generate_primitives(const Options_trajopt &options_trajopt,
 
     bool is_first = true;
     bool solved = false;
-    Trajectory traj_first;
+    dynobench::Trajectory traj_first;
     for (const auto &try_rate : try_rates) {
-      Trajectory init_guess;
+      dynobench::Trajectory init_guess;
       init_guess.num_time_steps =
           int(try_rate * options_primitives.ref_time_steps);
 
-      Trajectory traj;
+      dynobench::Trajectory traj;
       Result_opti opti_out;
 
       trajectory_optimization(problem, init_guess, options_trajopt, traj,
@@ -706,3 +716,5 @@ void generate_primitives(const Options_trajopt &options_trajopt,
   double success_rate = double(trajectories.data.size()) / attempts;
   CSTR_(success_rate);
 }
+
+} // namespace dynoplan
