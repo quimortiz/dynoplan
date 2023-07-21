@@ -1,4 +1,4 @@
-# Dynoplan
+# Dynoplan 🦖
 
 By Joaquim Ortiz-Haro and Wolfgang Honnig
 
