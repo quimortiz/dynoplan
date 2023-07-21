@@ -6,7 +6,7 @@ The first version [kinodynamic-motion-planning-benchmark](https://github.com/imr
 
 ## Robots and Problem Description 
 
-Kinodynamic motion planning problem are defined in [dynobench](https://github.com/quimortiz/dynobench)
+Kinodynamic motion planning problem are defined in [Dynobench](https://github.com/quimortiz/dynobench)
 
 ## How to use
 
