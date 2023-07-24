@@ -2738,7 +2738,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
       dynobench::robot_factory(
           (problem.models_base_path + problem.robotType + ".yaml").c_str());
 
-  load_env_quim(*model_robot, problem);
+  load_env(*model_robot, problem);
 
   size_t _nx = model_robot->nx;
   size_t _nu = model_robot->nu;

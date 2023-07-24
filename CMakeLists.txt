@@ -43,8 +43,9 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 
-add_subdirectory(dynobench EXCLUDE_FROM_ALL) # use EXCLUDE_FROM_ALL to avoid
-                                             # building the tests
+set(DISABLE_DYNOBENCH_TESTS ON)
+add_subdirectory(dynobench) # use EXCLUDE_FROM_ALL to avoid
+# building the tests
 
 add_executable(main_rrt_to ./src/ompl/main_rrt_to.cpp)
 add_executable(main_primitives ./src/motion_primitives/main_primitives.cpp)

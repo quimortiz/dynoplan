@@ -524,7 +524,7 @@ void dbrrtConnect(const dynobench::Problem &problem,
   std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
       dynobench::robot_type_to_path(problem.robotType).c_str(), problem.p_lb,
       problem.p_ub);
-  load_env_quim(*robot, problem);
+  load_env(*robot, problem);
   const int nx = robot->nx;
 
   std::vector<Motion> motions, motions_rev;
@@ -1135,7 +1135,7 @@ void dbrrt(const dynobench::Problem &problem,
           .c_str(),
       problem.p_lb, problem.p_ub);
   const int nx = robot->nx;
-  load_env_quim(*robot, problem);
+  load_env(*robot, problem);
 
   std::vector<Motion> motions;
 

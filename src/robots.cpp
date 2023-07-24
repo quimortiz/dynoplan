@@ -3010,7 +3010,7 @@ robot_factory_ompl(const dynobench::Problem &problem) {
     ERROR_WITH_INFO("dynamics not implemented");
   }
 
-  load_env_quim(*out->diff_model, problem);
+  load_env(*out->diff_model, problem);
 
   auto si = out->getSpaceInformation();
 
