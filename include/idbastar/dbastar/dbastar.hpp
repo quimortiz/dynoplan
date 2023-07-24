@@ -407,7 +407,7 @@ struct Options_dbastar {
 
   double search_timelimit = 1e4; // in ms
   double heu_connection_radius = 1;
-  bool use_nigh_nn = false;
+  bool use_nigh_nn = true;
   bool check_cols = true;
 
   void add_options(po::options_description &desc);

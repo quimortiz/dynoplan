@@ -45,11 +45,13 @@ int main(int argc, char *argv[]) {
   std::string env_file = "";
   std::string cfg_file = "";
   std::string results_file = "";
+  std::string models_base_path = "";
 
   po::options_description desc("Allowed options");
   options_idbastar.add_options(desc);
   options_dbastar.add_options(desc);
   options_trajopt.add_options(desc);
+  set_from_boostop(desc, VAR_WITH_NAME(models_base_path));
   set_from_boostop(desc, VAR_WITH_NAME(env_file));
   set_from_boostop(desc, VAR_WITH_NAME(cfg_file));
   set_from_boostop(desc, VAR_WITH_NAME(results_file));
@@ -88,6 +90,7 @@ int main(int argc, char *argv[]) {
   std::cout << "***" << std::endl;
 
   dynobench::Problem problem(env_file.c_str());
+  problem.models_base_path = models_base_path;
   dynobench::Trajectory traj_out;
   Info_out_idbastar info_out_idbastar;
 
@@ -107,5 +110,11 @@ int main(int argc, char *argv[]) {
     std::string file = results_file + ".traj-sol.yaml";
     std::ofstream out(file);
     traj_out.to_yaml_format(out);
+  }
+
+  if (info_out_idbastar.solved) {
+    return 0;
+  } else {
+    return 1;
   }
 }
