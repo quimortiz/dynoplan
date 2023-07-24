@@ -20,6 +20,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+      with:
+        submodules: recursive
 
     - name: Install system dependencies
       run: sudo apt update  && sudo apt install libboost-all-dev libfcl-dev cmake libeigen3-dev libyaml-cpp-dev -y
