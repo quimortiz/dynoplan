@@ -88,7 +88,7 @@ void modify_x_bound_for_contour(const Eigen::VectorXd &__x_lb,
                                 Eigen::VectorXd &x_lb, Eigen::VectorXd &x_ub,
                                 Eigen::VectorXd &xb_weight, double max_alpha);
 
-struct ActionDataQ : public crocoddyl::ActionDataAbstractTpl<double> {
+struct ActionDataDyno : public crocoddyl::ActionDataAbstractTpl<double> {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   typedef double Scalar;
@@ -106,10 +106,10 @@ struct ActionDataQ : public crocoddyl::ActionDataAbstractTpl<double> {
   using Base::xnext;
 
   template <template <typename Scalar> class Model>
-  explicit ActionDataQ(Model<Scalar> *const model) : Base(model) {}
+  explicit ActionDataDyno(Model<Scalar> *const model) : Base(model) {}
 };
 
-struct StateCrocoQ : crocoddyl::StateAbstractTpl<double> {
+struct StateCrocoDyno : crocoddyl::StateAbstractTpl<double> {
 
 public:
   typedef double Scalar;
@@ -118,10 +118,10 @@ public:
   typedef typename MathBase::MatrixXs MatrixXs;
   bool use_pin = true;
   std::shared_ptr<dynobench::StateQ> state;
-  explicit StateCrocoQ(const std::shared_ptr<dynobench::StateQ> &state)
+  explicit StateCrocoDyno(const std::shared_ptr<dynobench::StateQ> &state)
       : StateAbstractTpl<Scalar>(state->nx, state->ndx), state(state){};
 
-  virtual ~StateCrocoQ() {}
+  virtual ~StateCrocoDyno() {}
 
   virtual VectorXs zero() const override { return state->zero(); }
 
@@ -192,7 +192,7 @@ struct Dynamics {
   std::shared_ptr<dynobench::Model_robot> robot_model;
   double dt = 0;
   Control_Mode control_mode;
-  boost::shared_ptr<StateCrocoQ> state_croco;
+  boost::shared_ptr<StateCrocoDyno> state_croco;
   Eigen::VectorXd __v; // data
 
   Dynamics(std::shared_ptr<dynobench::Model_robot> robot_model = nullptr,
@@ -380,6 +380,103 @@ struct Cost {
   virtual std::string get_name() const { return name; }
 
   virtual ~Cost() = default;
+};
+
+struct Dynamics_free_time {
+
+  typedef crocoddyl::MathBaseTpl<double> MathBase;
+  typedef typename MathBase::VectorXs VectorXs;
+
+  std::shared_ptr<dynobench::Model_robot> robot_model;
+  std::vector<Cost> costs;
+  double dt = 0;
+  Control_Mode control_mode;
+  boost::shared_ptr<StateCrocoDyno> state_croco;
+  Eigen::VectorXd __v; // data
+
+  Dynamics_free_time(
+      std::shared_ptr<dynobench::Model_robot> robot_model = nullptr,
+      const Control_Mode &control_mode = Control_Mode::default_mode);
+
+  std::shared_ptr<crocoddyl::StateAbstractTpl<double>> state;
+
+  void virtual print_bounds(std::ostream &out) const {
+    out << STR_V(x_ub) << std::endl;
+    out << STR_V(x_lb) << std::endl;
+    out << STR_V(u_ub) << std::endl;
+    out << STR_V(u_lb) << std::endl;
+    out << STR_V(u_ref) << std::endl;
+    out << STR_V(x_weightb) << std::endl;
+    out << STR_V(u_weight) << std::endl;
+    out << STR_(nx) << std::endl;
+    out << STR_(nu) << std::endl;
+  }
+
+  virtual void calc(Eigen::Ref<Eigen::VectorXd> xnext,
+                    const Eigen::Ref<const VectorXs> &x,
+                    const Eigen::Ref<const VectorXs> &u);
+
+  virtual void calcDiff(Eigen::Ref<Eigen::MatrixXd> Fx,
+                        Eigen::Ref<Eigen::MatrixXd> Fu,
+                        const Eigen::Ref<const VectorXs> &x,
+                        const Eigen::Ref<const VectorXs> &u);
+
+  virtual void update_state_and_control() {
+
+    if (control_mode == Control_Mode::default_mode) {
+      ;
+    } else if (control_mode == Control_Mode::free_time) {
+      nu = robot_model->nu + 1;
+      Eigen::VectorXd __u_lb(u_lb), __u_ub(u_ub), __u_weight(u_weight),
+          __u_ref(u_ref);
+      modify_u_bound_for_free_time(__u_lb, __u_ub, __u_weight, __u_ref, u_lb,
+                                   u_ub, u_weight, u_ref);
+    } else if (control_mode == Control_Mode::free_time_linear) {
+
+      Eigen::VectorXd __u_lb(u_lb), __u_ub(u_ub), __u_weight(u_weight),
+          __u_ref(u_ref);
+      modify_u_for_free_time_linear(__u_lb, __u_ub, __u_weight, __u_ref, u_lb,
+                                    u_ub, u_weight, u_ref);
+
+      Eigen::VectorXd __x_lb(x_lb), __x_ub(x_ub), __x_weightb(x_weightb);
+
+      modify_x_bound_for_free_time_linear(__x_lb, __x_ub, __x_weightb, x_lb,
+                                          x_ub, x_weightb);
+
+    }
+
+    else if (control_mode == Control_Mode::contour) {
+      nu = robot_model->nu + 1;
+      nx = robot_model->nx + 1;
+      Eigen::VectorXd __u_lb(u_lb), __u_ub(u_ub), __u_weight(u_weight),
+          __u_ref(u_ref);
+      Eigen::VectorXd __x_lb(x_lb), __x_ub(x_ub), __x_weightb(x_weightb);
+
+      modify_u_bound_for_contour(__u_lb, __u_ub, __u_weight, __u_ref, u_lb,
+                                 u_ub, u_weight, u_ref);
+      double max_alpha = 1;
+      // TODO: user must change the alpha afterwards
+      modify_x_bound_for_contour(__x_lb, __x_ub, __x_weightb, x_lb, x_ub,
+                                 x_weightb, max_alpha);
+
+    } else {
+      ERROR_WITH_INFO("not implemented");
+    }
+  }
+
+  size_t nx;
+  size_t nu;
+
+  Eigen::VectorXd u_lb;
+  Eigen::VectorXd u_ub;
+  Eigen::VectorXd u_ref;
+  Eigen::VectorXd u_weight;
+
+  Eigen::VectorXd x_lb;
+  Eigen::VectorXd x_ub;
+  Eigen::VectorXd x_weightb;
+
+  virtual ~Dynamics_free_time(){};
 };
 
 struct Quaternion_cost : Cost {
@@ -996,17 +1093,14 @@ struct State_cost_model : Cost {
 size_t
 get_total_num_features(const std::vector<boost::shared_ptr<Cost>> &features);
 
-class ActionModelQ : public crocoddyl::ActionModelAbstractTpl<double> {
+class ActionModelDyno : public crocoddyl::ActionModelAbstractTpl<double> {
 public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   typedef double Scalar;
   typedef crocoddyl::ActionDataAbstractTpl<Scalar> ActionDataAbstract;
   typedef ActionModelAbstractTpl<Scalar> Base;
-  typedef ActionDataQ Data;
+  typedef ActionDataDyno Data;
   typedef crocoddyl::MathBaseTpl<Scalar> MathBase;
   typedef typename MathBase::VectorXs VectorXs;
-  typedef typename MathBase::Vector2s Vector2s;
 
   boost::shared_ptr<Dynamics> dynamics;
   std::vector<boost::shared_ptr<Cost>> features;
@@ -1016,12 +1110,59 @@ public:
 
   Eigen::MatrixXd Jx;
   Eigen::MatrixXd Ju;
-  // Eigen::VectorXd zero_u;:
-  // Eigen::MatrixXd zero_Ju;
 
-  ActionModelQ(ptr<Dynamics> dynamics, const std::vector<ptr<Cost>> &features);
+  ActionModelDyno(ptr<Dynamics> dynamics,
+                  const std::vector<ptr<Cost>> &features);
 
-  virtual ~ActionModelQ();
+  virtual ~ActionModelDyno() = default;
+
+  virtual void calc(const boost::shared_ptr<ActionDataAbstract> &data,
+                    const Eigen::Ref<const VectorXs> &x,
+                    const Eigen::Ref<const VectorXs> &u);
+
+  virtual void calcDiff(const boost::shared_ptr<ActionDataAbstract> &data,
+                        const Eigen::Ref<const VectorXs> &x,
+                        const Eigen::Ref<const VectorXs> &u);
+
+  virtual void calc(const boost::shared_ptr<ActionDataAbstract> &data,
+                    const Eigen::Ref<const VectorXs> &x);
+
+  virtual void calcDiff(const boost::shared_ptr<ActionDataAbstract> &data,
+                        const Eigen::Ref<const VectorXs> &x);
+
+  virtual boost::shared_ptr<ActionDataAbstract> createData();
+  virtual bool checkData(const boost::shared_ptr<ActionDataAbstract> &data);
+
+  virtual void print(std::ostream &os) const;
+};
+
+class ActionModelDynov2 : public crocoddyl::ActionModelAbstractTpl<double> {
+public:
+  typedef double Scalar;
+  typedef crocoddyl::ActionDataAbstractTpl<Scalar> ActionDataAbstract;
+  typedef ActionModelAbstractTpl<Scalar> Base;
+  typedef ActionDataDyno Data;
+  typedef crocoddyl::MathBaseTpl<Scalar> MathBase;
+  typedef typename MathBase::VectorXs VectorXs;
+
+  std::shared_ptr<dynobench::Model_robot> model_robot;
+  std::vector<boost::shared_ptr<Cost>> features;
+  size_t nx;
+  size_t nu;
+  size_t nr;
+
+  size_t nx_orig;
+  size_t nu_orig;
+
+  Eigen::MatrixXd Jx;
+  Eigen::MatrixXd Ju;
+
+  Control_Mode control_mode;
+  ActionModelDynov2(std::shared_ptr<dynobench::Model_robot> model_robot,
+                    const std::vector<ptr<Cost>> &features,
+                    Control_Mode default_mode);
+
+  virtual ~ActionModelDynov2() = default;
 
   virtual void calc(const boost::shared_ptr<ActionDataAbstract> &data,
                     const Eigen::Ref<const VectorXs> &x,
@@ -1055,7 +1196,7 @@ create_dynamics(std::shared_ptr<dynobench::Model_robot> model_robot,
                 const Control_Mode &control_mode = Control_Mode::default_mode);
 
 std::vector<ReportCost>
-get_report(ptr<ActionModelQ> p,
+get_report(ptr<ActionModelDyno> p,
            std::function<void(ptr<Cost>, Eigen::Ref<Eigen::VectorXd>)> fun);
 
 } // namespace dynoplan

@@ -81,23 +81,27 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
   for (size_t i = 0; i < problem_with_init_guess.size(); i++) {
 
     for (size_t j = 0; j < solvers.size(); j++) {
-      auto &solver = solvers.at(j);
 
+      auto &solver = solvers.at(j);
       auto &problem = problem_with_init_guess[i].first;
       auto &init_guess = problem_with_init_guess[i].second;
+      std::string experiment_id = std::to_string(i) + ":" + std::to_string(j) +
+                                  ":" + solver.name + ":" + problem.name + ":" +
+                                  init_guess.filename;
 
+      if (solver.name == "mpcc" && problem.name == "quadrotor_0-recovery") {
+        BOOST_TEST_WARN(false, "i skip mpcc in quadrotor_0-recovery");
+        continue;
+      }
+
+      std::cout << "experiment id" << std::endl;
+      std::cout << experiment_id << std::endl;
       Result_opti result;
       Trajectory sol;
       trajectory_optimization(problem, init_guess, solver, sol, result);
-      std::string experiment_id = std::to_string(i) + ":" + std::to_string(j) +
-                                  ":" + solver.name + ":" + problem.name;
 
-      if (solver.name == "mpcc" && problem.name == "quadrotor_0-recovery") {
-        BOOST_TEST_WARN(result.feasible, experiment_id);
-      } else {
-        BOOST_TEST_CHECK(result.feasible, experiment_id);
-        std::cout << "cost is " << result.cost << std::endl;
-      }
+      BOOST_TEST_CHECK(result.feasible, experiment_id);
+      std::cout << "cost is " << result.cost << std::endl;
       // BOOST_TEST_CHECK(result.cost <= 5., experiment_id);
     }
   }
@@ -131,7 +135,9 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
   options_mpcc.window_optimize = 50;
   options_mpcc.window_shift = 20;
   options_mpcc.max_iter = 30;
-  options_mpcc.weight_goal = 100;
+  options_mpcc.weight_goal = 50;
+  options_mpcc.k_linear = 50;
+  options_mpcc.k_contour = 10;
 
   std::vector<std::pair<Problem, Trajectory>> problem_with_init_guess;
   std::vector<Options_trajopt> solvers{options_mpc, options_dt, options_search,
@@ -145,7 +151,7 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
   problem_with_init_guess.push_back(
       std::make_pair(Problem(dynobench_base "envs/unicycle2_v0/bugtrap_0.yaml"),
                      Trajectory("../../benchmark_initguess/unicycle2_v0/"
-                                "bugtrap_0/delta_03_v0.yaml")));
+                                "bugtrap_0/delta_02_v0.yaml")));
 
   for (auto &p : problem_with_init_guess) {
     p.first.models_base_path = dynobench_base + std::string("models/");
@@ -164,7 +170,7 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
       trajectory_optimization(problem, init_guess, solver, sol, result);
       std::string experiment_id = std::to_string(i) + ":" + std::to_string(j) +
                                   ":" + solver.name + ":" + problem.name + ":" +
-                                  problem.robotType;
+                                  init_guess.filename;
 
       if (solver.name == "mpcc" && problem.name == "quadrotor_0-recovery") {
         BOOST_TEST_WARN(result.feasible, experiment_id);

@@ -524,9 +524,11 @@ void Col_cost::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x) {
 
   CHECK(model, AT);
   double raw_d;
-  bool check_one = (x - last_x).norm() < 1e-8;
+  bool check_one =
+      (x.head(nx_effective) - last_x.head(nx_effective)).norm() < 1e-8;
   bool check_two = (last_raw_d - margin) > 0 &&
-                   (x - last_x).norm() < sec_factor * (last_raw_d - margin);
+                   (x.head(nx_effective) - last_x.head(nx_effective)).norm() <
+                       sec_factor * (last_raw_d - margin);
 
   // std::cout << "checking collisions " << std::endl;
 
@@ -828,20 +830,6 @@ void State_cost::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x) {
   r = (x - ref).cwiseProduct(x_weight);
 }
 
-// void State_cost::calcDiff(Eigen::Ref<Eigen::MatrixXd> Jx,
-//                           Eigen::Ref<Eigen::MatrixXd> Ju,
-//                           const Eigen::Ref<const Vxd> &x,
-//                           const Eigen::Ref<const Vxd> &u) {
-//
-//   assert(static_cast<std::size_t>(Jx.rows()) == nr);
-//   assert(static_cast<std::size_t>(Ju.rows()) == nr);
-//   assert(static_cast<std::size_t>(Jx.cols()) == nx);
-//   assert(static_cast<std::size_t>(Ju.cols()) == nu);
-//
-//   Jx = x_weight.asDiagonal();
-//   Ju.setZero();
-// }
-
 void State_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
                           Eigen::Ref<Eigen::VectorXd> Lu,
                           Eigen::Ref<Eigen::MatrixXd> Lxx,
@@ -861,92 +849,14 @@ void State_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
   Lxx.diagonal() += x_weight.cwiseProduct(x_weight);
 }
 
-// void State_cost::calcDiff(Eigen::Ref<Eigen::MatrixXd> Jx,
-//                           const Eigen::Ref<const Vxd> &x) {
-//
-//   assert(static_cast<std::size_t>(Jx.rows()) == nr);
-//   assert(static_cast<std::size_t>(Jx.cols()) == nx);
-//
-//   Jx = x_weight.asDiagonal();
-// }
-
-// All_cost::All_cost(size_t nx, size_t nu, size_t nr,
-//                    const std::vector<boost::shared_ptr<Cost>> &costs)
-//     : Cost(nx, nu, nr), costs(costs) {}
-//
-// void All_cost::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x,
-//                     const Eigen::Ref<const Vxd> &u) {
-//   // check that r
-//   assert(static_cast<std::size_t>(r.size()) == nr);
-//   assert(static_cast<std::size_t>(x.size()) == nx);
-//   assert(static_cast<std::size_t>(u.size()) == nu);
-//
-//   int index = 0;
-//   for (size_t i = 0; i < costs.size(); i++) {
-//     // fill the matrix
-//     auto &feat = costs.at(i);
-//     int _nr = feat->nr;
-//     feat->calc(r.segment(index, _nr), x, u);
-//     index += _nr;
-//   }
-// }
-//
-// void All_cost::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x) {
-//   // check that r
-//   assert(static_cast<std::size_t>(r.size()) == nr);
-//
-//   int index = 0;
-//   for (size_t i = 0; i < costs.size(); i++) {
-//     auto &feat = costs.at(i);
-//     int _nr = feat->nr;
-//     feat->calc(r.segment(index, _nr), x);
-//     index += _nr;
-//   }
-// }
-//
-// void All_cost::calcDiff(Eigen::Ref<Eigen::MatrixXd> Jx,
-//                         Eigen::Ref<Eigen::MatrixXd> Ju,
-//                         const Eigen::Ref<const Vxd> &x,
-//                         const Eigen::Ref<const Vxd> &u) {
-//
-//   assert(static_cast<std::size_t>(x.size()) == nx);
-//   assert(static_cast<std::size_t>(u.size()) == nu);
-//
-//   // TODO: I shoudl only give the residuals...
-//   int index = 0;
-//   for (size_t i = 0; i < costs.size(); i++) {
-//     auto &feat = costs.at(i);
-//     int _nr = feat->nr;
-//     feat->calcDiff(Jx.block(index, 0, _nr, nx), Ju.block(index, 0, _nr,
-//     nu), x,
-//                    u);
-//     index += _nr;
-//   }
-// }
-//
-// void All_cost::calcDiff(Eigen::Ref<Eigen::MatrixXd> Jx,
-//                         const Eigen::Ref<const Vxd> &x) {
-//
-//   assert(static_cast<std::size_t>(x.size()) == nx);
-//
-//   // TODO: I shoudl only give the residuals...
-//   int index = 0;
-//   for (size_t i = 0; i < costs.size(); i++) {
-//     auto &feat = costs.at(i);
-//     int _nr = costs.at(i)->nr;
-//     feat->calcDiff(Jx.block(index, 0, _nr, nx), x);
-//     index += _nr;
-//   }
-// }
-
 size_t
 get_total_num_features(const std::vector<boost::shared_ptr<Cost>> &features) {
   return std::accumulate(features.begin(), features.end(), 0,
                          [](auto &a, auto &b) { return a + b->nr; });
 }
 
-ActionModelQ::ActionModelQ(ptr<Dynamics> dynamics,
-                           const std::vector<ptr<Cost>> &features)
+ActionModelDyno::ActionModelDyno(ptr<Dynamics> dynamics,
+                                 const std::vector<ptr<Cost>> &features)
     : Base(dynamics->state_croco, dynamics->nu,
            get_total_num_features(features)),
       dynamics(dynamics), features(features), nx(dynamics->nx),
@@ -956,11 +866,9 @@ ActionModelQ::ActionModelQ(ptr<Dynamics> dynamics,
   Ju.setZero();
 }
 
-ActionModelQ::~ActionModelQ(){};
-
-void ActionModelQ::calc(const boost::shared_ptr<ActionDataAbstract> &data,
-                        const Eigen::Ref<const VectorXs> &x,
-                        const Eigen::Ref<const VectorXs> &u) {
+void ActionModelDyno::calc(const boost::shared_ptr<ActionDataAbstract> &data,
+                           const Eigen::Ref<const VectorXs> &x,
+                           const Eigen::Ref<const VectorXs> &u) {
   Data *d = static_cast<Data *>(data.get());
   d->xnext.setZero();
   dynamics->calc(d->xnext, x, u);
@@ -985,9 +893,9 @@ void ActionModelQ::calc(const boost::shared_ptr<ActionDataAbstract> &data,
   }
 }
 
-void ActionModelQ::calcDiff(const boost::shared_ptr<ActionDataAbstract> &data,
-                            const Eigen::Ref<const VectorXs> &x,
-                            const Eigen::Ref<const VectorXs> &u) {
+void ActionModelDyno::calcDiff(
+    const boost::shared_ptr<ActionDataAbstract> &data,
+    const Eigen::Ref<const VectorXs> &x, const Eigen::Ref<const VectorXs> &u) {
   Data *d = static_cast<Data *>(data.get());
   d->Fx.setZero();
   d->Fu.setZero();
@@ -1000,35 +908,14 @@ void ActionModelQ::calcDiff(const boost::shared_ptr<ActionDataAbstract> &data,
   d->Luu.setZero();
   d->Lxu.setZero();
 
-  // Jx.setZero();
-  // Ju.setZero();
-  // size_t index = 0;
   for (size_t i = 0; i < features.size(); i++) {
     auto &feat = features.at(i);
-    // size_t &_nr = feat->nr;
-    // std::cout << feat->get_name() << std::endl;
-
-    // Eigen::Ref<Eigen::VectorXd> r = d->r.segment(index, _nr);
-    // Eigen::Ref<Eigen::MatrixXd> jx = Jx.block(index, 0, _nr, nx);
-    // Eigen::Ref<Eigen::MatrixXd> ju = Ju.block(index, 0, _nr, nu);
-
     feat->calcDiff(d->Lx, d->Lu, d->Lxx, d->Luu, d->Lxu, x, u);
-    // if (feat->cost_type == CostTYPE::least_squares) {
-    //   d->Lx.noalias() += r.transpose() * jx;
-    //   d->Lu.noalias() += r.transpose() * ju;
-    //   d->Lxx.noalias() += jx.transpose() * jx;
-    //   d->Luu.noalias() += ju.transpose() * ju;
-    //   d->Lxu.noalias() += jx.transpose() * ju;
-    // } else if (feat->cost_type == CostTYPE::linear) {
-    //   d->Lx.noalias() += jx.colwise().sum();
-    //   d->Lu.noalias() += ju.colwise().sum();
-    // }
-    // index += _nr;
   }
 }
 
-void ActionModelQ::calc(const boost::shared_ptr<ActionDataAbstract> &data,
-                        const Eigen::Ref<const VectorXs> &x) {
+void ActionModelDyno::calc(const boost::shared_ptr<ActionDataAbstract> &data,
+                           const Eigen::Ref<const VectorXs> &x) {
   Data *d = static_cast<Data *>(data.get());
   d->r.setZero();
 
@@ -1049,8 +936,9 @@ void ActionModelQ::calc(const boost::shared_ptr<ActionDataAbstract> &data,
   }
 }
 
-void ActionModelQ::calcDiff(const boost::shared_ptr<ActionDataAbstract> &data,
-                            const Eigen::Ref<const VectorXs> &x) {
+void ActionModelDyno::calcDiff(
+    const boost::shared_ptr<ActionDataAbstract> &data,
+    const Eigen::Ref<const VectorXs> &x) {
   Data *d = static_cast<Data *>(data.get());
 
   d->Lx.setZero();
@@ -1077,10 +965,10 @@ void ActionModelQ::calcDiff(const boost::shared_ptr<ActionDataAbstract> &data,
   }
 }
 
-boost::shared_ptr<crocoddyl::ActionDataAbstract> ActionModelQ::createData() {
+boost::shared_ptr<crocoddyl::ActionDataAbstract> ActionModelDyno::createData() {
   return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
 }
-bool ActionModelQ::checkData(
+bool ActionModelDyno::checkData(
     const boost::shared_ptr<ActionDataAbstract> &data) {
   boost::shared_ptr<Data> d = boost::dynamic_pointer_cast<Data>(data);
   if (d != NULL) {
@@ -1090,9 +978,325 @@ bool ActionModelQ::checkData(
   }
 }
 
-void ActionModelQ::print(std::ostream &os) const {
+void ActionModelDyno::print(std::ostream &os) const {
   os << "wrapper" << std::endl;
 }
+
+// NEW REFACTOR
+//
+//
+
+int get_total_num_features_mode(const std::vector<ptr<Cost>> &features,
+                                Control_Mode mode) {
+
+  int ff = get_total_num_features(features);
+  int additional_features = 0;
+  if (mode == Control_Mode::free_time) {
+    additional_features += 1; // regularization on dt
+  }
+  if (mode == Control_Mode::free_time_linear) {
+    additional_features += 2; //
+  }
+  if (mode == Control_Mode::contour) {
+    // additional features
+  }
+  return ff + additional_features;
+}
+
+int get_additional_nu(Control_Mode control_mode) {
+
+  switch (control_mode) {
+
+  case Control_Mode::free_time_linear_first:
+    NOT_IMPLEMENTED
+
+  case Control_Mode::free_time:
+    return 1;
+
+  case Control_Mode::default_mode:
+    return 0;
+
+  case Control_Mode::contour:
+    return 1;
+
+  case Control_Mode::free_time_linear:
+    return 1;
+  default:
+    NOT_IMPLEMENTED;
+  }
+}
+
+boost::shared_ptr<StateCrocoDyno>
+mk_state_croco(std::shared_ptr<dynobench::Model_robot> model_robot,
+               Control_Mode control_mode){};
+
+int get_nx(std::shared_ptr<dynobench::Model_robot> model_robot,
+           Control_Mode control_mode){};
+
+ActionModelDynov2::ActionModelDynov2(
+    std::shared_ptr<dynobench::Model_robot> model_robot,
+    const std::vector<ptr<Cost>> &features, Control_Mode control_mode)
+    : Base(mk_state_croco(model_robot, control_mode),
+           model_robot->nu + get_additional_nu(control_mode),
+           get_total_num_features_mode(features, control_mode)),
+      model_robot(model_robot), features(features) {
+  nu = get_nu();
+  nx = get_state()->get_nq(); //
+  std::cout << "nx is " << nx << std::endl;
+  // nu(), nr(get_total_num_features(features)),
+
+  nx_orig = model_robot->nx;
+  nu_orig = model_robot->nu;
+
+  Jx.resize(nr, nx);
+  Ju.resize(nr, nu);
+
+  Jx.setZero();
+  Ju.setZero();
+}
+
+void __calc_diff(std::shared_ptr<dynobench::Model_robot> robot_model,
+                 Control_Mode control_mode, Eigen::Ref<Eigen::MatrixXd> Fx,
+                 Eigen::Ref<Eigen::MatrixXd> Fu,
+                 const Eigen::Ref<const Eigen::VectorXd> &x,
+                 const Eigen::Ref<const Eigen::VectorXd> &u) {
+
+  double dt = robot_model->ref_dt;
+  CHECK_GE(dt, 0, AT);
+  size_t _nx = robot_model->nx;
+  size_t _nu = robot_model->nu;
+  size_t nx = x.size();
+  size_t nu = u.size();
+
+  Eigen::VectorXd __v(nx); // TODO: remove memory allocation
+  __v.setZero();
+
+  Fx.setZero(); // TODO: is this necessary?
+  Fu.setZero();
+
+  if (control_mode == Control_Mode::default_mode) {
+    robot_model->stepDiff(Fx, Fu, x, u, dt);
+  } else if (control_mode == Control_Mode::free_time_linear) {
+    CHECK_GE(u(robot_model->nu), 0, AT);
+    CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
+    if (!startsWith(robot_model->name, "quad3d")) {
+      robot_model->stepDiff_with_v(Fx.block(0, 0, _nx, _nx),
+                                   Fu.block(0, 0, _nx, _nu), __v, x.head(_nx),
+                                   u.head(_nu), dt * u(_nu));
+      Fu.block(0, _nu, _nx, 1) = __v * dt;
+      Fu(_nx, _nu) = 1.;
+      CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
+    } else {
+      robot_model->stepDiff(Fx.block(0, 0, _nx, _nx), Fu.block(0, 0, _nx, _nu),
+                            x.head(_nx), u.head(_nu), dt * u(_nu));
+      Eigen::VectorXd dd = derivate_wrt_time(*robot_model, x, u, dt);
+      Fu.block(0, _nu, _nx, 1) = robot_model->ref_dt * dd;
+      Fu(_nx, _nu) = 1.;
+    }
+  } else if (control_mode == Control_Mode::free_time) {
+    if (!startsWith(robot_model->name, "quad3d")) {
+      robot_model->stepDiff_with_v(Fx, Fu.block(0, 0, _nx, _nu), __v, x,
+                                   u.head(_nu), dt * u(_nu));
+      CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
+      Fu.col(_nu) = __v * dt;
+    } else {
+      robot_model->stepDiff(Fx.block(0, 0, _nx, _nx), Fu.block(0, 0, _nx, _nu),
+                            x.head(_nx), u.head(_nu), dt * u(_nu));
+      Eigen::VectorXd dd = derivate_wrt_time(*robot_model, x, u, dt);
+      Fu.col(_nu) = robot_model->ref_dt * dd;
+    }
+  } else if (control_mode == Control_Mode::contour) {
+    robot_model->stepDiff(Fx.block(0, 0, _nx, _nx), Fu.block(0, 0, _nx, _nu),
+                          x.head(_nx), u.head(_nu), dt);
+
+    Fx(nx - 1, nx - 1) = 1.0;
+    Fu(nx - 1, nu - 1) = 1.0;
+  } else {
+    ERROR_WITH_INFO("not implemented");
+  }
+}
+
+void __calc(std::shared_ptr<dynobench::Model_robot> robot_model,
+            Control_Mode control_mode, Eigen::Ref<Eigen::VectorXd> xnext,
+            const Eigen::Ref<const Eigen::VectorXd> &x,
+            const Eigen::Ref<const Eigen::VectorXd> &u) {
+  CHECK_GE(robot_model->ref_dt, 0, AT);
+  const size_t &_nx = robot_model->nx;
+  const size_t &_nu = robot_model->nu;
+
+  const size_t &nx = x.size();
+  const size_t &nu = u.size();
+
+  if (control_mode == Control_Mode::default_mode) {
+    robot_model->step(xnext, x, u, robot_model->ref_dt);
+  } else if (control_mode == Control_Mode::free_time) {
+    // CHECK_GEQ(u(robot_model->nu), 0., AT);
+    WARN_GEQ(u(robot_model->nu), 0, "time cannot be negative!");
+    robot_model->step(xnext, x, u.head(_nu), robot_model->ref_dt * u(_nu));
+  } else if (control_mode == Control_Mode::free_time_linear) {
+    WARN_GEQ(u(robot_model->nu), 0, "time cannot be negative!");
+    robot_model->step(xnext.head(_nx), x.head(_nx), u.head(_nu),
+                      robot_model->ref_dt * u(_nu));
+    xnext(_nx) = u(_nu);
+  } else if (control_mode == Control_Mode::contour) {
+    robot_model->step(xnext.head(_nx), x.head(_nx), u.head(_nu),
+                      robot_model->ref_dt);
+    xnext(nx - 1) = x(nx - 1) + u(nu - 1);
+  } else {
+    ERROR_WITH_INFO("not implemented");
+  }
+}
+
+void ActionModelDynov2::calc(const boost::shared_ptr<ActionDataAbstract> &data,
+                             const Eigen::Ref<const VectorXs> &x,
+                             const Eigen::Ref<const VectorXs> &u) {
+  Data *d = static_cast<Data *>(data.get());
+  d->xnext.setZero();
+  // calculate dynamics
+  // dynamics->calc(d->xnext, x, u);
+
+  __calc(model_robot, control_mode, d->xnext, x, u);
+
+  int index = 0;
+
+  d->cost = 0.;
+  d->r.setZero();
+
+  for (size_t i = 0; i < features.size(); i++) {
+    auto &feat = features.at(i);
+    size_t &_nr = feat->nr;
+    feat->calc(d->r.segment(index, _nr), x.head(nx_orig), u.head(nu_orig));
+
+    if (feat->cost_type == CostTYPE::least_squares) {
+      d->cost +=
+          Scalar(0.5) * d->r.segment(index, _nr).dot(d->r.segment(index, _nr));
+    } else if (feat->cost_type == CostTYPE::linear) {
+      d->cost += d->r.segment(index, _nr).sum();
+    }
+    index += _nr;
+  }
+  // add additional features based on the control mode
+
+  if (control_mode == Control_Mode::free_time) {
+    double u_ref = .7;
+    double k = 1.;
+    d->r(index) = k * (u(nu) - u_ref);
+    index++;
+  }
+  if (control_mode == Control_Mode::free_time_linear) {
+    double k_linear = 1.;
+    double k_reg = 1.;
+    d->r(index) = k_linear * u(nu - 1);
+    index++;
+    d->r(index) = k_reg * (u(nu - 1) - x(nx - 1));
+    index++;
+  }
+  if (control_mode == Control_Mode::contour) {
+    NOT_IMPLEMENTED;
+  }
+
+  assert(index == data->r.size());
+}
+
+void ActionModelDynov2::calcDiff(
+    const boost::shared_ptr<ActionDataAbstract> &data,
+    const Eigen::Ref<const VectorXs> &x, const Eigen::Ref<const VectorXs> &u) {
+  Data *d = static_cast<Data *>(data.get());
+  d->Fx.setZero();
+  d->Fu.setZero();
+
+  __calc_diff(model_robot, control_mode, d->Fx, d->Fu, x, u);
+
+  // create a matrix for the Jacobians
+  d->Lx.setZero();
+  d->Lu.setZero();
+  d->Lxx.setZero();
+  d->Luu.setZero();
+  d->Lxu.setZero();
+
+  for (size_t i = 0; i < features.size(); i++) {
+    auto &feat = features.at(i);
+    feat->calcDiff(d->Lx, d->Lu, d->Lxx, d->Luu, d->Lxu, x.head(nx_orig),
+                   u.head(nu_orig));
+  }
+  // add additional features based on the control mode
+
+  if (control_mode == Control_Mode::free_time) {
+    double k = 1.;
+    double u_ref = .7;
+    d->Lu(nu - 1) = k * k * (u(nu - 1) - u_ref);
+    d->Luu(nu - 1, nu - 1) = k * k;
+  } else if (control_mode == Control_Mode::free_time_linear) {
+    double k_linear = 1.;
+    double k_reg = 1.;
+    d->Lu(nx - 1) = k_linear * u(nu - 1);
+    d->Lx(nx - 1) = -k_reg * k_reg * (u(nu - 1) - x(nx - 1));
+    d->Lx(nx - 1) = k_reg * k_reg * (u(nu - 1) - x(nx - 1));
+    d->Lxu(nx - 1, nu - 1) = k_reg * k_reg;
+  } else if (control_mode == Control_Mode::contour) {
+    NOT_IMPLEMENTED;
+  }
+}
+
+void ActionModelDynov2::calc(const boost::shared_ptr<ActionDataAbstract> &data,
+                             const Eigen::Ref<const VectorXs> &x) {
+  Data *d = static_cast<Data *>(data.get());
+  d->r.setZero();
+
+  int index = 0;
+
+  d->cost = 0;
+  for (size_t i = 0; i < features.size(); i++) {
+    auto &feat = features.at(i);
+    size_t &_nr = feat->nr;
+    Eigen::Ref<Eigen::VectorXd> r = d->r.segment(index, _nr);
+    feat->calc(r, x);
+    if (feat->cost_type == CostTYPE::least_squares) {
+      d->cost += Scalar(0.5) * r.dot(r);
+    } else if (feat->cost_type == CostTYPE::linear) {
+      d->cost += r.sum();
+    }
+    index += _nr;
+  }
+  // TODO: i should copy here...
+}
+
+void ActionModelDynov2::calcDiff(
+    const boost::shared_ptr<ActionDataAbstract> &data,
+    const Eigen::Ref<const VectorXs> &x) {
+  Data *d = static_cast<Data *>(data.get());
+
+  d->Lx.setZero();
+  d->Lxx.setZero();
+
+  // size_t index = 0;
+  // Jx.setZero();
+  for (size_t i = 0; i < features.size(); i++) {
+    auto &feat = features.at(i);
+    feat->calcDiff(d->Lx, d->Lxx, x);
+  }
+  // TODO: i should copy here...
+}
+
+boost::shared_ptr<crocoddyl::ActionDataAbstract>
+ActionModelDynov2::createData() {
+  return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
+}
+bool ActionModelDynov2::checkData(
+    const boost::shared_ptr<ActionDataAbstract> &data) {
+  boost::shared_ptr<Data> d = boost::dynamic_pointer_cast<Data>(data);
+  if (d != NULL) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void ActionModelDynov2::print(std::ostream &os) const {
+  os << "wrapper" << std::endl;
+}
+//
+//
 
 void print_data(
     boost::shared_ptr<crocoddyl::ActionDataAbstractTpl<double>> data) {
@@ -1207,7 +1411,7 @@ void check_dyn(boost::shared_ptr<Dynamics> dyn, double eps, Vxd x, Vxd u,
 }
 
 std::vector<ReportCost>
-get_report(ptr<ActionModelQ> p,
+get_report(ptr<ActionModelDyno> p,
            std::function<void(ptr<Cost>, Eigen::Ref<Vxd>)> fun) {
   std::vector<ReportCost> reports;
   for (size_t j = 0; j < p->features.size(); j++) {
@@ -1266,7 +1470,6 @@ void Quaternion_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
                                Eigen::Ref<Eigen::MatrixXd> Lxu,
                                const Eigen::Ref<const Eigen::VectorXd> &x,
                                const Eigen::Ref<const Eigen::VectorXd> &u) {
-
   (void)Lu;
   (void)Luu;
   (void)Luu;
@@ -1291,7 +1494,6 @@ Quad3d_acceleration_cost::Quad3d_acceleration_cost(
 void Quad3d_acceleration_cost::calc(
     Eigen::Ref<Eigen::VectorXd> r, const Eigen::Ref<const Eigen::VectorXd> &x,
     const Eigen::Ref<const Eigen::VectorXd> &u) {
-
   model->calcV(f, x, u);
   acc = f.tail<6>();
   r = k_acc * acc;
@@ -1302,7 +1504,6 @@ void Quad3d_acceleration_cost::calcDiff(
     Eigen::Ref<Eigen::MatrixXd> Lxx, Eigen::Ref<Eigen::MatrixXd> Luu,
     Eigen::Ref<Eigen::MatrixXd> Lxu, const Eigen::Ref<const Eigen::VectorXd> &x,
     const Eigen::Ref<const Eigen::VectorXd> &u) {
-
   model->calcV(f, x, u);
   acc = f.tail<6>();
   model->calcDiffV(Jv_x, Jv_u, x, u);
@@ -1356,7 +1557,6 @@ void Acceleration_cost_acrobot::calcDiff(
     Eigen::Ref<Eigen::MatrixXd> Lxx, Eigen::Ref<Eigen::MatrixXd> Luu,
     Eigen::Ref<Eigen::MatrixXd> Lxu, const Eigen::Ref<const Eigen::VectorXd> &x,
     const Eigen::Ref<const Eigen::VectorXd> &u) {
-
   model.calcV(f, x, u);
   acc = f.tail<2>();
 
@@ -1389,7 +1589,6 @@ Acceleration_cost_quad2d::Acceleration_cost_quad2d(
 void Acceleration_cost_quad2d::calc(
     Eigen::Ref<Eigen::VectorXd> r, const Eigen::Ref<const Eigen::VectorXd> &x,
     const Eigen::Ref<const Eigen::VectorXd> &u) {
-
   model->calcV(f, x, u);
   acc = f.tail<3>();
   r = k_acc * acc;
@@ -1400,7 +1599,6 @@ void Acceleration_cost_quad2d::calcDiff(
     Eigen::Ref<Eigen::MatrixXd> Lxx, Eigen::Ref<Eigen::MatrixXd> Luu,
     Eigen::Ref<Eigen::MatrixXd> Lxu, const Eigen::Ref<const Eigen::VectorXd> &x,
     const Eigen::Ref<const Eigen::VectorXd> &u) {
-
   model->calcV(f, x, u);
   acc = f.tail<3>();
 
@@ -1435,9 +1633,9 @@ Dynamics::Dynamics(std::shared_ptr<dynobench::Model_robot> robot_model,
   dt = robot_model->ref_dt;
 
   if (control_mode == Control_Mode::default_mode) {
-    state_croco = boost::make_shared<StateCrocoQ>(robot_model->state);
+    state_croco = boost::make_shared<StateCrocoDyno>(robot_model->state);
   } else if (control_mode == Control_Mode::free_time) {
-    state_croco = boost::make_shared<StateCrocoQ>(robot_model->state);
+    state_croco = boost::make_shared<StateCrocoDyno>(robot_model->state);
     nu++;
     __v.resize(nx);
   } else if (control_mode == Control_Mode::free_time_linear) {
@@ -1446,7 +1644,7 @@ Dynamics::Dynamics(std::shared_ptr<dynobench::Model_robot> robot_model,
     nu++;
     nx++;
 
-    state_croco = boost::make_shared<StateCrocoQ>(
+    state_croco = boost::make_shared<StateCrocoDyno>(
         std::make_shared<dynobench::CompoundState2>(
             robot_model->state, std::make_shared<dynobench::Rn>(1)));
 
@@ -1456,7 +1654,7 @@ Dynamics::Dynamics(std::shared_ptr<dynobench::Model_robot> robot_model,
     nu++;
     nx++;
 
-    state_croco = boost::make_shared<StateCrocoQ>(
+    state_croco = boost::make_shared<StateCrocoDyno>(
         std::make_shared<dynobench::CompoundState2>(
             robot_model->state, std::make_shared<dynobench::Rn>(1)));
   }
@@ -1498,7 +1696,6 @@ void Dynamics::calcDiff(Eigen::Ref<Eigen::MatrixXd> Fx,
                         Eigen::Ref<Eigen::MatrixXd> Fu,
                         const Eigen::Ref<const VectorXs> &x,
                         const Eigen::Ref<const VectorXs> &u) {
-
   CHECK_GE(dt, 0, AT);
   size_t _nx = robot_model->nx;
   size_t _nu = robot_model->nu;
@@ -1574,7 +1771,6 @@ State_cost_model::State_cost_model(
     size_t nu, const Eigen::VectorXd &x_weight, const Eigen::VectorXd &ref)
     : Cost(nx, nu, model_robot->state->ndx), ref(ref), x_weight(x_weight),
       nx_effective(model_robot->state->nx), model_robot(model_robot) {
-
   // x_weight_mat
   CHECK_EQ(ref.size(), x_weight.size(), AT);
   CHECK_EQ(nx_effective, static_cast<size_t>(x_weight.size()), AT);
@@ -1610,7 +1806,6 @@ void State_cost_model::calc(Eigen::Ref<Eigen::VectorXd> r,
 
 void State_cost_model::calc(Eigen::Ref<Eigen::VectorXd> r,
                             const Eigen::Ref<const Eigen::VectorXd> &x) {
-
   check_input_calc(r, x);
   // CSTR_V(r)
   // CSTR_V(ref)
@@ -1638,7 +1833,6 @@ void State_cost_model::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
 void State_cost_model::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
                                 Eigen::Ref<Eigen::MatrixXd> Lxx,
                                 const Eigen::Ref<const Eigen::VectorXd> &x) {
-
   model_robot->state_diff(__r, ref, x.head(nx_effective));
   model_robot->state_diffDiff(Jx0, Jx1, ref, x.head(nx_effective));
 
@@ -1683,14 +1877,12 @@ Min_time_linear::Min_time_linear(size_t nx, size_t nu) : Cost(nx, nu, 1) {
 void Min_time_linear::calc(Eigen::Ref<Eigen::VectorXd> r,
                            const Eigen::Ref<const Eigen::VectorXd> &x,
                            const Eigen::Ref<const Eigen::VectorXd> &u) {
-
   check_input_calc(r, x, u);
   r(0) = k * u.tail(1)(0);
 }
 
 void Min_time_linear::calc(Eigen::Ref<Eigen::VectorXd> r,
                            const Eigen::Ref<const Eigen::VectorXd> &x) {
-
   check_input_calc(r, x);
   ERROR_WITH_INFO("should not be here");
 }
@@ -1702,7 +1894,6 @@ void Min_time_linear::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
                                Eigen::Ref<Eigen::MatrixXd> Lxu,
                                const Eigen::Ref<const Eigen::VectorXd> &x,
                                const Eigen::Ref<const Eigen::VectorXd> &u) {
-
   check_input_calcDiff(Lx, Lu, Lxx, Luu, Lxu, x, u);
   Lu(nu - 1) += k;
 }
@@ -1738,7 +1929,6 @@ void Diff_angle_cost::calc(Eigen::Ref<Eigen::VectorXd> r,
 void Diff_angle_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
                                Eigen::Ref<Eigen::MatrixXd> Lxx,
                                const Eigen::Ref<const Eigen::VectorXd> &x) {
-
   Eigen::Vector2d __u(0, 0);
   car->constraintsIneq(f, x, __u);
 
