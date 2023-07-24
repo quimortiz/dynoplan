@@ -6,7 +6,6 @@
 <img src="assets/example1.png" width=60% height=auto>
 </p >
 
-By Joaquim Ortiz-Haro and Wolfgang Honnig
 
 
 
