@@ -141,11 +141,10 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
   // options_mpcc.noise_level = 0;
 
   std::vector<std::pair<Problem, Trajectory>> problem_with_init_guess;
-  // std::vector<Options_trajopt> solvers{options_mpc, options_dt,
-  // options_search,
-  //                                      options_mpcc};
+  std::vector<Options_trajopt> solvers{options_mpc, options_dt, options_search,
+                                       options_mpcc};
 
-  std::vector<Options_trajopt> solvers{options_mpcc};
+  // std::vector<Options_trajopt> solvers{options_mpcc};
 
   problem_with_init_guess.push_back(
       std::make_pair(Problem(dynobench_base "envs/unicycle1_v0/bugtrap_0.yaml"),
