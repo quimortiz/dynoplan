@@ -1,0 +1,3 @@
+reference: "idbastar_v0_heu0"
+default:
+  heuristic: -1

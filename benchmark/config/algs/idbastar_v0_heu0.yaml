@@ -1,0 +1,28 @@
+# general parameters, all systems and problems
+reference: "idbastar_v0"
+default:
+  heuristic: 0
+  search_timelimit: 30000 # in ms
+  cost_delta_factor: 1
+unicycle1_v0:
+  default:
+    limit_branching_factor: 200
+    num_primitives_0: 500
+    delta_0: .2
+
+unicycle2_v0:
+  default:
+    limit_branching_factor: 1000
+    num_primitives_0: 500
+    delta_0: .4
+
+quad2d_v0:
+  default:
+    limit_branching_factor: 200
+    num_primitives_0: 40000
+    delta_0: .6
+
+quad3d_v0:
+  default:
+    num_primitives_0: 100000
+    cost_delta_factor: 0 # TODO: investigate why using =1 makes everything slower!

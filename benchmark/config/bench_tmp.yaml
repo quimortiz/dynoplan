@@ -1,0 +1,33 @@
+trials: 4
+timelimit: 20
+n_cores: 4 # -1=auto
+
+problems:
+  # - "unicycle_first_order_0/parallelpark_0"
+  - "unicycle_first_order_0/bugtrap_0"
+  # - "unicycle_first_order_0/kink_0"
+  # - "unicycle_second_order_0/parallelpark_0"
+  - "unicycle_second_order_0/bugtrap_0"
+  # - "car_first_order_with_1_trailers_0/bugtrap_0"
+  # - "car_first_order_with_1_trailers_0/parallelpark_0"
+  #
+  # - "quad2d/empty_0"
+  # - "quad2d/quad_obs_column"
+  # - "quad2d/quad2d_recovery_wo_obs"
+
+  # CONTINUE QUADROTOR_0
+  # - "quadrotor_0/empty_0_easy"
+  # - "quadrotor_0/recovery" # NOT WORKING -- Why I don't have primitives arounds this point?
+  # - "quadrotor_0/quad_one_obs"
+
+  # - "acrobot/swing_up_empty"
+  # - "acrobot/swing_down_easy"
+  # - "acrobot/swing_down_easy"
+  # - "car_first_order_with_1_trailers_0/easy_0"
+
+algs:
+  # - "sst_v0"
+  # - "geo_v1"
+  - "idbastar_v0"
+  # - "geo_v0" -- issue with quadcopter 3d!
+  # -  "idbastar_v1" # NOT USEFUL YET!!

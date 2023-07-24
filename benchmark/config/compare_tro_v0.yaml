@@ -1,0 +1,4 @@
+files:
+  - ../results_new/summary/summary_2023-07-12--15-39-59.csv
+benchmark_problems: [] # empy list means all
+benchmark_algs: ["idbastar_v0", "sst_v0", "geo_v0"]

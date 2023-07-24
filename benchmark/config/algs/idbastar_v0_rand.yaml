@@ -1,0 +1,14 @@
+# general parameters, all systems and problems
+reference: "idbastar_v0"
+default:
+  dummy: 0
+  # solver_id: 0
+unicycle2_v0:
+  default:
+    motionsFile: "../cloud/motionsV2/good/unicycle2_v0/random_unicycle2_v0.bin.sp.bin"
+    # num_primitives_0: 600
+    # delta_0: .4
+
+quad2d_v0:
+  default:
+    motionsFile: "../cloud/motionsV2/good/quad2d_v0/random_quad2d_v0.bin.sp.bin"

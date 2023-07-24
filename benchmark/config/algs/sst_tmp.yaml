@@ -1,0 +1,16 @@
+reference: sst_v0
+# params for SST
+default:
+  sst_use_nigh: true
+
+quad2d_v0:
+  default:
+    custom_sampling: true
+
+quad3d_v0:
+  default:
+    custom_sampling: true
+
+quad3d_omplapp:
+  default:
+    custom_sampling: true

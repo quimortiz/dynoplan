@@ -1,0 +1,18 @@
+reference: idbastar_v0
+
+default:
+  max_it: 1 # only one iterations, this is only for analysis.
+
+unicycle1_v0:
+  default:
+    delta_0: .3
+
+unicycle2_v0:
+  default:
+    delta_0: .5
+
+
+quad2d_v0:
+  default:
+    num_primitives_0: 350
+    delta_0: .55

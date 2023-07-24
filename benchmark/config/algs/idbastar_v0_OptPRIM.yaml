@@ -1,0 +1,10 @@
+# general parameters, all systems and problems
+reference: "idbastar_v0"
+default:
+  dummy: 0
+  # solver_id: 0
+unicycle2_v0:
+  default:
+    dummy: 0
+    # num_primitives_0: 600
+    # delta_0: .4

@@ -1,0 +1,67 @@
+trials: 4
+timelimit: 40
+n_cores: 4 # -1=auto
+
+problems:
+  - unicycle_first_order_0/parallelpark_0
+  - unicycle_first_order_0/bugtrap_0
+  - unicycle_first_order_0/kink_0
+
+  # - unicycle_first_order_1/kink_0
+  # - unicycle_first_order_2/wall_0
+
+  - unicycle_second_order_0/kink_0
+  - unicycle_second_order_0/parallelpark_0
+  - unicycle_second_order_0/bugtrap_0
+
+  # - car_first_order_with_1_trailers_0/kink_0
+  # - car_first_order_with_1_trailers_0/bugtrap_0
+  # - car_first_order_with_1_trailers_0/parallelpark_0
+
+  # - quad2d/empty_0
+  # - quad2d/quad_obs_column
+  # - quad2d/quad2d_recovery_wo_obs
+  # - quad2d/fall_through
+
+  # - acrobot/swing_up_empty
+  # - acrobot/swing_down_easy
+  # - acrobot/swing_down
+
+  #  CONTINUE QUADROTOR_0
+  # - quadrotor_0/empty_0_easy
+  # - quadrotor_0/recovery  # not working for  mpcc
+  # - quadrotor_0/quad_one_obs # not working for mpcc
+
+algs:
+  # - idbastar_v0
+
+  # - idbastar_v0_heu0
+  # - idbastar_v0_heu1
+  # - idbastar_v0_heuNO
+
+  # - idbastar_v0_fixedtime
+
+  # - idbastar_v0_freetime
+  # - idbastar_v0_mpc
+  # - idbastar_v0_mpcc
+  # - idbastar_v0_search
+
+  # - idbastar_tmp
+
+  # - idbastar_v0_heu0
+  # - idbastar_v0_heu1
+  # - idbastar_v0_heuNO
+
+  # COMPARE RAND vs OPTI PRIMITIVES
+  # - idbastar_v0_rand
+  # - idbastar_v0_OptPRIM
+
+  # ONLY DB-Astar with different heuristics
+  - dbastar_v0_heu0
+  - dbastar_v0_heu1
+  - dbastar_v0_heuNO
+
+  # - "idbastar_v0_mpcc"
+  # - "idbastar_v0_search"
+  #
+  # -  "idbastar_v1" # NOT USEFUL YET!!

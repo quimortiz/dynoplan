@@ -1,0 +1,48 @@
+# I am calling dbastar instead of dbastar
+reference: "idbastar_v0"
+
+default:
+  heuristic: 0
+  search_timelimit: 30000 # in ms
+  cost_delta_factor: 1
+
+unicycle1_v0:
+  default:
+    limit_branching_factor: 200
+    max_motions: 300
+    delta: .3
+
+unicycle2_v0:
+  default:
+    limit_branching_factor: 1000
+    max_motions: 500
+    delta: .4
+
+quad2d_v0:
+  default:
+    limit_branching_factor: 200
+    max_motions: 400
+    delta: .5
+
+car1_v0:
+  default:
+    max_motions: 400
+    delta: .3
+
+quad3d_v0:
+  default:
+    search_timelimit: 60000 # in ms
+    delta: .8
+    max_motions: 3000
+    connect_radius_h: 2
+    max_size_heu_map: 3000
+    num_sample_trials: 5000
+
+quad2dpole_v0:
+  default:
+    search_timelimit: 60000 # in ms
+    delta: .8
+    max_motions: 4000
+    connect_radius_h: 1.5
+    max_size_heu_map: 2000
+    num_sample_trials: 5000

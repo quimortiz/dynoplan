@@ -1,0 +1,54 @@
+# general parameters, all systems and problems
+reference: "idbastar_v0_freetime"
+default:
+  solver_id: 8
+  smooth_traj: true
+  window_optimize: 50
+  window_shift: 20
+  shift_repeat: false
+
+unicycle1_v0:
+  default:
+    dummy: 0
+    k_linear: 20
+    max_iter: 20
+
+#investigate why?
+unicycle2_v0:
+  default:
+    dummy: 0
+    weight_goal: 100
+    max_iter: 30
+
+quad2d_v0:
+  default:
+    window_optimize: 100
+    window_shift: 40
+    k_linear: 100
+    weight_goal: 200
+    soft_control_bounds: False
+    max_iter: 50
+
+acrobot_v0:
+  default:
+    # solver_id: 0 # TODO: check why Jacobians are not working with free time!
+    use_nigh_nn: true # library for knn
+    num_primitives_0: 100000
+    max_motions_primitives: 200000
+    check_cols: false
+    delta_0: .35
+    window_optimize: 300
+    window_shift: 100
+    max_iter: 100
+    weight_goal: 300
+    k_linear: 10 # default
+    k_contour: 10
+
+quad3d_v0:
+  default:
+    window_optimize: 100
+    window_shift: 40
+    max_iter: 50
+    k_linear: 100
+    weight_goal: 100
+    soft_control_bounds: False

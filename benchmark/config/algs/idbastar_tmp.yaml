@@ -1,0 +1,18 @@
+# general parameters, all systems and problems
+reference: idbastar_v0
+
+default:
+  dummy: 0
+  # max_it: 1
+  # delta_0: .5
+  # search_timelimit: 60000
+  # num_primitives_0: 500
+
+unicycle2_v0:
+  default:
+    delta_0: .2
+    num_primitives_0: 1000
+
+quad2d_v0:
+  default:
+    motionsFile: ../cloud/motionsV2/good/quad2d_v0/quad2d_v0_all_im.bin.sp.bin.ca.bin.so2.bin

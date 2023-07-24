@@ -1,0 +1,3 @@
+files:
+benchmark_problems: [] # empy list means all
+benchmark_algs: ["idbastar_v0", "sst_tmp", "geo_v1"]

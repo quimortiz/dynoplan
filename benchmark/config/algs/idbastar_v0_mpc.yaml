@@ -1,0 +1,37 @@
+reference: "idbastar_v0_freetime"
+default:
+  solver_id: 10
+  dummy: 0
+  smooth_traj: true
+  window_optimize: 40
+  window_shift: 20
+  shift_repeat: false
+
+unicycle1_v0:
+  default:
+    max_iter: 20
+    weight_goal: 40
+
+quad2d_v0:
+  default:
+    window_optimize: 100
+    window_shift: 40
+    k_linear: 100
+    max_iter: 50
+    # soft_control_bounds: False
+
+unicycle2_v0:
+  # TODO: check why I don't get 100% accuracy
+  default:
+    window_optimize: 40
+    window_shift: 20
+    max_iter: 30
+    weight_goal: 50
+
+quad3d_v0:
+  default:
+    window_optimize: 100
+    window_shift: 40
+    max_iter: 50
+    weight_goal: 100
+    soft_control_bounds: False

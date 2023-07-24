@@ -1,0 +1,3 @@
+reference: idbastar_v0 # I import the weight_goal parameter from idbastar_v0
+default:
+  solver_id: 1

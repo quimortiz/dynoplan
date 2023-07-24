@@ -1,0 +1,34 @@
+# general parameters, all systems and problems
+reference: "idbastar_v0"
+default:
+  heuristic: 1
+  search_timelimit: 50000 # in ms
+  cost_delta_factor: 1
+unicycle1_v0:
+  default:
+    limit_branching_factor: 200
+    num_primitives_0: 500
+    delta_0: .2
+    max_size_heu_map: 2000
+
+unicycle2_v0:
+  default:
+    limit_branching_factor: 1000
+    num_primitives_0: 500
+    delta_0: .4
+    max_size_heu_map: 2000
+
+quad2d_v0:
+  default:
+    limit_branching_factor: 1000
+    num_primitives_0: 40000
+    delta_0: .6
+
+quad3d_v0:
+  default:
+    cost_delta_factor: 0 # TODO: investigate why using =1 makes everything slower!
+    heu_connection_radius: 3 #otherwise sample are not connected
+    connect_radius_h: 2
+    max_size_heu_map: 3000
+    num_sample_trials: 5000
+    num_primitives_0: 100000

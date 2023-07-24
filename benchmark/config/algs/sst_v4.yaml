@@ -1,0 +1,85 @@
+default:
+  dummy: 0
+
+unicycle1_v0:
+  default:
+    dummy: 0
+    goal_epsilon: .2
+    goal_bias: .3
+    pruning_radius: .2
+    min_control_duration: 2
+    max_control_duration: 20
+
+unicycle1_v1:
+  default:
+    dummy: 0
+    goal_epsilon: .2
+    goal_bias: .3
+    pruning_radius: .2
+    min_control_duration: 2
+    max_control_duration: 20
+
+unicycle1_v2:
+  default:
+    dummy: 0
+    goal_epsilon: .2
+    goal_bias: .3
+    pruning_radius: .2
+    min_control_duration: 2
+    max_control_duration: 20
+
+unicycle2_v0:
+  default:
+    dummy: 0
+    goal_epsilon: .2
+    goal_bias: .3
+    pruning_radius: .2
+    min_control_duration: 2
+    max_control_duration: 20
+
+car1_v0:
+  default:
+    dummy: 0
+    goal_epsilon: .2
+    goal_bias: .3
+    pruning_radius: .3
+    min_control_duration: 2
+    max_control_duration: 20
+
+quad2d_v0:
+  default:
+    pruning_radius: .5
+    goal_epsilon: 0.5
+    goal_bias: 0.5
+    propagation_step_size: 0.01
+    min_control_duration: 20
+    max_control_duration: 50
+    custom_sampling: true
+
+acrobot_v0:
+  default:
+    goal_epsilon: 0.5 # with 0.1 it is hard to find a solution...
+    goal_bias: 0.1
+    propagation_step_size: 0.01
+    min_control_duration: 5
+    max_control_duration: 50
+    selection_radius: 1.5
+    pruning_radius: .5
+
+quad3d_v0:
+  default:
+    goal_epsilon: 0.7 # with 0.1 it is hard to find a solution...
+    goal_bias: 0.05
+    propagation_step_size: 0.01
+    min_control_duration: 20
+    max_control_duration: 100
+    pruning_radius: .05
+
+quad3d_omplapp:
+  default:
+    goal_epsilon: 0.7
+    goal_bias: 0.05
+    propagation_step_size: 0.01
+    min_control_duration: 20
+    max_control_duration: 100
+    pruning_radius: .05

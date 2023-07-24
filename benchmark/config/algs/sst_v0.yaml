@@ -1,0 +1,88 @@
+# params for SST
+default:
+  sst_use_nigh: true
+
+unicycle1_v0:
+  default:
+    dummy: 0
+    goal_epsilon: .2
+    min_control_duration: 2
+    max_control_duration: 20
+
+unicycle1_v1:
+  default:
+    dummy: 0
+    goal_epsilon: .2
+    min_control_duration: 2
+    max_control_duration: 20
+
+unicycle1_v2:
+  default:
+    dummy: 0
+    goal_epsilon: .2
+    min_control_duration: 2
+    max_control_duration: 20
+
+unicycle2_v0:
+  default:
+    dummy: 0
+    goal_epsilon: .2
+    min_control_duration: 2
+    max_control_duration: 20
+
+car1_v0:
+  default:
+    goal_epsilon: 0.2 # with 0.1 it is hard to find a solution...
+    goal_bias: 0.1
+    min_control_duration: 2
+    max_control_duration: 20
+
+quad2d_v0:
+  default:
+    goal_epsilon: 0.5
+    goal_bias: 0.5
+    propagation_step_size: 0.01
+    min_control_duration: 10
+    max_control_duration: 50
+    custom_sampling: true
+
+quad2dpole_v0:
+  default:
+    goal_epsilon: 0.5
+    goal_bias: 0.5
+    propagation_step_size: 0.01
+    min_control_duration: 10
+    max_control_duration: 50
+    custom_sampling: true
+
+quad3d_v0:
+  default:
+    goal_epsilon: 0.7
+    goal_bias: 0.2
+    propagation_step_size: 0.01
+    min_control_duration: 5
+    max_control_duration: 50
+    pruning_radius: .1
+    selection_radius: 1.
+    custom_sampling: true
+
+acrobot_v0:
+  default:
+    goal_epsilon: 0.5
+    goal_bias: 0.2
+    propagation_step_size: 0.01
+    min_control_duration: 5
+    max_control_duration: 50
+    selection_radius: 1.
+    pruning_radius: .2
+
+quad3d_omplapp:
+  default:
+    goal_epsilon: 0.7 # with 0.1 it is hard to find a solution...
+    goal_bias: 0.2
+    propagation_step_size: 0.01
+    min_control_duration: 5
+    max_control_duration: 50
+    pruning_radius: .1
+    selection_radius: 1.
+    custom_sampling: true

@@ -1,0 +1,31 @@
+reference: idbastar_v0 # I import the weight_goal parameter from idbastar_v0
+default:
+  solver_id: 9
+  linear_search: true # Binary search doesn't work for quadcopter models!
+  smooth_traj: true
+  geo_use_nigh: true
+
+quad2d_v0:
+  default:
+    tsearch_max_rate: 10 # necessary because init guess is not reallistic!
+    tsearch_min_rate: .8
+
+quad2dpole_v0:
+  default:
+    tsearch_max_rate: 10 # necessary because init guess is not reallistic!
+    tsearch_min_rate: .8
+
+quad3d_v0:
+  default:
+    tsearch_max_rate: 10 # necessary because init guess is not reallistic!
+    tsearch_min_rate: .8
+
+quad3d_omplapp:
+  default:
+    tsearch_max_rate: 10 # necessary because init guess is not reallistic!
+    tsearch_min_rate: .8
+
+acrobot_v0:
+  default:
+    tsearch_max_rate: 10 # necessary because init guess is not reallistic!
+    tsearch_min_rate: .8

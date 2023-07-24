@@ -1,0 +1,171 @@
+# general parameters, all systems and problems
+default:
+  solver_id: 1
+  search_timelimit: 15000 # in ms
+  use_nigh_nn: True
+  cost_delta_factor: 1
+  smooth_traj: true
+
+# you can set parameters per dynamial system
+unicycle1_v0:
+  default:
+    motionsFile: ../cloud/motionsV2/good/unicycle1_v0/unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin
+    num_primitives_0: 100
+
+unicycle1_v1:
+  default:
+    motionsFile: ../cloud/motionsV2/good/unicycle1_v1/tmp_motions_unicycle1_v1.bin.sp.bin
+    num_primitives_0: 100
+
+unicycle1_v2:
+  default:
+    motionsFile: ../cloud/motionsV2/good/unicycle1_v2/tmp_motions_unicycle1_v2.bin.sp.bin
+    num_primitives_0: 100
+
+unicycle2_v0:
+  default:
+    delta_0: .5
+    motionsFile: ../cloud/motionsV2/good/unicycle2_v0/unicycle2_v0__ispso__2023_04_03__15_36_01.bin.im.bin.im.bin
+    num_primitives_0: 200
+
+car1_v0:
+  default:
+    motionsFile: ../cloud/motionsV2/good/car1_v0/car1_v0_all.bin.sp.bin
+    num_primitives_0: 400
+    delta: .5
+    max_motions_primitives: 20000
+
+quad2d_v0:
+  default:
+    # motionsFile: "../cloud/motionsV2/good/quad2d_v0/quad2d_v0_all.bin.sp1.bin"
+    motionsFile: ../cloud/motionsV2/good/quad2d_v0/quad2d_v0_all_im.bin.sp.bin.ca.bin
+    #TODO: try ./cloud/motionsV2/good/quad2d_v0/quad2d_v0_all_im.bin.sp.bin.ca.bin.so2.bin.yaml
+    num_primitives_0: 400
+    delta_0: .5
+    soft_control_bounds: true
+    # TODO: RESTORE
+    # num_primitives_0: 2000
+    # delta_0: .3
+    # delta_0: 1.5
+    # max_it: 1
+    # delta_0: .3 # GOOD
+    # delta_0: .4 # TODO: RESTORE
+    # delta_0: 2 # TODO RESTORE
+    # delta_factor_goal: .5 # TODO : RESTORE
+    # search_timelimit: 15000 # in ms
+    max_motions_primitives: 50000
+    new_invariance: true
+    use_collision_shape: false
+    limit_branching_factor: 50
+    search_timelimit: 45000 # in ms
+    # optimization
+    weight_goal: 80
+    max_iter: 150
+  # quad2d_recovery_obs:
+  #   # delta_0: .4
+  #   # num_primitives_0: 1000
+  #   weight_goal: 80
+
+quad2dpole_v0:
+  default:
+    # idbastar
+    # motionsFile: ../cloud/motionsV2/good/quad2dpole_v0/quad2dpole_all.bin.sp1.bin.ca.bin
+    motionsFile: ../cloud/motionsV2/good/quad2dpole_v0/quad2dpole_all.bin.im.bin.sp1.bin.ca.bin
+    delta_0: .8
+    num_primitives_0: 4000
+    # dbastar
+    search_timelimit: 40000
+    delta_factor_goal: 1
+    new_invariance: True
+    use_collision_shape: False
+    limit_branching_factor: 15
+    # optimization
+    weight_goal: 200
+    max_iter: 100
+  # window_easy:
+  #   num_primitives_0: 3000 # TODO: double check if this is necessary?
+
+acrobot_v0:
+  # TODO: use the improved goal detection!! and the new invariance stuff
+  default:
+    max_iter: 200
+    weight_goal: 600
+    delta_factor_goal: .7
+    # motionsFile: "../cloud/motionsV2/good/acrobot_v0/acrobot_v0_all.bin.sp.bin.so.bin"
+    motionsFile: ../cloud/motionsV2/good/acrobot_v0/acrobot_v0_all2.bin.sp.bin # THIS IS FINE
+    # motionsFile: ../build/acrobot_v0_all2.bin.im.bin.sp1.bin # NOT WORKING -- TO FEW.
+    num_primitives_0: 100000
+    max_motions_primitives: 200000
+    delta_0: .35
+    limit_branching_factor: 40
+    search_timelimit: 25000
+  # swing_up_obs_hard:
+  # num_primitives_0: 200000
+  # max_motions_primitives: 200000
+
+quad3d_v0:
+  # TODO: try to come up with parameters that work for all!!
+  # TODO: I think that for the scheduling of delta and the number of  primitives
+  # I need something more intelligent? (e.g. no reduce delta if I exit with empty queue!!!)
+  default:
+    search_timelimit: 60000
+    max_iter: 100
+    weight_goal: 100
+    motionsFile: ../cloud/motionsV2/good/quad3d_v0/quad3d_v0_all3.bin.im.bin.sp1.bin.ca.bin
+
+    soft_control_bounds: true
+
+    # DEFAULT
+    delta_0: .7
+    num_primitives_0: 2000
+
+    # Generating init guess
+    # delta_0: .5
+    # # delta_factor_goal: .6
+    # num_primitives_0: 40000
+    # max_it: 1
+
+    # delta_0: 1.5
+    # delta_0: 1.5
+    # delta_factor_goal: .6
+    # delta_0: .5
+    #
+    max_motions_primitives: 50000
+    new_invariance: true
+    use_collision_shape: false
+    limit_branching_factor: 30
+  # recovery_with_obs:
+  #   # solver_id: 0 # TODO: check with solver=1
+  #   weight_goal: 80
+  # delta_0: .7
+  # quad_one_obs:
+  #   num_primitives_0: 3000
+
+quad3d_omplapp:
+  # TODO: try to come up with parameters that work for all!!
+  # TODO: I think that for the scheduling of delta and the number of  primitives
+  # I need something more intelligent? (e.g. no reduce delta if I exit with empty queue!!!)
+  default:
+    search_timelimit: 60000
+    max_iter: 100
+    weight_goal: 300
+    # solver_id: 0 # working
+    # motionsFile: ../cloud/motionsV2/good/quad3d_omplapp/quad3dompl_all.bin.sp.bin.ca.bin
+    motionsFile: ../cloud/motionsV2/good/quad3d_omplapp/quad3dompl_all.bin.im.bin.sp1.bin.ca.bin
+    delta_0: .8
+    # num_primitives_0: 5000
+    num_primitives_0: 2000
+    max_motions_primitives: 50000
+    new_invariance: true
+    use_collision_shape: false
+    limit_branching_factor: 30
+    soft_control_bounds: true
+  # window:
+  #   num_primitives_0: 2000
+  #   limit_branching_factor: 15
+  # recovery_with_obs:
+  #   # num_primitives_0: 8000
+  #   weight_goal: 100
+  # delta_0: .7
+  # quad_one_obs:
+  #   num_primitives_0: 3000

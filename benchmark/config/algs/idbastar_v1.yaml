@@ -1,0 +1,12 @@
+# general parameters, all systems and problems
+default:
+  solver_id: 8
+
+# you can set parameters per dynamical system
+unicycle1_v0:
+  default:
+    motionsFile: "../cloud/motionsV2/good/unicycle1_v0/unicycle1_v0__ispso__2023_04_03__14_56_57.bin"
+    num_primitives_0: 100
+
+  # And also per problem
+  # parallelpark:

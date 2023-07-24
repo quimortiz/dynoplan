@@ -1,0 +1,4 @@
+# general parameters, all systems and problems
+reference: "dbastar_v0_heu0"
+default:
+  heuristic: -1
