@@ -3,7 +3,7 @@
 #include <boost/graph/graphviz.hpp>
 
 // #include <flann/flann.hpp>
-#include <msgpack.hpp>
+// #include <msgpack.hpp>
 #include <ompl/base/spaces/SE2StateSpace.h>
 #include <yaml-cpp/yaml.h>
 
@@ -943,6 +943,9 @@ void load_motion_primitives(const std::string &motionsFile, RobotOmpl &robot,
                             std::vector<Motion> &motions, int max_motions,
                             bool cut_actions, bool shuffle) {
 
+  NOT_IMPLEMENTED;
+
+#if 0
   auto si = robot.getSpaceInformation();
   // load motions primitives
   std::cout << "loading file: " << motionsFile << std::endl;
@@ -1126,6 +1129,7 @@ void load_motion_primitives(const std::string &motionsFile, RobotOmpl &robot,
   for (size_t idx = 0; idx < motions.size(); ++idx) {
     motions[idx].idx = idx;
   }
+#endif
 }
 
 double automatic_delta(double delta_in, double alpha, RobotOmpl &robot,

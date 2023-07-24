@@ -62,6 +62,7 @@ struct Options_trajopt {
   bool interp = false;
   bool welf_format = false;
   bool linear_search = false;
+  std::string name = "";
 
   void add_options(po::options_description &desc);
 

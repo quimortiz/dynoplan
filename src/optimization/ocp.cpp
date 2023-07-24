@@ -66,6 +66,7 @@ public:
 
 void Options_trajopt::add_options(po::options_description &desc) {
 
+  set_from_boostop(desc, VAR_WITH_NAME(name));
   set_from_boostop(desc, VAR_WITH_NAME(soft_control_bounds));
   set_from_boostop(desc, VAR_WITH_NAME(rollout_warmstart));
   set_from_boostop(desc, VAR_WITH_NAME(u_bound_scale));
@@ -104,6 +105,7 @@ void Options_trajopt::read_from_yaml(const char *file) {
 
 void Options_trajopt::__read_from_node(const YAML::Node &node) {
 
+  set_from_yaml(node, VAR_WITH_NAME(name));
   set_from_yaml(node, VAR_WITH_NAME(soft_control_bounds));
   set_from_yaml(node, VAR_WITH_NAME(noise_level));
   set_from_yaml(node, VAR_WITH_NAME(welf_format));
@@ -148,6 +150,7 @@ void Options_trajopt::read_from_yaml(YAML::Node &node) {
 void Options_trajopt::print(std::ostream &out, const std::string &be,
                             const std::string &af) const {
 
+  out << be << STR(name, af) << std::endl;
   out << be << STR(shift_repeat, af) << std::endl;
   out << be << STR(soft_control_bounds, af) << std::endl;
   out << be << STR(welf_format, af) << std::endl;

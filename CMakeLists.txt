@@ -85,6 +85,7 @@ target_include_directories(
   optimization
   PUBLIC $<INSTALL_INTERFACE:include>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+         ${CROCODDYL_INCLUDE_DIRS}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_include_directories(
@@ -111,7 +112,7 @@ target_include_directories(
   motion_primitives
   PUBLIC $<INSTALL_INTERFACE:include>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-         ${OMPL_INCLUDE_DIRS}
+         ${OMPL_INCLUDE_DIRS} ${CROCODDYL_INCLUDE_DIRS}
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
           ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src)
 
