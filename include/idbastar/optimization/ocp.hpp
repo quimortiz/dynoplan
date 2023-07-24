@@ -52,8 +52,8 @@ struct Options_trajopt {
   std::string debug_file_name = "/tmp/debug_file.yaml";
   double weight_goal = 200.;
   double collision_weight = 100.;
-  bool smooth_traj = false;
-  bool shift_repeat = true;
+  bool smooth_traj = true;
+  bool shift_repeat = false;
 
   double tsearch_max_rate = 2;
   double tsearch_min_rate = .3;

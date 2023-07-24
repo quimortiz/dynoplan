@@ -30,6 +30,7 @@ using namespace dynobench;
 
 BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {
 
+  NOT_IMPLEMENTED;
   Problem problem(DYNOBENCH_BASE +
                   std::string("envs/unicycle1_v0/bugtrap_0.yaml"));
 

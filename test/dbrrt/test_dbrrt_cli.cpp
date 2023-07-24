@@ -20,9 +20,11 @@ BOOST_AUTO_TEST_CASE(t_cli) {
       "--do_optimization",
       "1",
       "--motionsFile",
-      "/home/quim/stg/wolfgang/kinodynamic-motion-planning-benchmark/cloud/"
-      "motionsV2/good/unicycle1_v0/"
-      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin"};
+      "../../data/motion_primitives/unicycle1_v0/"
+      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin"
+      // "motionsV2/good/unicycle1_v0/"
+      // "unicycle1_v0__ispso__2023_04_03__14_56_57.bin"
+  };
 
   std::string cmd = "";
 

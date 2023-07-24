@@ -53,9 +53,12 @@ BOOST_AUTO_TEST_CASE(test_uni1_bugtrap_with_opt) {
   options_dbrrt.do_optimization = 1;
 
   options_dbrrt.motionsFile =
-      "/home/quim/stg/wolfgang/kinodynamic-motion-planning-benchmark/cloud/"
-      "motionsV2/good/unicycle1_v0/"
-      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin";
+      "../../data/motion_primitives/unicycle1_v0/"
+      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin";
+
+  // "/home/quim/stg/wolfgang/kinodynamic-motion-planning-benchmark/cloud/"
+  // "motionsV2/good/unicycle1_v0/"
+  // "unicycle1_v0__ispso__2023_04_03__14_56_57.bin";
 
   po::options_description desc("Allowed options");
   options_dbrrt.add_options(desc);

@@ -18,8 +18,8 @@ problems:
   # - env: unicycle1_v0/bugtrap_0
   #   guess: unicycle1_v0/bugtrap_0/delta_05_v0
   #
-  # - env: unicycle2_v0/bugtrap_0
-  #   guess: unicycle2_v0/bugtrap_0/delta_02_v0
+  - env: unicycle2_v0/bugtrap_0
+    guess: unicycle2_v0/bugtrap_0/delta_02_v0
   #
   # - env: unicycle2_v0/bugtrap_0
   #   guess: unicycle2_v0/bugtrap_0/delta_03_v0
@@ -78,8 +78,8 @@ problems:
   # - env: quadrotor_v0/window
   #   guess: quadrotor_v0/window/delta_08_v0
 
-  - env: quadrotor_v0/recovery
-    guess: quadrotor_v0/recovery/delta_05_v0
+  # - env: quadrotor_v0/recovery
+  #   guess: quadrotor_v0/recovery/delta_05_v0
 
   # - env: quadrotor_v0/recovery
   #   guess: quadrotor_v0/recovery/delta_06_v0

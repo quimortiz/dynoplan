@@ -16,6 +16,7 @@ enum class PRIMITIVE_MODE {
   bintoyaml = 11,
   yamltobin = 12,
   sort_with_rand_config = 13,
+  reduce_set = 14,
 };
 
 using namespace dynobench;
@@ -78,9 +79,9 @@ int main(int argc, const char *argv[]) {
   PRIMITIVE_MODE mode = static_cast<PRIMITIVE_MODE>(mode_gen_id);
 
   std::shared_ptr<dynobench::Model_robot> robot_model =
-      dynobench::robot_factory(
-          (options_primitives.models_base_path + options_primitives.dynamics)
-              .c_str());
+      dynobench::robot_factory((options_primitives.models_base_path +
+                                options_primitives.dynamics + ".yaml")
+                                   .c_str());
 
   if (mode == PRIMITIVE_MODE::make_canonical) {
     dynobench::Trajectories trajectories, trajectories_out;
@@ -397,6 +398,23 @@ int main(int argc, const char *argv[]) {
     std::shuffle(trajectories.data.begin(), trajectories.data.end(), g);
     if (out_file == "auto") {
       out_file = in_file + ".sh.bin";
+    }
+
+    trajectories.save_file_boost(out_file.c_str());
+    trajectories.compute_stats("/tmp/tmp_stats.yaml");
+  }
+
+  if (mode == PRIMITIVE_MODE::reduce_set) {
+
+    dynobench::Trajectories trajectories;
+    trajectories.load_file_boost(in_file.c_str());
+
+    if (options_primitives.max_num_primitives > 0 &&
+        options_primitives.max_num_primitives < trajectories.data.size())
+      trajectories.data.resize(options_primitives.max_num_primitives);
+
+    if (out_file == "auto") {
+      out_file = in_file + ".less.bin";
     }
 
     trajectories.save_file_boost(out_file.c_str());

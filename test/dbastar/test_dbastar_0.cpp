@@ -39,9 +39,12 @@ BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {
   options_dbastar.max_motions = 30;
   options_dbastar.heuristic = 0;
   options_dbastar.motionsFile =
-      "/home/quim/stg/wolfgang/kinodynamic-motion-planning-benchmark/cloud/"
-      "motionsV2/good/unicycle1_v0/"
-      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin";
+      "../../data/motion_primitives/unicycle1_v0/"
+      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin";
+
+  // "/home/quim/stg/wolfgang/kinodynamic-motion-planning-benchmark/cloud/"
+  // "motionsV2/good/unicycle1_v0/"
+  // "unicycle1_v0__ispso__2023_04_03__14_56_57.bin";
   options_dbastar.use_nigh_nn = 1;
   Out_info_db out_info_db;
   Trajectory traj_out;
