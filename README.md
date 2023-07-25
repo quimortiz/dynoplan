@@ -24,7 +24,7 @@ Kinodynamic motion planning problem are defined in [Dynobench](https://github.co
 
 ## How to use
 
-we provide several exectuables and libraries to fit different use cases
+we provide several exectuables and libraries for different different use cases
 
 ## Testing
 
@@ -32,23 +32,26 @@ Check the tests to learn how to use the code!
 
 ## Planners
 
-- Pure Optimization-Base
+- Pure Optimization-Based
 - RRT* (ompl) + Optimization
 - Idbastar (Iterative search and Optimization)
-- Dbrrt, AO-dbrrt and DBrrtConnect (coming soon!)
 - SST* (ompl)
+- Dbrrt, AO-dbrrt and DBrrtConnect (coming soon!)
 
 ## Building
 
+You can check the Github CI [cmake.yml](.github/workflows/cmake.yml) to see how to compile the project in latest ubuntu (For ubuntu 20.04, we experienced some issues with g++-9, but clang-13 is fine.)
+
 Dependencies:
 
-fcl (0.7)
-yaml-cpp
-Eigen 3
-Crocoddyl (1.8)
-OMPL (1.6)
+- Boost 
+- fcl (0.7)
+- yaml-cpp
+- Eigen3
+- Crocoddyl (1.8)
+- OMPL (1.6)
 
-Yes, you need OMPL 1.6 for planners RRT + TO and  SST  . You will need OMPL 1.6 -- we recommend to install OMPL in a local directory with -DCMAKE_INSTALL_PREFIX, and use -DCMAKE_PREFIX_PATH here
+We need OMPL 1.6 for planners RRT + TO and  SST. We recommend to install OMPL in a local directory with -DCMAKE_INSTALL_PREFIX, and use -DCMAKE_PREFIX_PATH here
 
 ## Motion Primitives
 
