@@ -44,12 +44,12 @@ You can check the Github CI [cmake.yml](.github/workflows/cmake.yml) to see how 
 
 Dependencies:
 
-- Boost 
-- fcl (0.7)
-- yaml-cpp
-- Eigen3
-- Crocoddyl (1.8)
-- OMPL (1.6)
+* Boost 
+* fcl (0.7)
+* yaml-cpp
+* Eigen3
+* Crocoddyl (1.8)
+* OMPL (1.6)
 
 We need OMPL 1.6 for planners RRT + TO and  SST. We recommend to install OMPL in a local directory with -DCMAKE_INSTALL_PREFIX, and use -DCMAKE_PREFIX_PATH here
 
