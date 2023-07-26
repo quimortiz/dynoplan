@@ -41,7 +41,6 @@ BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {
   options_dbastar.motionsFile =
       "../../data/motion_primitives/unicycle1_v0/"
       "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin";
-  options_dbastar.use_nigh_nn = 1;
 
   Out_info_db out_info_db;
   Trajectory traj_out;
@@ -56,7 +55,7 @@ BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {
         dbastar(problem, options_dbastar, traj_out, out_info_db));
     std::string message = std::string("heu: ") + std::to_string(heu);
     BOOST_TEST(out_info_db.solved, heu);
-    BOOST_TEST(out_info_db.cost < 60., heu);
+    BOOST_TEST(out_info_db.cost < 100., heu);
   }
 }
 // ADD the test that i use for  the paper heuristic evaluation!

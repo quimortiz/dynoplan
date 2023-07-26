@@ -152,26 +152,6 @@ void Motion::print(std::ostream &out,
   STRY(disabled, out, "", ": ");
 }
 
-template <typename _T>
-class NearestNeighborsGNATNoThreadSafety_public
-    : public ompl::NearestNeighborsGNATNoThreadSafety<_T> {
-  using Base = ompl::NearestNeighborsGNATNoThreadSafety<_T>;
-
-public:
-  void set_rebuildSize_(int rebuild_size) { Base::rebuildSize_ = rebuild_size; }
-  int get_rebuildSize_() { return Base::rebuildSize_; }
-  virtual ~NearestNeighborsGNATNoThreadSafety_public() = default;
-};
-
-// TODO: store all the queries, and try the kdtree.h!! both T_m and T_n!
-
-// TODO:
-// CHECK all states in the trajectory -- DONE
-// CHECK that new formulation of invariance also solves other problems.
-// CHECK which delta can we achieve, and whether this leads to better
-// optimization 3d quadcopter model of OMPL app. 2d quadcopter with pole.
-
-// continue here: cost lower bound for the quadcopter
 void dbastar(const dynobench::Problem &problem,
              const Options_dbastar &options_dbastar, Trajectory &traj_out,
              Out_info_db &out_info_db) {
@@ -452,10 +432,7 @@ void dbastar(const dynobench::Problem &problem,
 
   ompl::NearestNeighbors<AStarNode *> *T_n;
   if (si->getStateSpace()->isMetricSpace()) {
-    T_n = new NearestNeighborsGNATNoThreadSafety_public<AStarNode *>();
-    static_cast<NearestNeighborsGNATNoThreadSafety_public<AStarNode *> *>(T_n)
-        ->set_rebuildSize_(5000);
-
+    T_n = new ompl::NearestNeighborsGNATNoThreadSafety<AStarNode *>();
   } else {
     T_n = new ompl::NearestNeighborsSqrtApprox<AStarNode *>();
   }
