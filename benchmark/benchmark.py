@@ -498,6 +498,8 @@ def solve_problem_search(env: str, alg: str, out: str) -> List[str]:
         out,
         "--cfg",
         cfg_out,
+        "--models_base_path",
+        "../dynobench/models/",
     ]
 
     return cmd
@@ -1387,7 +1389,7 @@ def __benchmark_search(bench_cfg: str) -> List[str]:
     print(f"problems ", data["problems"])
     print(f"algs", data["algs"])
 
-    base_path_problem = "../benchmark/"
+    base_path_problem = "../dynobench/envs/"
     folder_results = "../results_new_search/"
 
     now = datetime.now()  # current date and time

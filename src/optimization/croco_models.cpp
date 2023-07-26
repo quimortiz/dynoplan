@@ -1,5 +1,5 @@
 #include "dynoplan/optimization/croco_models.hpp"
-#include "dynobench/croco_macros.hpp"
+#include "dynobench/dyno_macros.hpp"
 #include "dynobench/math_utils.hpp"
 // #include "dynoplan/ompl/robots.h"
 #include <Eigen/src/Core/Matrix.h>

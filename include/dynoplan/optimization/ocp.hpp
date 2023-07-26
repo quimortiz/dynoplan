@@ -11,7 +11,7 @@
 
 #include "Eigen/Core"
 
-#include "dynobench/croco_macros.hpp"
+#include "dynobench/dyno_macros.hpp"
 #include <boost/program_options.hpp>
 // #include "croco_models.hpp"
 #include "dynobench/general_utils.hpp"

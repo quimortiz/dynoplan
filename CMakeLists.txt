@@ -69,7 +69,9 @@ add_library(
 add_library(sst ./src/ompl/sst.cpp ./src/robots.cpp)
 add_library(rrt_to ./src/ompl/rrt_to.cpp ./src/robots.cpp)
 
-add_library(dbastar ./src/dbastar/dbastar.cpp ./src/robots.cpp)
+add_library(dbastar ./src/dbastar/dbastar.cpp ./src/dbastar/options.cpp
+                    ./src/robots.cpp ./src/dbastar/heuristics.cpp)
+
 add_library(dbrrt ./src/dbrrt/dbrrt.cpp ./src/robots.cpp)
 
 add_library(idbastar ./src/idbastar/idbastar.cpp)

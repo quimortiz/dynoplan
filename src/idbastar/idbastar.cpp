@@ -31,9 +31,7 @@ void idbA(const dynobench::Problem &problem,
   std::cout << "Loading motion primitives " << std::endl;
   if (!options_dbastar_local.primitives_new_format) {
     CHECK(robot, AT);
-    load_motion_primitives(options_dbastar_local.motionsFile, *robot, motions,
-                           options_idbas.max_motions_primitives,
-                           options_dbastar_local.cut_actions, false);
+    NOT_IMPLEMENTED;
     // load_motion_primitives(options_dbastar_local.motionsFile, *robot,
     // motions,
     //                        options_idbas.max_motions_primitives,
