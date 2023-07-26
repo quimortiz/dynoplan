@@ -28,7 +28,7 @@
 //
 // #include "fclHelper.hpp"
 #include "dynobench/motions.hpp"
-#include "idbastar/ompl/robots.h"
+#include "dynoplan/ompl/robots.h"
 #include "ompl/base/ScopedState.h"
 #include <fcl/fcl.h>
 

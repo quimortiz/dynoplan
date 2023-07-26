@@ -1,4 +1,4 @@
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 
 // #define BOOST_TEST_MODULE test module name
 // #define BOOST_TEST_DYN_LINK

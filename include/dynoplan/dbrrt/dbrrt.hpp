@@ -1,6 +1,6 @@
 #include "dynobench/for_each_macro.hpp"
-#include "idbastar/dbastar/dbastar.hpp"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/dbastar/dbastar.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 #include <string>
 #include <vector>
 

@@ -1,5 +1,5 @@
 
-#include "idbastar/dbastar/dbastar.hpp"
+#include "dynoplan/dbastar/dbastar.hpp"
 
 // #define BOOST_TEST_MODULE test module name
 // #define BOOST_TEST_DYN_LINK

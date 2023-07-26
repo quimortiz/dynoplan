@@ -1,13 +1,11 @@
 
-#include "idbastar/ompl/rrt_to.hpp"
-#include "idbastar/nigh_custom_spaces.hpp"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/ompl/rrt_to.hpp"
+#include "dynoplan/nigh_custom_spaces.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 
 namespace og = ompl::geometric;
 
 namespace dynoplan {
-
-using dynobench::FMT;
 
 struct RRTstar_public_interface : public og::RRTstar {
 

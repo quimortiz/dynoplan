@@ -1,4 +1,4 @@
-#include "idbastar/dbastar/dbastar.hpp"
+#include "dynoplan/dbastar/dbastar.hpp"
 
 #include <boost/graph/graphviz.hpp>
 
@@ -23,7 +23,7 @@
 
 #include "dynobench/motions.hpp"
 #include "dynobench/robot_models.hpp"
-#include "idbastar/ompl/robots.h"
+#include "dynoplan/ompl/robots.h"
 #include "ompl/base/Path.h"
 #include "ompl/base/ScopedState.h"
 
@@ -36,7 +36,7 @@
 
 #include "dynobench/general_utils.hpp"
 
-#include "idbastar/nigh_custom_spaces.hpp"
+#include "dynoplan/nigh_custom_spaces.hpp"
 
 namespace dynoplan {
 

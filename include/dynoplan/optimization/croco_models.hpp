@@ -117,8 +117,8 @@ public:
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
   bool use_pin = true;
-  std::shared_ptr<dynobench::StateQ> state;
-  explicit StateCrocoDyno(const std::shared_ptr<dynobench::StateQ> &state)
+  std::shared_ptr<dynobench::StateDyno> state;
+  explicit StateCrocoDyno(const std::shared_ptr<dynobench::StateDyno> &state)
       : StateAbstractTpl<Scalar>(state->nx, state->ndx), state(state){};
 
   virtual ~StateCrocoDyno() {}

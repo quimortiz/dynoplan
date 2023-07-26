@@ -1,5 +1,5 @@
 
-#include "idbastar/dbrrt/dbrrt.hpp"
+#include "dynoplan/dbrrt/dbrrt.hpp"
 
 // #define BOOST_TEST_MODULE test module name
 // #define BOOST_TEST_DYN_LINK

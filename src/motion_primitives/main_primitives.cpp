@@ -1,5 +1,5 @@
 
-#include "idbastar/motion_primitives/motion_primitives.hpp"
+#include "dynoplan/motion_primitives/motion_primitives.hpp"
 
 enum class PRIMITIVE_MODE {
   generate = 0,

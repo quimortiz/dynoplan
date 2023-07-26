@@ -1,4 +1,4 @@
-#include "idbastar/ompl/robots.h"
+#include "dynoplan/ompl/robots.h"
 #include <memory>
 
 #include "dynobench/croco_macros.hpp"
@@ -20,7 +20,7 @@
 #include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
 #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
 
-#include "idbastar/ompl/fclHelper.hpp"
+#include "dynoplan/ompl/fclHelper.hpp"
 
 #include "dynobench/acrobot.hpp"
 #include "dynobench/car.hpp"

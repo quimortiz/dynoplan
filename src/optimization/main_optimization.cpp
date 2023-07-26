@@ -1,5 +1,5 @@
 #include "crocoddyl/core/utils/timer.hpp"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 
 using namespace dynoplan;
 int main(int argc, const char *argv[]) {

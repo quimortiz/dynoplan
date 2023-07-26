@@ -1,7 +1,7 @@
-#include "idbastar/motion_primitives/motion_primitives.hpp"
+#include "dynoplan/motion_primitives/motion_primitives.hpp"
 #include "crocoddyl/core/utils/timer.hpp"
 #include "dynobench/croco_macros.hpp"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 #include <thread>
 
 namespace dynoplan {

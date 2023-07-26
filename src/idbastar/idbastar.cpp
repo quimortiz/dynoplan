@@ -1,4 +1,4 @@
-#include "idbastar/idbastar/idbastar.hpp"
+#include "dynoplan/idbastar/idbastar.hpp"
 
 namespace dynoplan {
 

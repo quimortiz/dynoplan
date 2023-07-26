@@ -16,8 +16,8 @@
 
 #include "dynobench/general_utils.hpp"
 #include "dynobench/robot_models.hpp"
-#include "idbastar/ompl/robots.h"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/ompl/robots.h"
+#include "dynoplan/optimization/ocp.hpp"
 
 namespace dynoplan {
 

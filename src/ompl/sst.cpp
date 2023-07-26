@@ -1,6 +1,6 @@
-#include "idbastar/ompl/sst.hpp"
-#include "idbastar/nigh_custom_spaces.hpp"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/ompl/sst.hpp"
+#include "dynoplan/nigh_custom_spaces.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 
 namespace oc = ompl::control;
 

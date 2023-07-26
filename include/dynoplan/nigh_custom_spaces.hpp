@@ -16,7 +16,7 @@
 #include <ompl/datastructures/NearestNeighbors.h>
 
 #include "dynobench/general_utils.hpp"
-#include "idbastar/ompl/robots.h"
+#include "dynoplan/ompl/robots.h"
 
 namespace dynoplan {
 

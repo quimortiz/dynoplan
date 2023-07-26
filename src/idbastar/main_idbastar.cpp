@@ -24,13 +24,13 @@
 #include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
 #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
 
-#include "idbastar/ompl/robots.h"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/ompl/robots.h"
+#include "dynoplan/optimization/ocp.hpp"
 #include "ompl/base/ScopedState.h"
 
 #include "dynobench/general_utils.hpp"
-#include "idbastar/dbastar/dbastar.hpp"
-#include "idbastar/idbastar/idbastar.hpp"
+#include "dynoplan/dbastar/dbastar.hpp"
+#include "dynoplan/idbastar/idbastar.hpp"
 
 // this is the complete algorithm: idbA*
 

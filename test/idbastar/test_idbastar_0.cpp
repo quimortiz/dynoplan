@@ -1,4 +1,4 @@
-#include "idbastar/idbastar/idbastar.hpp"
+#include "dynoplan/idbastar/idbastar.hpp"
 
 // #define BOOST_TEST_MODULE test module name
 // #define BOOST_TEST_DYN_LINK

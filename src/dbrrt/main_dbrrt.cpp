@@ -24,11 +24,11 @@
 #include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
 #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
 
-#include "idbastar/ompl/robots.h"
+#include "dynoplan/ompl/robots.h"
 #include "ompl/base/ScopedState.h"
 
 #include "dynobench/general_utils.hpp"
-#include "idbastar/dbrrt/dbrrt.hpp"
+#include "dynoplan/dbrrt/dbrrt.hpp"
 
 using namespace dynobench;
 using namespace dynoplan;

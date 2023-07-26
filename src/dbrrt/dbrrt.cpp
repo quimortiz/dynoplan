@@ -1,4 +1,4 @@
-#include "idbastar/dbrrt/dbrrt.hpp"
+#include "dynoplan/dbrrt/dbrrt.hpp"
 #include <boost/graph/graphviz.hpp>
 
 // #include <flann/flann.hpp>
@@ -21,11 +21,11 @@
 #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
 
 #include "dynobench/motions.hpp"
-#include "idbastar/dbastar/dbastar.hpp"
+#include "dynoplan/dbastar/dbastar.hpp"
 // #include "ocp.hpp"
 #include "dynobench/robot_models.hpp"
-#include "idbastar/ompl/robots.h"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/ompl/robots.h"
+#include "dynoplan/optimization/ocp.hpp"
 #include "ompl/base/Path.h"
 #include "ompl/base/ScopedState.h"
 
@@ -38,7 +38,7 @@
 
 #include "dynobench/general_utils.hpp"
 
-#include "idbastar/nigh_custom_spaces.hpp"
+#include "dynoplan/nigh_custom_spaces.hpp"
 
 namespace dynoplan {
 

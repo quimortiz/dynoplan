@@ -17,8 +17,8 @@
 #include <ompl/control/spaces/RealVectorControlSpace.h>
 
 #include "dynobench/general_utils.hpp"
-#include "idbastar/ompl/robots.h"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/ompl/robots.h"
+#include "dynoplan/optimization/ocp.hpp"
 
 namespace po = boost::program_options;
 

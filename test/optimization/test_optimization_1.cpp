@@ -1,7 +1,8 @@
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 
 // #define BOOST_TEST_MODULE test module name
 // #define BOOST_TEST_DYN_LINK
+#include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include "Eigen/Core"
@@ -64,6 +65,8 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
   std::vector<Options_trajopt> solvers{options_mpc, options_dt, options_search,
                                        options_mpcc};
 
+  // std::vector<Options_trajopt> solvers{options_dt};
+
   problem_with_init_guess.push_back(std::make_pair(
       Problem(dynobench_base "envs/quadrotor_v0/recovery.yaml"),
       Trajectory(
@@ -98,7 +101,8 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
       std::cout << experiment_id << std::endl;
       Result_opti result;
       Trajectory sol;
-      trajectory_optimization(problem, init_guess, solver, sol, result);
+      BOOST_CHECK_NO_THROW(
+          trajectory_optimization(problem, init_guess, solver, sol, result));
 
       BOOST_TEST_CHECK(result.feasible, experiment_id);
       std::cout << "cost is " << result.cost << std::endl;
@@ -170,10 +174,13 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
 
       Result_opti result;
       Trajectory sol;
-      trajectory_optimization(problem, init_guess, solver, sol, result);
+
       std::string experiment_id = std::to_string(i) + ":" + std::to_string(j) +
                                   ":" + solver.name + ":" + problem.name + ":" +
                                   init_guess.filename;
+
+      BOOST_CHECK_NO_THROW(
+          trajectory_optimization(problem, init_guess, solver, sol, result));
 
       if (solver.name == "mpcc" && problem.name == "quadrotor_0-recovery") {
         BOOST_TEST_WARN(result.feasible, experiment_id);
@@ -181,7 +188,26 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
         BOOST_TEST_CHECK(result.feasible, experiment_id);
         std::cout << "cost is " << result.cost << std::endl;
       }
-      // BOOST_TEST_CHECK(result.cost <= 5., experiment_id);
     }
   }
+}
+
+BOOST_AUTO_TEST_CASE(t_opti_integrator2) {
+
+  Options_trajopt options;
+  Problem problem(dynobench_base "envs/integrator2_2d_v0/park.yaml");
+  problem.models_base_path = dynobench_base "models/";
+
+  Trajectory init_guess, traj_out;
+  init_guess.num_time_steps = 50;
+  Result_opti opti_out;
+  trajectory_optimization(problem, init_guess, options, traj_out, opti_out);
+  BOOST_TEST(opti_out.feasible);
+
+  // write down the generated trajectory
+
+  std::string filename = "/tmp/dynoplan/traj_t_opti_integrator2.yaml";
+  create_dir_if_necessary(filename.c_str());
+  std::ofstream out(filename);
+  traj_out.to_yaml_format(out);
 }
