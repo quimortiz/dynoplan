@@ -34,7 +34,7 @@ Check the tests to learn how to use the code!
 
 - Trajectory Optimization (Several Algorithms on top of Differential Dynamic Programming (Croccoddyl))
 - RRT*-TO (Geometric Planner RRT* (OMPL)  + Trajectory Optimzation)
-- Idb-A* (Iterative disccontinuity bounded search and Trajecgory Optimization)
+- iDb-A* (Iterative disccontinuity bounded search and Trajecgory Optimization)
 - SST* (Stable Sparse Tree (OMPL))
 - Dbrrt, AO-dbrrt and DBrrtConnect, DB-SST* (coming soon!)
 
