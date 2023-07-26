@@ -32,11 +32,11 @@ Check the tests to learn how to use the code!
 
 ## Planners
 
-- Pure Optimization-Based
-- RRT* (ompl) + Optimization
-- Idbastar (Iterative search and Optimization)
-- SST* (ompl)
-- Dbrrt, AO-dbrrt and DBrrtConnect (coming soon!)
+- Trajectory Optimization (Several Algorithms on top of Differential Dynamic Programming (Croccoddyl))
+- RRT*-TO (Geometric Planner RRT* (OMPL)  + Trajectory Optimzation)
+- Idb-A* (Iterative disccontinuity bounded search and Trajecgory Optimization)
+- SST* (Stable Sparse Tree (OMPL))
+- Dbrrt, AO-dbrrt and DBrrtConnect, DB-SST* (coming soon!)
 
 ## Building
 
