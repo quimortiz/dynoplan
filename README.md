@@ -63,9 +63,7 @@ A large set of primitives for each system can be downloaded from Google Drive. T
 gdown --fuzzy "https://drive.google.com/file/d/1r_ecGwdfvWnVWxPsvR4d8Hjcayxg5PsB/view?usp=drive_link"
 ```
 
-All primitive in two ZIP files: 
-
-https://drive.google.com/drive/folders/15mC3x4aQirHOpmRMlyMps2o9y8XwLVKK?usp=drive_link
+All primitive in two ZIP files:  https://drive.google.com/drive/folders/1-Nvctva17I8aFsWvHfdQFWTIDUNWwgcM?usp=drive_link
 
 Primitves per system:
 
