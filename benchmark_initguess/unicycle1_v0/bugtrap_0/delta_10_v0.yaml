@@ -32,7 +32,7 @@ limit_branching_factor: 20
 debug: 0
 add_after_expand: 0
 motionsFile: ../cloud/motionsV2/good/unicycle1_v0/unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin
-outFile: /tmp/dbastar/i_db_GOitwP.yaml
+outFile: /tmp/dynoplan/i_db_GOitwP.yaml
 search_timelimit: 15000
 max_size_heu_map: 1000
 heu_map_file:

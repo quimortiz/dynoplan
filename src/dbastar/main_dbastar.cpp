@@ -70,6 +70,19 @@ int main(int argc, char *argv[]) {
   options_dbastar.print(std::cout);
   std::cout << "***" << std::endl;
 
+  // load motions primitives
+
+  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+      (problem.models_base_path + problem.robotType + ".yaml").c_str(),
+      problem.p_lb, problem.p_ub);
+
+  std::vector<Motion> motions;
+  load_motion_primitives_new(
+      options_dbastar.motionsFile, *robot, motions, options_dbastar.max_motions,
+      options_dbastar.cut_actions, false, options_dbastar.check_cols);
+
+  options_dbastar.motions_ptr = &motions;
+
   dbastar(problem, options_dbastar, traj, out_db);
 
   std::cout << "*** inout_db *** " << std::endl;

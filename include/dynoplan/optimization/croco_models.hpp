@@ -291,15 +291,15 @@ struct Cost {
   void check_input_calc(Eigen::Ref<Eigen::VectorXd> r,
                         const Eigen::Ref<const Eigen::VectorXd> &x,
                         const Eigen::Ref<const Eigen::VectorXd> &u) {
-    CHECK_EQ(static_cast<size_t>(r.size()), nr, AT);
-    CHECK_EQ(static_cast<size_t>(u.size()), nu, AT);
-    CHECK_EQ(static_cast<size_t>(x.size()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(r.size()), nr, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(u.size()), nu, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(x.size()), nx, AT);
   }
 
   void check_input_calc(Eigen::Ref<Eigen::VectorXd> r,
                         const Eigen::Ref<const Eigen::VectorXd> &x) {
-    CHECK_EQ(static_cast<size_t>(r.size()), nr, AT);
-    CHECK_EQ(static_cast<size_t>(x.size()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(r.size()), nr, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(x.size()), nx, AT);
   }
 
   virtual void calc(Eigen::Ref<Eigen::VectorXd>,
@@ -321,19 +321,19 @@ struct Cost {
       const Eigen::Ref<const Eigen::VectorXd> &x,
       const Eigen::Ref<const Eigen::VectorXd> &u) {
 
-    CHECK_EQ(static_cast<size_t>(u.size()), nu, AT);
-    CHECK_EQ(static_cast<size_t>(x.size()), nx, AT);
-    CHECK_EQ(static_cast<size_t>(Lx.size()), nx, AT);
-    CHECK_EQ(static_cast<size_t>(Lu.size()), nu, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(u.size()), nu, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(x.size()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(Lx.size()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(Lu.size()), nu, AT);
 
-    CHECK_EQ(static_cast<size_t>(Lxx.cols()), nx, AT);
-    CHECK_EQ(static_cast<size_t>(Lxx.rows()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(Lxx.cols()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(Lxx.rows()), nx, AT);
 
-    CHECK_EQ(static_cast<size_t>(Luu.cols()), nu, AT);
-    CHECK_EQ(static_cast<size_t>(Luu.rows()), nu, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(Luu.cols()), nu, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(Luu.rows()), nu, AT);
 
-    CHECK_EQ(static_cast<size_t>(Lxu.rows()), nx, AT);
-    CHECK_EQ(static_cast<size_t>(Lxu.cols()), nu, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(Lxu.rows()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(Lxu.cols()), nu, AT);
   }
 
   virtual void
@@ -341,11 +341,11 @@ struct Cost {
                        Eigen::Ref<Eigen::MatrixXd> Lxx,
                        const Eigen::Ref<const Eigen::VectorXd> &x) {
 
-    CHECK_EQ(static_cast<size_t>(x.size()), nx, AT);
-    CHECK_EQ(static_cast<size_t>(Lx.size()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(x.size()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(Lx.size()), nx, AT);
 
-    CHECK_EQ(static_cast<size_t>(Lxx.cols()), nx, AT);
-    CHECK_EQ(static_cast<size_t>(Lxx.rows()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(Lxx.cols()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(Lxx.rows()), nx, AT);
   }
 
   virtual void calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,

@@ -13,6 +13,7 @@ void Options_dbastar::__load_data(void *source, bool boost, bool write,
   loader.source = source;
   loader.be = be;
 
+  loader.set(VAR_WITH_NAME(fix_seed));
   loader.set(VAR_WITH_NAME(new_invariance));
   loader.set(VAR_WITH_NAME(connect_radius_h));
   loader.set(VAR_WITH_NAME(always_add));

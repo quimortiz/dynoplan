@@ -32,7 +32,7 @@ limit_branching_factor: 30
 debug: 0
 add_after_expand: 0
 motionsFile: ../cloud/motionsV2/good/quad3d_v0/quad3d_v0_all3.bin.im.bin.sp1.bin.ca.bin
-outFile: /tmp/dbastar/i_db_zYcV9Z.yaml
+outFile: /tmp/dynoplan/i_db_zYcV9Z.yaml
 search_timelimit: 60000
 max_size_heu_map: 1000
 heu_map_file:

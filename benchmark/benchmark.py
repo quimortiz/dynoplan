@@ -78,14 +78,14 @@ def generate_texpdf(filename_tex: str) -> None:
     with open(filename_tex + ".tex", "w") as f:
         f.writelines(lines)
 
-    pathlib.Path("/tmp/dbastar/").mkdir(parents=True, exist_ok=True)
-    pathlib.Path("/tmp/dbastar/tex").mkdir(parents=True, exist_ok=True)
-    f_stdout = open("/tmp/dbastar/latexmk_out.log", "w")
-    f_stderr = open("/tmp/dbastar/latexmk_err.log", "w")
+    pathlib.Path("/tmp/dynoplan/").mkdir(parents=True, exist_ok=True)
+    pathlib.Path("/tmp/dynoplan/tex").mkdir(parents=True, exist_ok=True)
+    f_stdout = open("/tmp/dynoplan/latexmk_out.log", "w")
+    f_stderr = open("/tmp/dynoplan/latexmk_err.log", "w")
 
-    cmd = f"latexmk -f -pdf -output-directory=/tmp/dbastar/tex/ {filename_tex}.tex".split()
+    cmd = f"latexmk -f -pdf -output-directory=/tmp/dynoplan/tex/ {filename_tex}.tex".split()
 
-    #     /tmp/dbastar/tex/
+    #     /tmp/dynoplan/tex/
     # #
     # #
     # #         summary_timeopt_2023-07-07--10-57-08.tex.pdf
@@ -100,12 +100,12 @@ def generate_texpdf(filename_tex: str) -> None:
     f_stderr.close()
 
     p = Path(filename_tex)
-    pdf_name = "/tmp/dbastar/tex/" + str(p.stem) + ".tex.pdf"
+    pdf_name = "/tmp/dynoplan/tex/" + str(p.stem) + ".tex.pdf"
 
     print(f"copy  {pdf_name} to {filename_tex + '.pdf'}")
     shutil.copy(pdf_name, filename_tex + ".pdf")
 
-    tmp_location = "/tmp/dbastar/table_tex.pdf"
+    tmp_location = "/tmp/dynoplan/table_tex.pdf"
 
     print(f"copy  {pdf_name} to {tmp_location}")
     shutil.copy(pdf_name, tmp_location)
@@ -611,10 +611,10 @@ def run_cmd(cmd: str):
 
     if redirect_output:
         id = str(uuid.uuid4())[:7]
-        stdout_name = f"/tmp/dbastar/stdout/stdout-{id}.log"
-        stderr_name = f"/tmp/dbastar/stderr/stderr-{id}.log"
+        stdout_name = f"/tmp/dynoplan/stdout/stdout-{id}.log"
+        stderr_name = f"/tmp/dynoplan/stderr/stderr-{id}.log"
 
-        directories = ["/tmp/dbastar/stdout/", "/tmp/dbastar/stderr/"]
+        directories = ["/tmp/dynoplan/stdout/", "/tmp/dynoplan/stderr/"]
 
         for d in directories:
             pathlib.Path(d).mkdir(parents=True, exist_ok=True)
@@ -934,7 +934,7 @@ def compare_time(
     print("calling compare:")
     print(f"files {files}")
 
-    file_out_debug = "/tmp/dbastar/compare_time.yaml"
+    file_out_debug = "/tmp/dynoplan/compare_time.yaml"
     Path(file_out_debug).parent.mkdir(parents=True, exist_ok=True)
     with open(file_out_debug, "w") as f:
         yaml.dump({"files": files}, f)
@@ -1051,7 +1051,7 @@ def compare_time(
         print(all_problems)
         # sys.exit(0)
 
-    # with open("/tmp/dbastar/all_problem_time_opt.yaml", "w") as f:
+    # with open("/tmp/dynoplan/all_problem_time_opt.yaml", "w") as f:
     #     yaml.dump({"all_problems": all_problems}, f)
     #
     # sys.exit(0)
@@ -1127,7 +1127,7 @@ def compare_time(
     print("guesses")
     print(guesses)
 
-    with open("/tmp/dbastar/guesses.yaml", "w") as f:
+    with open("/tmp/dynoplan/guesses.yaml", "w") as f:
         yaml.dump({"guesses": guesses}, f)
 
     if len(selected_guesses):
@@ -1431,7 +1431,7 @@ def __benchmark_search(bench_cfg: str) -> List[str]:
 
     experiments_outs = [e.to_dict() for e in experiments]
     id = str(uuid.uuid4())[:7]
-    filename_experimentes_out = f"/tmp/dbastar/experimentes_info_{id}.yaml"
+    filename_experimentes_out = f"/tmp/dynoplan/experimentes_info_{id}.yaml"
     pathlib.Path(filename_experimentes_out).parent.mkdir(parents=True, exist_ok=True)
     with open(filename_experimentes_out, "w") as f:
         yaml.dump(experiments_outs, f)
@@ -1561,7 +1561,7 @@ def __benchmark_opti(bench_cfg: str) -> List[str]:
 
     experiments_outs = [e.to_dict() for e in experiments]
     id = str(uuid.uuid4())[:7]
-    filename_experimentes_out = f"/tmp/dbastar/experimentes_info_{id}.yaml"
+    filename_experimentes_out = f"/tmp/dynoplan/experimentes_info_{id}.yaml"
     pathlib.Path(filename_experimentes_out).parent.mkdir(parents=True, exist_ok=True)
     with open(filename_experimentes_out, "w") as f:
         yaml.dump(experiments_outs, f)
@@ -1661,7 +1661,7 @@ def __benchmark(bench_cfg: str):
 
     experiments_outs = [e.to_dict() for e in experiments]
     id = str(uuid.uuid4())[:7]
-    filename_experimentes_out = f"/tmp/dbastar/experimentes_info_{id}.yaml"
+    filename_experimentes_out = f"/tmp/dynoplan/experimentes_info_{id}.yaml"
     pathlib.Path(filename_experimentes_out).parent.mkdir(parents=True, exist_ok=True)
     with open(filename_experimentes_out, "w") as f:
         yaml.dump(experiments_outs, f)

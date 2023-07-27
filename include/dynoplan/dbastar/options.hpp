@@ -15,13 +15,14 @@ namespace po = boost::program_options;
 
 struct Options_dbastar {
 
+  bool fix_seed = 0;
   float delta = .3;
   float epsilon = 1.;
   float alpha = .5;
   float connect_radius_h = .5;
   std::string motionsFile = "";
   std::vector<Motion> *motions_ptr = nullptr; // pointer to loaded motions
-  std::string outFile = "/tmp/dbastar/out_db.yaml";
+  std::string outFile = "/tmp/dynoplan/out_db.yaml";
   bool filterDuplicates = false;     // very expensive in high dim systems!
   bool primitives_new_format = true; // (false=Format of IROS 22)
   float maxCost = std::numeric_limits<float>::infinity();

@@ -268,8 +268,8 @@ int main(int argc, const char *argv[]) {
         auto &traj = trajectories_out_debug.data.at(t);
         auto &traj2 = trajectories_out.data.at(t);
 
-        CHECK_LEQ((traj.start - traj2.start).norm(), 1e-6, AT);
-        CHECK_LEQ((traj.goal - traj2.goal).norm(), 1e-6, AT);
+        DYNO_CHECK_LEQ((traj.start - traj2.start).norm(), 1e-6, AT);
+        DYNO_CHECK_LEQ((traj.goal - traj2.goal).norm(), 1e-6, AT);
       }
     }
 

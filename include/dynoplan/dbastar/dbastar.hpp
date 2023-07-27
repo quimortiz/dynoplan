@@ -139,28 +139,13 @@ struct Out_info_db {
       out << "  " << k << ": " << v << std::endl;
     }
   }
-
-  // void add_options(po::options_description &desc);
-  // void read_from_yaml(YAML::Node &node);
-  // void read_from_yaml(const char *file);
-};
-
-struct Result_db {
-
-  bool feasible = false;
-  double cost = -1;
-  double cost_with_delta_time = -1;
-  void print(std::ostream &out) {
-    std::string be = "";
-    std::string af = ": ";
-    out << be << STR(feasible, af) << std::endl;
-    out << be << STR(cost, af) << std::endl;
-    out << be << STR(cost_with_delta_time, af) << std::endl;
-  }
 };
 
 struct Time_benchmark {
 
+  double extra_time = 0.;
+  double check_bounds = 0.0;
+  double time_lazy_expand = 0.0;
   double time_alloc_primitive = 0.0;
   double build_heuristic = 0.0;
   double time_transform_primitive = 0.0;
@@ -186,6 +171,9 @@ struct Time_benchmark {
     std::string be = "";
     std::string af = ": ";
 
+    out << be << STR(extra_time, af) << std::endl;
+    out << be << STR(check_bounds, af) << std::endl;
+    out << be << STR(time_lazy_expand, af) << std::endl;
     out << be << STR(time_alloc_primitive, af) << std::endl;
     out << be << STR(time_transform_primitive, af) << std::endl;
     out << be << STR(build_heuristic, af) << std::endl;
@@ -209,6 +197,9 @@ struct Time_benchmark {
 
   inline std::map<std::string, std::string> to_data() const {
     std::map<std::string, std::string> out;
+
+    out.insert(NAME_AND_STRING(check_bounds));
+    out.insert(NAME_AND_STRING(time_lazy_expand));
     out.insert(NAME_AND_STRING(time_alloc_primitive));
     out.insert(NAME_AND_STRING(time_transform_primitive));
     out.insert(NAME_AND_STRING(build_heuristic));
@@ -242,8 +233,7 @@ double automatic_delta(double delta_in, double alpha, RobotOmpl &robot,
 void filte_duplicates(std::vector<Motion> &motions, double delta, double alpha,
                       RobotOmpl &robot, ompl::NearestNeighbors<Motion *> &T_m);
 
-void dbastar(const dynobench::Problem &problem,
-             const Options_dbastar &options_dbastar,
+void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
              dynobench::Trajectory &traj_out, Out_info_db &out_info_db);
 
 struct LazyTraj {
@@ -281,7 +271,7 @@ struct Expander {
   bool random = true;
   std::mt19937 g;
   size_t max_k = std::numeric_limits<size_t>::max();
-  double total_times_ms = 0;
+  double time_in_nn = 0;
   bool verbose = false;
 
   Expander(dynobench::Model_robot *robot, ompl::NearestNeighbors<Motion *> *T_m,
@@ -307,7 +297,7 @@ struct Expander {
 
     Stopwatch sw;
     T_m->nearestR(&fakeMotion, delta, neighbors_m);
-    total_times_ms += sw.elapsed_ms();
+    time_in_nn += sw.elapsed_ms();
 
     if (!neighbors_m.size() && verbose) {
 
@@ -343,64 +333,15 @@ struct Expander {
   }
 };
 
-inline void plot_search_tree(std::vector<AStarNode *> nodes,
-                             std::vector<Motion> motions,
-                             dynobench::Model_robot &robot,
-                             const char *filename) {
+void plot_search_tree(std::vector<AStarNode *> nodes,
+                      std::vector<Motion> &motions,
+                      dynobench::Model_robot &robot, const char *filename);
 
-  std::cout << "plotting search tree to: " << filename << std::endl;
-  std::ofstream out(filename);
-  out << "nodes:" << std::endl;
-  const std::string indent2 = "  ";
-  const std::string indent4 = "    ";
-  const std::string indent6 = "      ";
-  for (auto &n : nodes) {
-    out << indent2 << "-" << std::endl;
-    out << indent4 << "x: " << n->state_eig.format(dynobench::FMT) << std::endl;
-    out << indent4 << "fScore: " << n->fScore << std::endl;
-    out << indent4 << "gScore: " << n->gScore << std::endl;
-    out << indent4 << "hScore: " << n->hScore << std::endl;
-  }
-  // out << "edges_reduced:" << std::endl;
-  //
-  // for (auto &n : nodes) {
-  //   if (n->came_from) {
-  //     std::cout << indent2 << "-" << std::endl;
-  //     out << indent4 << "from:" <<
-  //     n->came_from->state_eig.format(FMT)
-  //         << std::endl;
-  //     out << indent4 << "to:" << n->state_eig.format(FMT) <<
-  //     std::endl;
-  //   }
-  // }
-  out << "edges:" << std::endl;
-
-  for (auto &n : nodes) {
-    if (n->came_from) {
-      out << indent2 << "-" << std::endl;
-      out << indent4
-          << "from: " << n->came_from->state_eig.format(dynobench::FMT)
-          << std::endl;
-      out << indent4 << "to: " << n->state_eig.format(dynobench::FMT)
-          << std::endl;
-      // get the motion
-
-      LazyTraj lazy_traj;
-      lazy_traj.offset.resize(robot.get_offset_dim());
-      robot.offset(n->came_from->state_eig, lazy_traj.offset);
-      lazy_traj.robot = &robot;
-      lazy_traj.motion = &motions.at(n->used_motion);
-
-      dynobench::Trajectory traj;
-      traj.states = lazy_traj.motion->traj.states;
-      traj.actions = lazy_traj.motion->traj.actions;
-      lazy_traj.compute(traj);
-      out << indent4 << "traj:" << std::endl;
-      for (auto &s : traj.states) {
-        out << indent6 << "- " << s.format(dynobench::FMT) << std::endl;
-      }
-    }
-  }
-}
+void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
+                                    const std::vector<Motion> &motions,
+                                    AStarNode *solution,
+                                    const dynobench::Problem &problem,
+                                    dynobench::Trajectory &traj_out,
+                                    std::ofstream *out = nullptr);
 
 } // namespace dynoplan

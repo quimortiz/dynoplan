@@ -77,10 +77,13 @@ BOOST_AUTO_TEST_CASE(test_uni1_bugtrap_with_opt) {
 
   std::vector<Motion> motions;
 
+  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+      (problem.models_base_path + problem.robotType + ".yaml").c_str(),
+      problem.p_lb, problem.p_ub);
+
   load_motion_primitives_new(
-      options_dbrrt.motionsFile, *robot_factory_ompl(problem), motions,
-      options_dbrrt.max_motions, options_dbrrt.cut_actions, false,
-      options_dbrrt.check_cols);
+      options_dbrrt.motionsFile, *robot, motions, options_dbrrt.max_motions,
+      options_dbrrt.cut_actions, false, options_dbrrt.check_cols);
 
   options_dbrrt.motions_ptr = &motions;
   Trajectory traj_out;

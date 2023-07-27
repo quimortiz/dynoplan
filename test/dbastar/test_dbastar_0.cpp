@@ -29,7 +29,51 @@
 using namespace dynoplan;
 using namespace dynobench;
 
+BOOST_AUTO_TEST_CASE(test_heu_map) {
+
+  Problem problem(DYNOBENCH_BASE "envs/unicycle1_v0/bugtrap_0.yaml");
+  problem.models_base_path = DYNOBENCH_BASE "models/";
+
+  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+      (problem.models_base_path + problem.robotType + ".yaml").c_str(),
+      problem.p_lb, problem.p_ub);
+
+  load_env(*robot, problem);
+
+  Options_dbastar options;
+  std::vector<Heuristic_node> heu_map;
+  generate_heuristic_map(problem, robot, options, heu_map);
+
+  auto filename = "/tmp/dynoplan/tmp_heu_map.yaml";
+  create_dir_if_necessary(filename);
+  write_heu_map(heu_map, filename);
+
+  // YOU CAN VISUALIZE WITH:
+  // python3 ../utils/show_heuristic_map.py --file
+  // /tmp/dynoplan/tmp_heu_map.yaml --max 30
+
+  // check a couple of points
+
+  auto hh = std::make_shared<Heu_roadmap>(robot, heu_map, problem.goal,
+                                          problem.robotType);
+
+  hh->connect_radius_h = options.connect_radius_h;
+
+  double h1 = hh->h(problem.goal);
+  double h2 = hh->h(problem.start);
+  double h3 = hh->h(Eigen::Vector3d(4, 5, 0));
+  double h4 = hh->h(Eigen::Vector3d(4, 5.5, 1.57));
+  double h5 = hh->h(Eigen::Vector3d(1, 5, 0));
+
+  std::vector<double> order_h = {h1, h3, h4, h5, h2};
+  std::vector<double> order_expected = {h1, h3, h4, h5, h2};
+
+  std::sort(order_h.begin(), order_h.end());
+  BOOST_TEST(order_h == order_expected);
+}
+
 BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {
+  // TODO: PLOT the HEU MAP
 
   Problem problem(DYNOBENCH_BASE +
                   std::string("envs/unicycle1_v0/bugtrap_0.yaml"));
@@ -37,16 +81,32 @@ BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {
 
   Options_dbastar options_dbastar;
   options_dbastar.search_timelimit = 1e5; // in ms
-  options_dbastar.max_motions = 30;
+  options_dbastar.max_motions = 100;
   options_dbastar.motionsFile =
       "../../data/motion_primitives/unicycle1_v0/"
       "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin";
 
+  // DEBUG THIS!! -- add tools for debugging :)
+
   Out_info_db out_info_db;
   Trajectory traj_out;
 
+  std::vector<Motion> motions;
+
+  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+      (problem.models_base_path + problem.robotType + ".yaml").c_str(),
+      problem.p_lb, problem.p_ub);
+
+  load_motion_primitives_new(
+      options_dbastar.motionsFile, *robot, motions, options_dbastar.max_motions,
+      options_dbastar.cut_actions, false, options_dbastar.check_cols);
+
+  options_dbastar.motions_ptr = &motions;
+
   std::vector<int> heus;
-  heus = {0, 1, -1};
+  // heus = {0, 1, -1};
+  heus = {0};
+  // heus = {1};
   for (auto &heu : heus) {
     options_dbastar.heuristic = heu;
     Trajectory traj_out;
@@ -96,7 +156,6 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
   o_car.max_motions = 400;
   o_car.delta = .3;
   o_car.motionsFile =
-
       BASE_PATH "cloud/motionsV2/good/car1_v0/car1_v0_all.bin.sp.bin";
 
   o_quad2d.max_motions = 400;
@@ -121,13 +180,15 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
   std::vector<Options_dbastar> options{
       o_uni1, o_uni2, o_car, o_quad2d, o_quad3d, o_quad3d, o_quad2dpole};
 
+  // std::vector<Options_dbastar> options{o_quad3d, o_quad3d};
+
   for (auto &o : options) {
     o.search_timelimit = 40 * 10e3;
   }
 
   // you can choose the heuristic here!!
 
-  CHECK_EQ(options.size(), problems.size(), AT);
+  DYNO_CHECK_EQ(options.size(), problems.size(), AT);
 
   for (size_t j = 0; j < options.size(); j++) {
 
@@ -138,6 +199,20 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
 
     Trajectory traj_out;
     Out_info_db info_out;
+
+    // load motions
+
+    std::vector<Motion> motions;
+
+    std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+        (problem.models_base_path + problem.robotType + ".yaml").c_str(),
+        problem.p_lb, problem.p_ub);
+
+    load_motion_primitives_new(option.motionsFile, *robot, motions,
+                               option.max_motions, option.cut_actions, false,
+                               option.check_cols);
+
+    option.motions_ptr = &motions;
 
     BOOST_REQUIRE_NO_THROW(dbastar(problem, option, traj_out, info_out));
 

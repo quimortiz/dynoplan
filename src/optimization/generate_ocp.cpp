@@ -293,8 +293,8 @@ generate_problem(const Generate_params &gen_args,
 
     if (gen_args.states_weights.size() && gen_args.states.size()) {
 
-      CHECK_EQ(gen_args.states_weights.size(), gen_args.states.size(), AT);
-      CHECK_EQ(gen_args.states_weights.size(), gen_args.N, AT);
+      DYNO_CHECK_EQ(gen_args.states_weights.size(), gen_args.states.size(), AT);
+      DYNO_CHECK_EQ(gen_args.states_weights.size(), gen_args.N, AT);
 
       ptr<Cost> state_feature = mk<State_cost>(
           nx, nu, nx, gen_args.states_weights.at(t), gen_args.states.at(t));
@@ -378,8 +378,8 @@ generate_problem(const Generate_params &gen_args,
     //     nx, nu, nx, options_trajopt.weight_goal * Vxd::Ones(nx),
     //     gen_args.goal);
 
-    CHECK_EQ(static_cast<size_t>(gen_args.goal.size()),
-             gen_args.model_robot->nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(gen_args.goal.size()),
+                  gen_args.model_robot->nx, AT);
     ptr<Cost> state_feature =
         mk<State_cost_model>(gen_args.model_robot, nx, nu,
                              gen_args.penalty * options_trajopt.weight_goal *
@@ -525,7 +525,7 @@ bool check_problem(ptr<crocoddyl::ShootingProblem> problem,
     equal = false;
   WARN(check, std::string("LxxT:") + AT);
 
-  CHECK_EQ(data_running_diff.size(), data_running.size(), AT);
+  DYNO_CHECK_EQ(data_running_diff.size(), data_running.size(), AT);
   for (size_t i = 0; i < data_running_diff.size(); i++) {
     auto &d = data_running.at(i);
     auto &d_diff = data_running_diff.at(i);

@@ -58,6 +58,8 @@ struct Heuristic_node {
   Eigen::VectorXd x;
   double d; // distance
   int p;    // parent
+  const Eigen::VectorXd &getStateEig() const { return x; }
+  const double get_cost() const { ERROR_WITH_INFO("should not be here!"); }
 };
 
 void load_heu_map(const char *file, std::vector<Heuristic_node> &heu_map);
@@ -65,8 +67,10 @@ void load_heu_map(const char *file, std::vector<Heuristic_node> &heu_map);
 struct HeuNode {
   const ob::State *state;
   double dist;
+  Eigen::VectorXd x;
 
   const ob::State *getState() const { return state; }
+  const Eigen::VectorXd &getStateEig() const { return x; }
 };
 
 using HeuristicMap = std::vector<SampleNode>;
@@ -95,29 +99,31 @@ void build_heuristic_distance(const std::vector<Sample_ *> &batch_samples,
                               std::vector<SampleNode> &heuristic_map,
                               double distance_threshold, double resolution);
 
-double heuristicCollisionsTree(ompl::NearestNeighbors<HeuNode *> *T_heu,
-                               const ob::State *s,
-                               std::shared_ptr<RobotOmpl> robot,
+double heuristicCollisionsTree(ompl::NearestNeighbors<Heuristic_node *> *T_heu,
+                               const Eigen::VectorXd &x,
+                               std::shared_ptr<dynobench::Model_robot> robot,
                                double connect_radius_h);
 
 void write_heu_map(const std::vector<Heuristic_node> &heu_map, const char *file,
                    const char *header = nullptr);
 
 struct Heu_fun {
-  virtual double h(const ompl::base::State *x) = 0;
+  virtual double h(const Eigen::VectorXd &x) = 0;
   virtual ~Heu_fun() = default;
 };
 
 struct Heu_euclidean : Heu_fun {
 
-  Heu_euclidean(std::shared_ptr<RobotOmpl> robot, ob::State *goal)
+  Heu_euclidean(std::shared_ptr<dynobench::Model_robot> robot,
+                const Eigen::VectorXd &goal)
       : robot(robot), goal(goal) {}
 
-  std::shared_ptr<RobotOmpl> robot;
-  ob::State *goal;
+  std::shared_ptr<dynobench::Model_robot> robot;
+  Eigen::VectorXd goal;
 
-  virtual double h(const ompl::base::State *x) override {
-    return robot->cost_lower_bound(x, goal);
+  virtual double h(const Eigen::VectorXd &x) override {
+    assert(x.size() == robot->nx);
+    return robot->lower_bound_time(x, goal);
   }
 
   virtual ~Heu_euclidean() override{};
@@ -127,7 +133,7 @@ struct Heu_blind : Heu_fun {
 
   Heu_blind() {}
 
-  virtual double h(const ompl::base::State *x) override {
+  virtual double h(const Eigen::VectorXd &x) override {
     (void)x;
     return 0;
   }
@@ -137,44 +143,50 @@ struct Heu_blind : Heu_fun {
 
 struct Heu_roadmap : Heu_fun {
 
-  std::shared_ptr<RobotOmpl> robot;
-  std::shared_ptr<ompl::NearestNeighbors<HeuNode *>> T_heu;
+  std::shared_ptr<dynobench::Model_robot> robot;
+  std::shared_ptr<ompl::NearestNeighbors<Heuristic_node *>> T_heu;
   double connect_radius_h = 0.5;
-  ob::State *goal;
-  ob::State *__x_zero_vel;
-  // ob::State *__tmp_vel;
+  Eigen::VectorXd goal;
+  Eigen::VectorXd __x_zero_vel;
+  std::vector<Heuristic_node> heu_map;
 
-  Heu_roadmap(std::shared_ptr<RobotOmpl> robot,
-              const std::vector<Heuristic_node> &heu_map, ob::State *goal,
-              const std::string &robot_type = "");
+  Heu_roadmap(std::shared_ptr<dynobench::Model_robot> robot,
+              const std::vector<Heuristic_node> &heu_map,
+              const Eigen::VectorXd &goal, const std::string &robot_type = "");
 
-  virtual double h(const ompl::base::State *x) override {
-    CHECK(T_heu, AT);
+  virtual double h(const Eigen::VectorXd &x) override {
+    assert(T_heu);
+    assert(x.size() == robot->nx);
+    __x_zero_vel = x;
+    robot->set_0_velocity(__x_zero_vel);
 
-    auto si = robot->getSpaceInformation()->getStateSpace();
-    const auto &locations = si->getValueLocations();
+    // auto si = robot->getSpaceInformation()->getStateSpace();
+    // const auto &locations = si->getValueLocations();
+    //
+    // DYNO_CHECK_EQ(locations.size(), robot->nx, AT);
+    // DYNO_CHECK_LEQ(robot->nx_pr, locations.size(), AT);
+    //
+    // for (std::size_t i = 0; i < robot->nx_pr; ++i) {
+    //   *si->getValueAddressAtLocation(__x_zero_vel, locations[i]) =
+    //       *si->getValueAddressAtLocation(x, locations[i]);
+    // }
 
-    CHECK_EQ(locations.size(), robot->nx, AT);
-    CHECK_LEQ(robot->nx_pr, locations.size(), AT);
-
-    for (std::size_t i = 0; i < robot->nx_pr; ++i) {
-      *si->getValueAddressAtLocation(__x_zero_vel, locations[i]) =
-          *si->getValueAddressAtLocation(x, locations[i]);
-    }
-
+    // NOT_IMPLEMENTED;
+    // refactor this!!
     double pos_h = heuristicCollisionsTree(T_heu.get(), __x_zero_vel, robot,
                                            connect_radius_h);
-    double vel_h = robot->cost_lower_bound_vel(x, goal);
+
+    double vel_h = robot->lower_bound_time_vel(x, goal);
 
     return std::max(vel_h, pos_h);
   }
 
-  virtual ~Heu_roadmap() override {
+  virtual ~Heu_roadmap() override{
 
-    robot->getSpaceInformation()->freeState(__x_zero_vel);
+      // robot->getSpaceInformation()->freeState(__x_zero_vel);
 
-    // TODO: memory leak
-    // I have to delete more stuff!!!
+      // TODO: memory leak
+      // I have to delete more stuff!!!
   };
 };
 
@@ -185,7 +197,7 @@ void build_heuristic_distance_new(
     double resolution);
 
 void generate_heuristic_map(const dynobench::Problem &problem,
-                            std::shared_ptr<RobotOmpl> robot_ompl,
+                            std::shared_ptr<dynobench::Model_robot> robot,
                             const Options_dbastar &options_dbastar,
                             std::vector<Heuristic_node> &heu_map);
 

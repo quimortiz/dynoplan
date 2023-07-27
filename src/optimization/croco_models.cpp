@@ -38,8 +38,8 @@ void modify_x_bound_for_free_time_linear(const Vxd &__x_lb, const Vxd &__x_ub,
                                          const Vxd &__xb__weight, Vxd &x_lb,
                                          Vxd &x_ub, Vxd &xb_weight) {
 
-  CHECK_EQ(__x_lb.size(), __x_ub.size(), AT);
-  CHECK_EQ(__xb__weight.size(), __x_ub.size(), AT);
+  DYNO_CHECK_EQ(__x_lb.size(), __x_ub.size(), AT);
+  DYNO_CHECK_EQ(__xb__weight.size(), __x_ub.size(), AT);
 
   size_t nx = __x_lb.size() + 1;
 
@@ -57,8 +57,8 @@ void modify_x_bound_for_contour(const Vxd &__x_lb, const Vxd &__x_ub,
                                 const Vxd &__xb__weight, Vxd &x_lb, Vxd &x_ub,
                                 Vxd &xb_weight, double max_alpha) {
 
-  CHECK_EQ(__x_lb.size(), __x_ub.size(), AT);
-  CHECK_EQ(__xb__weight.size(), __x_ub.size(), AT);
+  DYNO_CHECK_EQ(__x_lb.size(), __x_ub.size(), AT);
+  DYNO_CHECK_EQ(__xb__weight.size(), __x_ub.size(), AT);
 
   size_t nx = __x_lb.size() + 1;
 
@@ -76,9 +76,9 @@ void modify_u_bound_for_contour(const Vxd &__u_lb, const Vxd &__u_ub,
                                 Vxd &u_lb, Vxd &u_ub, Vxd &u_weight,
                                 Vxd &u_ref) {
 
-  CHECK_EQ(__u_lb.size(), __u_ub.size(), AT);
-  CHECK_EQ(__u__weight.size(), __u_ub.size(), AT);
-  CHECK_EQ(__u__ref.size(), __u_ub.size(), AT);
+  DYNO_CHECK_EQ(__u_lb.size(), __u_ub.size(), AT);
+  DYNO_CHECK_EQ(__u__weight.size(), __u_ub.size(), AT);
+  DYNO_CHECK_EQ(__u__ref.size(), __u_ub.size(), AT);
 
   size_t nu = __u_lb.size() + 1;
 
@@ -98,9 +98,9 @@ void modify_u_for_free_time_linear(const Vxd &__u_lb, const Vxd &__u_ub,
                                    Vxd &u_lb, Vxd &u_ub, Vxd &u_weight,
                                    Vxd &u_ref) {
 
-  CHECK_EQ(__u_lb.size(), __u_ub.size(), AT);
-  CHECK_EQ(__u__weight.size(), __u_ub.size(), AT);
-  CHECK_EQ(__u__ref.size(), __u_ub.size(), AT);
+  DYNO_CHECK_EQ(__u_lb.size(), __u_ub.size(), AT);
+  DYNO_CHECK_EQ(__u__weight.size(), __u_ub.size(), AT);
+  DYNO_CHECK_EQ(__u__ref.size(), __u_ub.size(), AT);
 
   size_t nu = __u_lb.size() + 1;
 
@@ -122,9 +122,9 @@ void modify_u_bound_for_free_time(const Vxd &__u_lb, const Vxd &__u_ub,
                                   Vxd &u_lb, Vxd &u_ub, Vxd &u_weight,
                                   Vxd &u_ref) {
 
-  CHECK_EQ(__u_lb.size(), __u_ub.size(), AT);
-  CHECK_EQ(__u__weight.size(), __u_ub.size(), AT);
-  CHECK_EQ(__u__ref.size(), __u_ub.size(), AT);
+  DYNO_CHECK_EQ(__u_lb.size(), __u_ub.size(), AT);
+  DYNO_CHECK_EQ(__u__weight.size(), __u_ub.size(), AT);
+  DYNO_CHECK_EQ(__u__ref.size(), __u_ub.size(), AT);
 
   size_t nu = __u_lb.size() + 1;
 
@@ -308,7 +308,7 @@ void Contour_cost_alpha_u::calc(Eigen::Ref<Vxd> r,
                                 const Eigen::Ref<const Vxd> &x,
                                 const Eigen::Ref<const Vxd> &u) {
   check_input_calc(r, x, u);
-  CHECK_GE(k, 0, AT);
+  DYNO_CHECK_GE(k, 0, AT);
 
   r(0) = -k * u(nu - 1);
 }
@@ -381,7 +381,7 @@ void Contour_cost_x::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x) {
 
   last_query = alpha;
   CHECK(path, AT);
-  CHECK_GEQ(weight, 0, AT);
+  DYNO_DYNO_CHECK_GEQ(weight, 0, AT);
   path->interpolate(alpha, last_out, last_J);
 
   r = weight * (last_out - x.head(nx - 1));
@@ -401,7 +401,7 @@ void Contour_cost_x::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
                               Eigen::Ref<Eigen::MatrixXd> Lxx,
                               const Eigen::Ref<const Eigen::VectorXd> &x) {
 
-  CHECK_GE(weight, 0, AT);
+  DYNO_CHECK_GE(weight, 0, AT);
   check_input_calcDiff(Lx, Lxx, x);
 
   double alpha = x(nx - 1);
@@ -648,9 +648,9 @@ Control_cost::Control_cost(size_t nx, size_t nu, size_t nr,
   u_weight = t_u_weight;
   u_ref = t_u_ref;
 
-  CHECK_EQ(static_cast<size_t>(u_weight.size()), nu, AT);
-  CHECK_EQ(static_cast<size_t>(u_ref.size()), nu, AT);
-  CHECK_EQ(nu, nr, AT);
+  DYNO_CHECK_EQ(static_cast<size_t>(u_weight.size()), nu, AT);
+  DYNO_CHECK_EQ(static_cast<size_t>(u_ref.size()), nu, AT);
+  DYNO_CHECK_EQ(nu, nr, AT);
   name = "control";
 }
 
@@ -658,9 +658,9 @@ void Control_cost::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x,
                         const Eigen::Ref<const Vxd> &u) {
   (void)x;
   // check that r
-  CHECK_EQ(static_cast<std::size_t>(r.size()), nr, AT);
-  CHECK_EQ(static_cast<std::size_t>(x.size()), nx, AT);
-  CHECK_EQ(static_cast<std::size_t>(u.size()), nu, AT);
+  DYNO_CHECK_EQ(static_cast<std::size_t>(r.size()), nr, AT);
+  DYNO_CHECK_EQ(static_cast<std::size_t>(x.size()), nx, AT);
+  DYNO_CHECK_EQ(static_cast<std::size_t>(u.size()), nu, AT);
   r = (u - u_ref).cwiseProduct(u_weight);
 }
 
@@ -709,9 +709,9 @@ State_bounds::State_bounds(size_t nx, size_t nu, size_t nr, const Vxd &ub,
                            const Vxd &weight)
     : Cost(nx, nu, nr), ub(ub), weight(weight) {
   name = "xbound";
-  CHECK_EQ(weight.size(), ub.size(), AT);
-  CHECK_EQ(nx, nr, AT);
-  CHECK_EQ(static_cast<size_t>(weight.size()), nx, AT);
+  DYNO_CHECK_EQ(weight.size(), ub.size(), AT);
+  DYNO_CHECK_EQ(nx, nr, AT);
+  DYNO_CHECK_EQ(static_cast<size_t>(weight.size()), nx, AT);
 }
 
 void State_bounds::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x,
@@ -724,8 +724,8 @@ void State_bounds::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x,
 
 void State_bounds::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x) {
   check_input_calc(r, x);
-  CHECK_EQ(static_cast<std::size_t>(r.size()), nr, AT);
-  CHECK_EQ(static_cast<std::size_t>(x.size()), nx, AT);
+  DYNO_CHECK_EQ(static_cast<std::size_t>(r.size()), nr, AT);
+  DYNO_CHECK_EQ(static_cast<std::size_t>(x.size()), nx, AT);
   r = ((x - ub).cwiseProduct(weight)).cwiseMax(0.);
 }
 
@@ -759,9 +759,9 @@ Control_bounds::Control_bounds(size_t nx, size_t nu, size_t nr, const Vxd &ub,
                                const Vxd &weight)
     : Cost(nx, nu, nr), ub(ub), weight(weight) {
   name = "xbound";
-  CHECK_EQ(weight.size(), ub.size(), AT);
-  CHECK_EQ(nu, nr, AT);
-  CHECK_EQ(static_cast<size_t>(weight.size()), nu, AT);
+  DYNO_CHECK_EQ(weight.size(), ub.size(), AT);
+  DYNO_CHECK_EQ(nu, nr, AT);
+  DYNO_CHECK_EQ(static_cast<size_t>(weight.size()), nu, AT);
 }
 
 void Control_bounds::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x,
@@ -815,8 +815,8 @@ State_cost::State_cost(size_t nx, size_t nu, size_t nr, const Vxd &x_weight,
                        const Vxd &ref)
     : Cost(nx, nu, nr), x_weight(x_weight), ref(ref) {
   name = "state";
-  CHECK_EQ(static_cast<std::size_t>(x_weight.size()), nx, AT);
-  CHECK_EQ(static_cast<std::size_t>(ref.size()), nx, AT);
+  DYNO_CHECK_EQ(static_cast<std::size_t>(x_weight.size()), nx, AT);
+  DYNO_CHECK_EQ(static_cast<std::size_t>(ref.size()), nx, AT);
 }
 
 void State_cost::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x,
@@ -1062,7 +1062,7 @@ void __calc_diff(std::shared_ptr<dynobench::Model_robot> robot_model,
                  const Eigen::Ref<const Eigen::VectorXd> &u) {
 
   double dt = robot_model->ref_dt;
-  CHECK_GE(dt, 0, AT);
+  DYNO_CHECK_GE(dt, 0, AT);
   size_t _nx = robot_model->nx;
   size_t _nu = robot_model->nu;
   size_t nx = x.size();
@@ -1077,15 +1077,15 @@ void __calc_diff(std::shared_ptr<dynobench::Model_robot> robot_model,
   if (control_mode == Control_Mode::default_mode) {
     robot_model->stepDiff(Fx, Fu, x, u, dt);
   } else if (control_mode == Control_Mode::free_time_linear) {
-    CHECK_GE(u(robot_model->nu), 0, AT);
-    CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
+    DYNO_CHECK_GE(u(robot_model->nu), 0, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
     if (!startsWith(robot_model->name, "quad3d")) {
       robot_model->stepDiff_with_v(Fx.block(0, 0, _nx, _nx),
                                    Fu.block(0, 0, _nx, _nu), __v, x.head(_nx),
                                    u.head(_nu), dt * u(_nu));
       Fu.block(0, _nu, _nx, 1) = __v * dt;
       Fu(_nx, _nu) = 1.;
-      CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
+      DYNO_CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
     } else {
       robot_model->stepDiff(Fx.block(0, 0, _nx, _nx), Fu.block(0, 0, _nx, _nu),
                             x.head(_nx), u.head(_nu), dt * u(_nu));
@@ -1097,7 +1097,7 @@ void __calc_diff(std::shared_ptr<dynobench::Model_robot> robot_model,
     if (!startsWith(robot_model->name, "quad3d")) {
       robot_model->stepDiff_with_v(Fx, Fu.block(0, 0, _nx, _nu), __v, x,
                                    u.head(_nu), dt * u(_nu));
-      CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
+      DYNO_CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
       Fu.col(_nu) = __v * dt;
     } else {
       robot_model->stepDiff(Fx.block(0, 0, _nx, _nx), Fu.block(0, 0, _nx, _nu),
@@ -1120,7 +1120,7 @@ void __calc(std::shared_ptr<dynobench::Model_robot> robot_model,
             Control_Mode control_mode, Eigen::Ref<Eigen::VectorXd> xnext,
             const Eigen::Ref<const Eigen::VectorXd> &x,
             const Eigen::Ref<const Eigen::VectorXd> &u) {
-  CHECK_GE(robot_model->ref_dt, 0, AT);
+  DYNO_CHECK_GE(robot_model->ref_dt, 0, AT);
   const size_t &_nx = robot_model->nx;
   const size_t &_nu = robot_model->nu;
 
@@ -1130,11 +1130,11 @@ void __calc(std::shared_ptr<dynobench::Model_robot> robot_model,
   if (control_mode == Control_Mode::default_mode) {
     robot_model->step(xnext, x, u, robot_model->ref_dt);
   } else if (control_mode == Control_Mode::free_time) {
-    // CHECK_GEQ(u(robot_model->nu), 0., AT);
-    WARN_GEQ(u(robot_model->nu), 0, "time cannot be negative!");
+    // DYNO_DYNO_CHECK_GEQ(u(robot_model->nu), 0., AT);
+    DYNO_WARN_GEQ(u(robot_model->nu), 0, "time cannot be negative!");
     robot_model->step(xnext, x, u.head(_nu), robot_model->ref_dt * u(_nu));
   } else if (control_mode == Control_Mode::free_time_linear) {
-    WARN_GEQ(u(robot_model->nu), 0, "time cannot be negative!");
+    DYNO_WARN_GEQ(u(robot_model->nu), 0, "time cannot be negative!");
     robot_model->step(xnext.head(_nx), x.head(_nx), u.head(_nu),
                       robot_model->ref_dt * u(_nu));
     xnext(_nx) = u(_nu);
@@ -1440,7 +1440,7 @@ Quaternion_cost::Quaternion_cost(size_t nx, size_t nu) : Cost(nx, nu, 1) {
 
 void Quaternion_cost::calc(Eigen::Ref<Eigen::VectorXd> r,
                            const Eigen::Ref<const Eigen::VectorXd> &x) {
-  CHECK_GEQ(k_quat, 0., AT);
+  DYNO_DYNO_CHECK_GEQ(k_quat, 0., AT);
 
   check_input_calc(r, x);
 
@@ -1512,13 +1512,13 @@ void Quad3d_acceleration_cost::calcDiff(
   // std::cout << "Jv_x\n" << Jv_x << std::endl;
   // std::cout << "Jv_u\n" << Jv_u <<  std::endl;
 
-  CHECK_EQ(f.size(), 12, AT);
-  CHECK_EQ(acc.size(), 6, AT);
-  CHECK_EQ(Jv_x.cols(), 13, AT);
-  CHECK_EQ(Jv_u.cols(), 4, AT);
+  DYNO_CHECK_EQ(f.size(), 12, AT);
+  DYNO_CHECK_EQ(acc.size(), 6, AT);
+  DYNO_CHECK_EQ(Jv_x.cols(), 13, AT);
+  DYNO_CHECK_EQ(Jv_u.cols(), 4, AT);
 
-  CHECK_EQ(Jv_x.rows(), 12, AT);
-  CHECK_EQ(Jv_u.rows(), 12, AT);
+  DYNO_CHECK_EQ(Jv_x.rows(), 12, AT);
+  DYNO_CHECK_EQ(Jv_u.rows(), 12, AT);
 
   acc_x = Jv_x.block<6, 13>(6, 0);
   acc_u = Jv_u.block<6, 4>(6, 0);
@@ -1659,7 +1659,7 @@ Dynamics::Dynamics(std::shared_ptr<dynobench::Model_robot> robot_model,
             robot_model->state, std::make_shared<dynobench::Rn>(1)));
   }
 
-  CHECK_EQ(state_croco->get_nx(), nx, AT);
+  DYNO_CHECK_EQ(state_croco->get_nx(), nx, AT);
 
   update_state_and_control();
 }
@@ -1667,7 +1667,7 @@ Dynamics::Dynamics(std::shared_ptr<dynobench::Model_robot> robot_model,
 void Dynamics::calc(Eigen::Ref<Eigen::VectorXd> xnext,
                     const Eigen::Ref<const VectorXs> &x,
                     const Eigen::Ref<const VectorXs> &u) {
-  CHECK_GE(dt, 0, AT);
+  DYNO_CHECK_GE(dt, 0, AT);
   const size_t &_nx = robot_model->nx;
   const size_t &_nu = robot_model->nu;
 
@@ -1677,11 +1677,11 @@ void Dynamics::calc(Eigen::Ref<Eigen::VectorXd> xnext,
   if (control_mode == Control_Mode::default_mode) {
     robot_model->step(xnext, x, u, dt);
   } else if (control_mode == Control_Mode::free_time) {
-    // CHECK_GEQ(u(robot_model->nu), 0., AT);
-    WARN_GEQ(u(robot_model->nu), 0, "time cannot be negative!");
+    // DYNO_DYNO_CHECK_GEQ(u(robot_model->nu), 0., AT);
+    DYNO_WARN_GEQ(u(robot_model->nu), 0, "time cannot be negative!");
     robot_model->step(xnext, x, u.head(_nu), dt * u(_nu));
   } else if (control_mode == Control_Mode::free_time_linear) {
-    WARN_GEQ(u(robot_model->nu), 0, "time cannot be negative!");
+    DYNO_WARN_GEQ(u(robot_model->nu), 0, "time cannot be negative!");
     robot_model->step(xnext.head(_nx), x.head(_nx), u.head(_nu), dt * u(_nu));
     xnext(_nx) = u(_nu);
   } else if (control_mode == Control_Mode::contour) {
@@ -1696,7 +1696,7 @@ void Dynamics::calcDiff(Eigen::Ref<Eigen::MatrixXd> Fx,
                         Eigen::Ref<Eigen::MatrixXd> Fu,
                         const Eigen::Ref<const VectorXs> &x,
                         const Eigen::Ref<const VectorXs> &u) {
-  CHECK_GE(dt, 0, AT);
+  DYNO_CHECK_GE(dt, 0, AT);
   size_t _nx = robot_model->nx;
   size_t _nu = robot_model->nu;
   size_t nx = x.size();
@@ -1708,15 +1708,15 @@ void Dynamics::calcDiff(Eigen::Ref<Eigen::MatrixXd> Fx,
   if (control_mode == Control_Mode::default_mode) {
     robot_model->stepDiff(Fx, Fu, x, u, dt);
   } else if (control_mode == Control_Mode::free_time_linear) {
-    CHECK_GE(u(robot_model->nu), 0, AT);
-    CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
+    DYNO_CHECK_GE(u(robot_model->nu), 0, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
     if (!startsWith(robot_model->name, "quad3d")) {
       robot_model->stepDiff_with_v(Fx.block(0, 0, _nx, _nx),
                                    Fu.block(0, 0, _nx, _nu), __v, x.head(_nx),
                                    u.head(_nu), dt * u(_nu));
       Fu.block(0, _nu, _nx, 1) = __v * dt;
       Fu(_nx, _nu) = 1.;
-      CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
+      DYNO_CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
     } else {
       robot_model->stepDiff(Fx.block(0, 0, _nx, _nx), Fu.block(0, 0, _nx, _nu),
                             x.head(_nx), u.head(_nu), dt * u(_nu));
@@ -1728,7 +1728,7 @@ void Dynamics::calcDiff(Eigen::Ref<Eigen::MatrixXd> Fx,
     if (!startsWith(robot_model->name, "quad3d")) {
       robot_model->stepDiff_with_v(Fx, Fu.block(0, 0, _nx, _nu), __v, x,
                                    u.head(_nu), dt * u(_nu));
-      CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
+      DYNO_CHECK_EQ(static_cast<size_t>(__v.size()), _nx, AT);
       Fu.col(_nu) = __v * dt;
     } else {
       robot_model->stepDiff(Fx.block(0, 0, _nx, _nx), Fu.block(0, 0, _nx, _nu),
@@ -1772,8 +1772,8 @@ State_cost_model::State_cost_model(
     : Cost(nx, nu, model_robot->state->ndx), ref(ref), x_weight(x_weight),
       nx_effective(model_robot->state->nx), model_robot(model_robot) {
   // x_weight_mat
-  CHECK_EQ(ref.size(), x_weight.size(), AT);
-  CHECK_EQ(nx_effective, static_cast<size_t>(x_weight.size()), AT);
+  DYNO_CHECK_EQ(ref.size(), x_weight.size(), AT);
+  DYNO_CHECK_EQ(nx_effective, static_cast<size_t>(x_weight.size()), AT);
   x_weight_mat = x_weight.replicate(1, ref.size());
 
   x_weight_sq = x_weight.cwiseAbs2();
@@ -1850,15 +1850,15 @@ void State_cost_model::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
   // CSTR_(x_weight_sq.size());
 
   if (Jx1_is_diagonal) {
-    // CHECK_EQ(Lx.head(nx_effective).size(),
+    // DYNO_CHECK_EQ(Lx.head(nx_effective).size(),
     //          __r.cwiseProduct(Jx1.diagonal()).cwiseProduct(x_weight_sq).size(),
     //          AT);
     Lx.head(nx_effective) +=
         __r.cwiseProduct(Jx1.diagonal()).cwiseProduct(x_weight_sq);
     Lxx.diagonal().head(nx_effective) += x_weight_sq;
   } else {
-    // CHECK_EQ(Jx1.cols(), x_weight_mat.cols(), AT);
-    // CHECK_EQ(Jx1.rows(), x_weight_mat.rows(), AT);
+    // DYNO_CHECK_EQ(Jx1.cols(), x_weight_mat.cols(), AT);
+    // DYNO_CHECK_EQ(Jx1.rows(), x_weight_mat.rows(), AT);
     Jx1_w = Jx1.cwiseProduct(x_weight_mat);
     Lx.block(0, 0, nx_effective, nx_effective).noalias() +=
         __r.cwiseProduct(x_weight) * Jx1_w;

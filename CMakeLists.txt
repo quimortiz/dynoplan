@@ -66,13 +66,13 @@ add_library(
   ./src/optimization/ocp.cpp ./src/optimization/options.cpp
   ./src/optimization/croco_models.cpp ./src/optimization/generate_ocp.cpp)
 
-add_library(sst ./src/ompl/sst.cpp ./src/robots.cpp)
-add_library(rrt_to ./src/ompl/rrt_to.cpp ./src/robots.cpp)
+add_library(sst ./src/ompl/sst.cpp ./src/ompl/robots.cpp)
+add_library(rrt_to ./src/ompl/rrt_to.cpp ./src/ompl/robots.cpp)
 
 add_library(dbastar ./src/dbastar/dbastar.cpp ./src/dbastar/options.cpp
-                    ./src/robots.cpp ./src/dbastar/heuristics.cpp)
+                    ./src/ompl/robots.cpp ./src/dbastar/heuristics.cpp)
 
-add_library(dbrrt ./src/dbrrt/dbrrt.cpp ./src/robots.cpp)
+add_library(dbrrt ./src/dbrrt/dbrrt.cpp ./src/ompl/robots.cpp)
 
 add_library(idbastar ./src/idbastar/idbastar.cpp)
 
@@ -163,7 +163,7 @@ target_link_libraries(
 
 target_link_libraries(
   dbrrt
-  PUBLIC optimization Eigen3::Eigen dynobench::dynobench
+  PUBLIC optimization Eigen3::Eigen dynobench::dynobench dbastar
   PRIVATE fcl ${OMPL_LIBRARIES})
 
 target_link_libraries(

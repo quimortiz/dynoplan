@@ -119,11 +119,11 @@ BOOST_AUTO_TEST_CASE(t_split) {
 
   std::string time_stamp = get_time_stamp();
   trajectories_out.save_file_boost(
-      ("/tmp/dbastar/motions__s__" + dynamics + "__" + time_stamp + ".bin")
+      ("/tmp/dynoplan/motions__s__" + dynamics + "__" + time_stamp + ".bin")
           .c_str());
 
   trajectories_out.save_file_yaml(
-      ("/tmp/dbastar/motions__s__" + dynamics + "__" + time_stamp + ".yaml")
+      ("/tmp/dynoplan/motions__s__" + dynamics + "__" + time_stamp + ".yaml")
           .c_str());
 }
 
@@ -168,8 +168,8 @@ BOOST_AUTO_TEST_CASE(t_sort) {
   sort_motion_primitives(trajectories, trajectories_out, fun);
 
   // check.
-  CHECK_LEQ(trajectories_out.data.at(0).distance(t3), 1e-8, AT);
-  CHECK_LEQ(trajectories_out.data.at(1).distance(t2), 1e-8, AT);
-  CHECK_LEQ(trajectories_out.data.at(2).distance(t1), 1e-8, AT);
-  CHECK_LEQ(trajectories_out.data.at(3).distance(t4), 1e-8, AT);
+  DYNO_CHECK_LEQ(trajectories_out.data.at(0).distance(t3), 1e-8, AT);
+  DYNO_CHECK_LEQ(trajectories_out.data.at(1).distance(t2), 1e-8, AT);
+  DYNO_CHECK_LEQ(trajectories_out.data.at(2).distance(t1), 1e-8, AT);
+  DYNO_CHECK_LEQ(trajectories_out.data.at(3).distance(t4), 1e-8, AT);
 }

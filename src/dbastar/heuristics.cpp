@@ -4,10 +4,9 @@
 namespace dynoplan {
 
 void generate_heuristic_map(const dynobench::Problem &problem,
-                            std::shared_ptr<RobotOmpl> robot_ompl,
+                            std::shared_ptr<dynobench::Model_robot> robot,
                             const Options_dbastar &options_dbastar,
                             std::vector<Heuristic_node> &heu_map) {
-  auto robot = robot_ompl->diff_model;
 
   std::vector<Eigen::VectorXd> samples;
   Eigen::VectorXd v(robot->nx);
@@ -44,6 +43,25 @@ void generate_heuristic_map(const dynobench::Problem &problem,
                                options_dbastar.heu_resolution);
 }
 
+Heu_roadmap::Heu_roadmap(std::shared_ptr<dynobench::Model_robot> robot,
+                         const std::vector<Heuristic_node> &t_heu_map,
+                         const Eigen::VectorXd &goal,
+                         const std::string &robot_type)
+    : robot(robot), goal(goal), heu_map(t_heu_map) {
+
+  std::vector<double> xx(robot->nx, 0.);
+
+  const bool use_nigh = true;
+
+  auto tt = nigh_factory2<Heuristic_node *>(robot_type, robot);
+  T_heu.reset(tt);
+
+  for (size_t i = 0; i < heu_map.size(); i++) {
+    T_heu->add(&heu_map.at(i));
+  }
+}
+
+#if 0
 Heu_roadmap::Heu_roadmap(std::shared_ptr<RobotOmpl> robot,
                          const std::vector<Heuristic_node> &heu_map,
                          ob::State *goal, const std::string &robot_type)
@@ -86,6 +104,7 @@ Heu_roadmap::Heu_roadmap(std::shared_ptr<RobotOmpl> robot,
     T_heu->add(ptr);
   }
 }
+#endif
 
 void get_distance_all_vertices(const EdgeList &edge_list,
                                const DistanceList &distance_list,
@@ -155,20 +174,6 @@ void compute_heuristic_map_new(
   }
 }
 
-void write_heuristic_map(
-    const std::vector<SampleNode> &heuristic_map,
-    const std::shared_ptr<ompl::control::SpaceInformation> si,
-    const char *filename) {
-
-  std::ofstream file(filename);
-  for (auto &n : heuristic_map) {
-    printState(file, si, n.x, false);
-    file << " ";
-    file << n.dist << " ";
-    file << n.parent << " " << std::endl;
-  }
-}
-
 void build_heuristic_distance_new(
     const std::vector<Eigen::VectorXd> &batch_samples,
     std::shared_ptr<dynobench::Model_robot> &robot,
@@ -203,19 +208,18 @@ void build_heuristic_distance_new(
                             heuristic_map);
 }
 
-double heuristicCollisionsTree(ompl::NearestNeighbors<HeuNode *> *T_heu,
-                               const ob::State *s,
-                               std::shared_ptr<RobotOmpl> robot,
+double heuristicCollisionsTree(ompl::NearestNeighbors<Heuristic_node *> *T_heu,
+                               const Eigen::VectorXd &x,
+                               std::shared_ptr<dynobench::Model_robot> robot,
                                double connect_radius_h) {
-  HeuNode node;
-  node.state = s;
-  std::vector<HeuNode *> neighbors;
+  Heuristic_node node;
+  node.x = x;
+  std::vector<Heuristic_node *> neighbors;
   double min = 1e8;
   CHECK(T_heu, AT);
   T_heu->nearestR(&node, connect_radius_h, neighbors);
   for (const auto &p : neighbors) {
-    double d = p->dist + robot->cost_lower_bound(p->state, s);
-    if (d < min) {
+    if (double d = p->d + robot->lower_bound_time_pr(p->x, x); d < min) {
       min = d;
     }
   }

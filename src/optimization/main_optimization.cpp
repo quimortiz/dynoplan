@@ -162,7 +162,7 @@ int main(int argc, const char *argv[]) {
   crocoddyl::Timer timer;
   trajectory_optimization(problem, traj_init, options_trajopt, traj_out,
                           result);
-  CHECK_EQ(traj_out.feasible, result.feasible, AT);
+  DYNO_CHECK_EQ(traj_out.feasible, result.feasible, AT);
   double d = timer.get_duration();
 
   {

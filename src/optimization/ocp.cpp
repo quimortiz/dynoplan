@@ -207,7 +207,7 @@ void add_noise(double noise_level, std::vector<Eigen::VectorXd> &xs,
   size_t nx = xs.at(0).size();
   size_t nu = us.at(0).size();
   for (size_t i = 0; i < xs.size(); i++) {
-    CHECK_EQ(static_cast<size_t>(xs.at(i).size()), nx, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(xs.at(i).size()), nx, AT);
     xs.at(i) += noise_level * Vxd::Random(nx);
 
     if (startsWith(robot_type, "quad3d")) {
@@ -218,7 +218,7 @@ void add_noise(double noise_level, std::vector<Eigen::VectorXd> &xs,
   }
 
   for (size_t i = 0; i < us.size(); i++) {
-    CHECK_EQ(static_cast<size_t>(us.at(i).size()), nu, AT);
+    DYNO_CHECK_EQ(static_cast<size_t>(us.at(i).size()), nu, AT);
     us.at(i) += noise_level * Vxd::Random(nu);
   }
 };
@@ -239,7 +239,7 @@ void mpc_adaptative_warmstart(
     std::cout << "new warmstart" << std::endl;
     xs = xs_warmstart;
     us = us_warmstart;
-    CHECK_GE(nu, 0, AT);
+    DYNO_CHECK_GE(nu, 0, AT);
     size_t missing_steps = window_optimize_i - us.size();
 
     Vxd u_last = Vxd::Zero(nu);
@@ -483,7 +483,7 @@ void solve_for_fixed_penalty(
   }
 
   // store init guess
-  report_problem(problem_croco, xs, us, "/tmp/dbastar/report-0.yaml");
+  report_problem(problem_croco, xs, us, "/tmp/dynoplan/report-0.yaml");
   std::cout << "solving with croco " << AT << std::endl;
 
   std::string random_id = gen_random(6);
@@ -524,7 +524,7 @@ void solve_for_fixed_penalty(
   std::string filename = folder_tmptraj + "opt_" + random_id + ".yaml";
   write_states_controls(ddp.get_xs(), ddp.get_us(), model_robot, problem,
                         filename.c_str());
-  report_problem(problem_croco, xs_out, us_out, "/tmp/dbastar/report-1.yaml");
+  report_problem(problem_croco, xs_out, us_out, "/tmp/dynoplan/report-1.yaml");
 };
 
 void __trajectory_optimization(
@@ -554,7 +554,7 @@ void __trajectory_optimization(
 
   const bool modify_to_match_goal_start = false;
   const bool store_iterations = false;
-  const std::string folder_tmptraj = "/tmp/dbastar/";
+  const std::string folder_tmptraj = "/tmp/dynoplan/";
 
   std::cout
       << "WARNING: "
@@ -587,7 +587,7 @@ void __trajectory_optimization(
   bool verbose = false;
   auto xs_init = init_guess.states;
   auto us_init = init_guess.actions;
-  CHECK_EQ(xs_init.size(), us_init.size() + 1, AT);
+  DYNO_CHECK_EQ(xs_init.size(), us_init.size() + 1, AT);
   size_t N = init_guess.actions.size();
   auto goal = problem.goal;
   auto start = problem.start;
@@ -659,8 +659,8 @@ void __trajectory_optimization(
   if (solver == SOLVER::mpc || solver == SOLVER::mpcc ||
       solver == SOLVER::mpcc_linear || solver == SOLVER::mpc_adaptative) {
 
-    CHECK_GEQ(options_trajopt_local.window_optimize,
-              options_trajopt_local.window_shift, AT);
+    DYNO_DYNO_CHECK_GEQ(options_trajopt_local.window_optimize,
+                        options_trajopt_local.window_shift, AT);
 
     bool finished = false;
 
@@ -717,8 +717,8 @@ void __trajectory_optimization(
 
     while (!finished) {
       if (solver == SOLVER::mpc) {
-        CHECK_GEQ(int(N) - int(counter * options_trajopt_local.window_shift), 0,
-                  "");
+        DYNO_DYNO_CHECK_GEQ(
+            int(N) - int(counter * options_trajopt_local.window_shift), 0, "");
         size_t remaining_steps =
             N - counter * options_trajopt_local.window_shift;
 
@@ -918,8 +918,8 @@ void __trajectory_optimization(
         }
       }
 
-      CHECK_EQ(xs.size(), window_optimize_i + 1, AT);
-      CHECK_EQ(us.size(), window_optimize_i, AT);
+      DYNO_CHECK_EQ(xs.size(), window_optimize_i + 1, AT);
+      DYNO_CHECK_EQ(us.size(), window_optimize_i, AT);
 
       if (!options_trajopt_local.use_finite_diff && check_with_finite_diff) {
         check_problem_with_finite_diff(options_trajopt_local, gen_args,
@@ -947,7 +947,7 @@ void __trajectory_optimization(
         add_noise(options_trajopt_local.noise_level, xs, us, problem.robotType);
       }
 
-      report_problem(problem_croco, xs, us, "/tmp/dbastar/report-0.yaml");
+      report_problem(problem_croco, xs, us, "/tmp/dynoplan/report-0.yaml");
 
       std::string random_id = gen_random(6);
 
@@ -985,7 +985,7 @@ void __trajectory_optimization(
       ddp_iterations += ddp.get_iter();
       ddp_time += timer.get_duration();
       report_problem(problem_croco, ddp.get_xs(), ddp.get_us(),
-                     "/tmp/dbastar/report-1.yaml");
+                     "/tmp/dynoplan/report-1.yaml");
 
       std::cout << "time: " << time_i << std::endl;
       std::cout << "iterations: " << iterations_i << std::endl;
@@ -1156,7 +1156,7 @@ void __trajectory_optimization(
         debug_file_yaml << "    state_alpha: " << out.format(FMT) << std::endl;
       }
 
-      CHECK_EQ(us_i_sol.size() + 1, xs_i_sol.size(), AT);
+      DYNO_CHECK_EQ(us_i_sol.size() + 1, xs_i_sol.size(), AT);
 
       // copy results
 
@@ -1319,7 +1319,7 @@ void __trajectory_optimization(
 
   // END OF Optimization
 
-  std::ofstream file_out_debug("/tmp/dbastar/out.yaml");
+  std::ofstream file_out_debug("/tmp/dynoplan/out.yaml");
 
   opti_out.success = success;
   // in some s
@@ -1501,7 +1501,8 @@ void trajectory_optimization(const dynobench::Problem &problem,
   }
   CHECK(tmp_init_guess.actions.size(), AT);
   CHECK(tmp_init_guess.states.size(), AT);
-  CHECK_EQ(tmp_init_guess.states.size(), tmp_init_guess.actions.size() + 1, AT);
+  DYNO_CHECK_EQ(tmp_init_guess.states.size(), tmp_init_guess.actions.size() + 1,
+                AT);
 
   // check the init guess trajectory
 
@@ -1527,7 +1528,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
       options_trajopt_local.solver_id = static_cast<int>(SOLVER::mpc);
       options_trajopt_local.control_bounds = 0;
       options_trajopt_local.debug_file_name =
-          "/tmp/dbastar/debug_file_mpc_" + std::to_string(i) + ".yaml";
+          "/tmp/dynoplan/debug_file_mpc_" + std::to_string(i) + ".yaml";
 
       std::cout << "**\nopti params is " << std::endl;
 
@@ -1560,7 +1561,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
         options_trajopt_local.solver_id = static_cast<int>(SOLVER::mpcc);
         options_trajopt_local.control_bounds = 1;
         options_trajopt_local.debug_file_name =
-            "/tmp/dbastar/debug_file_mpcc_" + std::to_string(i) + ".yaml";
+            "/tmp/dynoplan/debug_file_mpcc_" + std::to_string(i) + ".yaml";
 
         tmp_init_guess = tmp_solution;
 
@@ -1579,7 +1580,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
       }
     }
     traj = tmp_solution;
-    CHECK_EQ(traj.feasible, opti_out.feasible, AT);
+    DYNO_CHECK_EQ(traj.feasible, opti_out.feasible, AT);
 
   } break;
 
@@ -1590,7 +1591,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
     options_trajopt_local.solver_id = static_cast<int>(SOLVER::traj_opt);
     options_trajopt_local.control_bounds = 0;
     options_trajopt_local.debug_file_name =
-        "/tmp/dbastar/debug_file_trajopt.yaml";
+        "/tmp/dynoplan/debug_file_trajopt.yaml";
     std::cout << "**\nopti params is " << std::endl;
     options_trajopt_local.print(std::cout);
 
@@ -1617,7 +1618,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
           static_cast<int>(SOLVER::traj_opt_free_time_proxi);
       options_trajopt_local.control_bounds = 1;
       options_trajopt_local.debug_file_name =
-          "/tmp/dbastar/debug_file_trajopt_freetime.yaml";
+          "/tmp/dynoplan/debug_file_trajopt_freetime.yaml";
 
       __trajectory_optimization(problem, model_robot, tmp_solution,
                                 options_trajopt_local, traj, opti_out);
@@ -1628,7 +1629,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
       // missing fix step with ref dt!
     }
 
-    CHECK_EQ(traj.feasible, opti_out.feasible, AT);
+    DYNO_CHECK_EQ(traj.feasible, opti_out.feasible, AT);
 
   } break;
 
@@ -1639,7 +1640,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
 
     options_trajopt_local.solver_id = static_cast<int>(SOLVER::traj_opt);
     options_trajopt_local.debug_file_name =
-        "/tmp/dbastar/debug_file_trajopt_0.yaml";
+        "/tmp/dynoplan/debug_file_trajopt_0.yaml";
 
     std::cout << "**\nopti params is " << std::endl;
     options_trajopt_local.print(std::cout);
@@ -1666,7 +1667,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
                               opti_out);
       time_ddp_total += std::stod(opti_out.data.at("ddp_time"));
 
-      CHECK_EQ(traj.feasible, opti_out.feasible, AT);
+      DYNO_CHECK_EQ(traj.feasible, opti_out.feasible, AT);
     }
   } break;
 
@@ -1760,41 +1761,40 @@ void trajectory_optimization(const dynobench::Problem &problem,
     double *it = nullptr;
 
     if (!options_trajopt_local.linear_search) {
-      it = std::lower_bound(rates.data(), rates.data() + rates.size(), true,
-                            [&](auto rate, auto val) {
-                              (void)val;
-                              std::cout << "checking rate " << rate
-                                        << std::endl;
-                              options_trajopt_local.debug_file_name =
-                                  "/tmp/dbastar/debug_file_trajopt_" +
-                                  std::to_string(counter++) + ".yaml";
-                              Trajectory traj_out;
-                              check_with_rate(rate, opti_out_local, traj_out);
-                              if (opti_out_local.feasible) {
-                                std::cout << "if feasible -- COST"
-                                          << opti_out_local.cost << std::endl;
-                                CHECK_GEQ(best.cost, opti_out_local.cost, AT);
-                                best_traj = traj_out;
-                                best = opti_out_local;
-                              }
-                              std::cout << "feasibility of rate: " << rate
-                                        << " is " << opti_out_local.feasible
-                                        << std::endl;
-                              return !opti_out_local.feasible;
-                            });
+      it = std::lower_bound(
+          rates.data(), rates.data() + rates.size(), true,
+          [&](auto rate, auto val) {
+            (void)val;
+            std::cout << "checking rate " << rate << std::endl;
+            options_trajopt_local.debug_file_name =
+                "/tmp/dynoplan/debug_file_trajopt_" +
+                std::to_string(counter++) + ".yaml";
+            Trajectory traj_out;
+            check_with_rate(rate, opti_out_local, traj_out);
+            if (opti_out_local.feasible) {
+              std::cout << "if feasible -- COST" << opti_out_local.cost
+                        << std::endl;
+              DYNO_DYNO_CHECK_GEQ(best.cost, opti_out_local.cost, AT);
+              best_traj = traj_out;
+              best = opti_out_local;
+            }
+            std::cout << "feasibility of rate: " << rate << " is "
+                      << opti_out_local.feasible << std::endl;
+            return !opti_out_local.feasible;
+          });
     } else {
       it = std::find_if(
           rates.data(), rates.data() + rates.size(), [&](const auto &rate) {
             std::cout << "checking rate " << rate << std::endl;
             options_trajopt_local.debug_file_name =
-                "/tmp/dbastar/debug_file_trajopt_" + std::to_string(counter++) +
-                ".yaml";
+                "/tmp/dynoplan/debug_file_trajopt_" +
+                std::to_string(counter++) + ".yaml";
             Trajectory traj_out;
             check_with_rate(rate, opti_out_local, traj_out);
             if (opti_out_local.feasible) {
               std::cout << "if feasible -- COST: " << opti_out_local.cost
                         << std::endl;
-              CHECK_GEQ(best.cost, opti_out_local.cost, AT);
+              DYNO_DYNO_CHECK_GEQ(best.cost, opti_out_local.cost, AT);
               best_traj = traj_out;
               best = opti_out_local;
             }
@@ -1814,7 +1814,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
       opti_out = best;
       traj = best_traj;
     }
-    CHECK_EQ(traj.feasible, opti_out.feasible, AT);
+    DYNO_CHECK_EQ(traj.feasible, opti_out.feasible, AT);
   } break;
 
   case SOLVER::traj_opt_free_time_linear: {
@@ -1823,7 +1823,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
     options_trajopt_local.solver_id =
         static_cast<int>(SOLVER::traj_opt_free_time_proxi_linear);
     options_trajopt_local.debug_file_name =
-        "/tmp/dbastar/debug_file_trajopt_freetime_proxi.yaml";
+        "/tmp/dynoplan/debug_file_trajopt_freetime_proxi.yaml";
     std::cout << "**\nopti params is " << std::endl;
     options_trajopt_local.print(std::cout);
 
@@ -1843,7 +1843,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
       std::cout << "time proxi was feasible, doing final step " << std::endl;
       options_trajopt_local.solver_id = static_cast<int>(SOLVER::traj_opt);
       options_trajopt_local.debug_file_name =
-          "/tmp/dbastar/debug_file_trajopt_after_freetime_proxi.yaml";
+          "/tmp/dynoplan/debug_file_trajopt_after_freetime_proxi.yaml";
 
       __trajectory_optimization(problem, model_robot, tmp_solution,
                                 options_trajopt_local, traj, opti_out);
@@ -1851,7 +1851,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
       CSTR_(time_ddp_total);
     }
 
-    CHECK_EQ(traj.feasible, opti_out.feasible, AT);
+    DYNO_CHECK_EQ(traj.feasible, opti_out.feasible, AT);
   } break;
 
   case SOLVER::traj_opt_free_time: {
@@ -1860,7 +1860,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
     options_trajopt_local.solver_id =
         static_cast<int>(SOLVER::traj_opt_free_time_proxi);
     options_trajopt_local.debug_file_name =
-        "/tmp/dbastar/debug_file_trajopt_freetime_proxi.yaml";
+        "/tmp/dynoplan/debug_file_trajopt_freetime_proxi.yaml";
     std::cout << "**\nopti params is " << std::endl;
     options_trajopt_local.print(std::cout);
 
@@ -1881,14 +1881,14 @@ void trajectory_optimization(const dynobench::Problem &problem,
       std::cout << "time proxi was feasible, doing final step " << std::endl;
       options_trajopt_local.solver_id = static_cast<int>(SOLVER::traj_opt);
       options_trajopt_local.debug_file_name =
-          "/tmp/dbastar/debug_file_trajopt_after_freetime_proxi.yaml";
+          "/tmp/dynoplan/debug_file_trajopt_after_freetime_proxi.yaml";
 
       __trajectory_optimization(problem, model_robot, tmp_solution,
                                 options_trajopt_local, traj, opti_out);
       time_ddp_total += std::stod(opti_out.data.at("ddp_time"));
       CSTR_(time_ddp_total);
     }
-    CHECK_EQ(traj.feasible, opti_out.feasible, AT);
+    DYNO_CHECK_EQ(traj.feasible, opti_out.feasible, AT);
   } break;
 
   case SOLVER::traj_opt_no_bound_bound: {
@@ -1898,7 +1898,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
     options_trajopt_local.u_bound_scale = 1.5;
     options_trajopt_local.solver_id = static_cast<int>(SOLVER::traj_opt);
     options_trajopt_local.debug_file_name =
-        "/tmp/dbastar/debug_file_trajopt_bound_scale.yaml";
+        "/tmp/dynoplan/debug_file_trajopt_bound_scale.yaml";
     std::cout << "**\nopti params is " << std::endl;
     options_trajopt_local.print(std::cout);
 
@@ -1924,7 +1924,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
       options_trajopt_local.u_bound_scale = 1.;
       options_trajopt_local.solver_id = static_cast<int>(SOLVER::traj_opt);
       options_trajopt_local.debug_file_name =
-          "/tmp/dbastar/debug_file_trajopt_bound.yaml";
+          "/tmp/dynoplan/debug_file_trajopt_bound.yaml";
       std::cout << "**\nopti params is " << std::endl;
       options_trajopt_local.print(std::cout);
 
@@ -1933,7 +1933,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
       time_ddp_total += std::stod(opti_out.data.at("ddp_time"));
       CSTR_(time_ddp_total);
     }
-    CHECK_EQ(traj.feasible, opti_out.feasible, AT);
+    DYNO_CHECK_EQ(traj.feasible, opti_out.feasible, AT);
   } break;
 
   default: {
@@ -1941,7 +1941,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
                               options_trajopt_local, traj, opti_out);
     time_ddp_total += std::stod(opti_out.data.at("ddp_time"));
     CSTR_(time_ddp_total);
-    CHECK_EQ(traj.feasible, opti_out.feasible, AT);
+    DYNO_CHECK_EQ(traj.feasible, opti_out.feasible, AT);
   }
   }
 
@@ -2010,7 +2010,7 @@ smooth_traj2(const std::vector<Eigen::VectorXd> &xs_init,
              const dynobench::StateDyno &state) {
   size_t n = xs_init.front().size();
   size_t ndx = state.ndx;
-  CHECK_EQ(n, state.nx, AT);
+  DYNO_CHECK_EQ(n, state.nx, AT);
   std::vector<Vxd> xs_out(xs_init.size(), Eigen::VectorXd::Zero(n));
 
   // compute diff vectors

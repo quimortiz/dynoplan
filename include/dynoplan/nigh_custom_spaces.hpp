@@ -255,7 +255,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
       return std::tuple(Eigen::Vector2d(__x.head(2)), __x(2));
     };
 
-    CHECK_EQ(w.size(), 2, AT);
+    DYNO_CHECK_EQ(w.size(), 2, AT);
     __Space space(double(w(0)), double(w(1)));
 
     out = new NearestNeighborsNigh<_T, __Space>(space, data_to_key);
@@ -274,7 +274,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
 
     // out = new NearestNeighborsNigh<_T, SpaceUni2>(data_to_key);
 
-    CHECK_EQ(w.size(), 4, AT);
+    DYNO_CHECK_EQ(w.size(), 4, AT);
     __SpaceUni2 space(w(0), w(1), w(2), w(3));
     out = new NearestNeighborsNigh<_T, __SpaceUni2>(space, data_to_key);
   }
@@ -293,7 +293,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
     };
 
     using Space = __SpaceQuad2dPole;
-    CHECK_EQ(w.size(), 6, AT);
+    DYNO_CHECK_EQ(w.size(), 6, AT);
     Space space(w(0), w(1), w(2), w(3), w(4), w(5));
 
     out = new NearestNeighborsNigh<_T, Space>(space, data_to_key);
@@ -311,7 +311,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
                         Eigen::Vector2d(__x(3), __x(4)), V1d(__x(5)));
     };
 
-    CHECK_EQ(w.size(), 4, AT);
+    DYNO_CHECK_EQ(w.size(), 4, AT);
     __SpaceQuad2d space(w(0), w(1), w(2), w(3));
 
     out = new NearestNeighborsNigh<_T, __SpaceQuad2d>(space, data_to_key);
@@ -328,7 +328,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
 
     // out = new NearestNeighborsNigh<_T, SpaceAcrobot>(data_to_key);
 
-    CHECK_EQ(w.size(), 3, AT);
+    DYNO_CHECK_EQ(w.size(), 3, AT);
     __SpaceAcrobot space(w(0), w(1), w(2));
 
     out = new NearestNeighborsNigh<_T, __SpaceAcrobot>(space, data_to_key);
@@ -346,7 +346,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
                         Eigen::Vector3d(__x(10), __x(11), __x(12)));
     };
 
-    CHECK_EQ(w.size(), 4, AT);
+    DYNO_CHECK_EQ(w.size(), 4, AT);
     __SpaceQuad3d space(w(0), w(1), w(2), w(3));
     // out = new NearestNeighborsNigh<_T, SpaceQuad3d>(data_to_key);
     out = new NearestNeighborsNigh<_T, __SpaceQuad3d>(space, data_to_key);
@@ -362,7 +362,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
     };
     // out = new NearestNeighborsNigh<_T, SpaceCar1>(data_to_key);
 
-    CHECK_EQ(w.size(), 3, AT);
+    DYNO_CHECK_EQ(w.size(), 3, AT);
     __SpaceCar1 space(w(0), w(1), w(2));
     // out = new NearestNeighborsNigh<_T, SpaceQuad3d>(data_to_key);
     out = new NearestNeighborsNigh<_T, __SpaceCar1>(space, data_to_key);
@@ -392,7 +392,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
         return std::tuple(Eigen::Vector2d(__x.head(2)), __x(2));
       };
 
-      CHECK_EQ(w.size(), 2, AT);
+      DYNO_CHECK_EQ(w.size(), 2, AT);
       __Space space(double(w(0)), double(w(1)));
 
       out = new NearestNeighborsNigh<_T, __Space>(space, data_to_key);
@@ -406,7 +406,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
         return std::tuple(Eigen::Vector2d(__x.head(2)), __x(2), Vector1d(c));
       };
 
-      CHECK_EQ(w.size(), 2, AT);
+      DYNO_CHECK_EQ(w.size(), 2, AT);
       __SpaceWithCost space(double(w(0)), double(w(1)), cost_scale);
 
       out = new NearestNeighborsNigh<_T, __SpaceWithCost>(space, data_to_key);
@@ -425,7 +425,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
 
       // out = new NearestNeighborsNigh<_T, SpaceUni2>(data_to_key);
 
-      CHECK_EQ(w.size(), 4, AT);
+      DYNO_CHECK_EQ(w.size(), 4, AT);
       __SpaceUni2 space(w(0), w(1), w(2), w(3));
       out = new NearestNeighborsNigh<_T, __SpaceUni2>(space, data_to_key);
     } else {
@@ -439,7 +439,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
                           Vector1d(__x(3)), Vector1d(__x(4)), Vector1d(c));
       };
 
-      CHECK_EQ(w.size(), 4, AT);
+      DYNO_CHECK_EQ(w.size(), 4, AT);
       __SpaceUni2WithCost space(w(0), w(1), w(2), w(3), cost_scale);
       out =
           new NearestNeighborsNigh<_T, __SpaceUni2WithCost>(space, data_to_key);
@@ -458,7 +458,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
     };
 
     using Space = __SpaceQuad2dPole;
-    CHECK_EQ(w.size(), 6, AT);
+    DYNO_CHECK_EQ(w.size(), 6, AT);
     Space space(w(0), w(1), w(2), w(3), w(4), w(5));
 
     out = new NearestNeighborsNigh<_T, Space>(space, data_to_key);
@@ -474,7 +474,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
                         Eigen::Vector2d(__x(3), __x(4)), V1d(__x(5)));
     };
 
-    CHECK_EQ(w.size(), 4, AT);
+    DYNO_CHECK_EQ(w.size(), 4, AT);
     __SpaceQuad2d space(w(0), w(1), w(2), w(3));
 
     out = new NearestNeighborsNigh<_T, __SpaceQuad2d>(space, data_to_key);
@@ -489,7 +489,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
 
     // out = new NearestNeighborsNigh<_T, SpaceAcrobot>(data_to_key);
 
-    CHECK_EQ(w.size(), 3, AT);
+    DYNO_CHECK_EQ(w.size(), 3, AT);
     __SpaceAcrobot space(w(0), w(1), w(2));
 
     out = new NearestNeighborsNigh<_T, __SpaceAcrobot>(space, data_to_key);
@@ -505,7 +505,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
                         Eigen::Vector3d(__x(10), __x(11), __x(12)));
     };
 
-    CHECK_EQ(w.size(), 4, AT);
+    DYNO_CHECK_EQ(w.size(), 4, AT);
     __SpaceQuad3d space(w(0), w(1), w(2), w(3));
     // out = new NearestNeighborsNigh<_T, SpaceQuad3d>(data_to_key);
     out = new NearestNeighborsNigh<_T, __SpaceQuad3d>(space, data_to_key);
@@ -518,7 +518,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
     };
     // out = new NearestNeighborsNigh<_T, SpaceCar1>(data_to_key);
 
-    CHECK_EQ(w.size(), 3, AT);
+    DYNO_CHECK_EQ(w.size(), 3, AT);
     __SpaceCar1 space(w(0), w(1), w(2));
     // out = new NearestNeighborsNigh<_T, SpaceQuad3d>(data_to_key);
     out = new NearestNeighborsNigh<_T, __SpaceCar1>(space, data_to_key);

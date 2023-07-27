@@ -27,7 +27,11 @@ void idbA(const dynobench::Problem &problem,
 
   std::vector<Motion> motions;
 
-  auto robot = robot_factory_ompl(problem);
+  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+      (problem.models_base_path + problem.robotType + ".yaml").c_str(),
+      problem.p_lb, problem.p_ub);
+
+  robot_factory_ompl(problem);
   std::cout << "Loading motion primitives " << std::endl;
   if (!options_dbastar_local.primitives_new_format) {
     CHECK(robot, AT);
@@ -123,7 +127,7 @@ void idbA(const dynobench::Problem &problem,
 
     std::string id_db = gen_random(6);
 
-    options_dbastar_local.outFile = "/tmp/dbastar/i_db_" + id_db + ".yaml";
+    options_dbastar_local.outFile = "/tmp/dynoplan/i_db_" + id_db + ".yaml";
 
     Stopwatch sw;
     dbastar(problem, options_dbastar_local, traj_db, out_info_db);
@@ -142,8 +146,8 @@ void idbA(const dynobench::Problem &problem,
     if (out_info_db.solved) {
       // write trajectory to file
       {
-        std::string filename = "/tmp/dbastar/i_traj_db.yaml";
-        std::string filename_id = "/tmp/dbastar/i_traj_db_" + id_db + ".yaml";
+        std::string filename = "/tmp/dynoplan/i_traj_db.yaml";
+        std::string filename_id = "/tmp/dynoplan/i_traj_db_" + id_db + ".yaml";
         std::cout << "saving traj to: " << filename << std::endl;
         std::cout << "saving traj to: " << filename_id << std::endl;
         create_dir_if_necessary(filename.c_str());
@@ -165,9 +169,9 @@ void idbA(const dynobench::Problem &problem,
 
       // write trajectory to file
       {
-        std::string filename = "/tmp/dbastar/i_traj_opt.yaml";
+        std::string filename = "/tmp/dynoplan/i_traj_opt.yaml";
         std::string filename_id =
-            "/tmp/dbastar/i_traj_opt_" + gen_random(6) + ".yaml";
+            "/tmp/dynoplan/i_traj_opt_" + gen_random(6) + ".yaml";
         std::cout << "saving traj to: " << filename << std::endl;
         std::cout << "saving traj to: " << filename_id << std::endl;
         create_dir_if_necessary(filename.c_str());
@@ -203,18 +207,16 @@ void idbA(const dynobench::Problem &problem,
           size_t number_of_cuts = 5;
 
           dynobench::Trajectories new_trajectories =
-              cut_trajectory(traj, number_of_cuts, robot->diff_model);
-
-          auto &rr = robot->diff_model;
+              cut_trajectory(traj, number_of_cuts, robot);
 
           dynobench::Trajectories trajs_canonical;
 
-          make_trajs_canonical(*robot->diff_model, new_trajectories.data,
+          make_trajs_canonical(*robot, new_trajectories.data,
                                trajs_canonical.data);
 
           {
             std::string filename =
-                "/tmp/dbastar/trajs_cuts_canonical_" + gen_random(6) + ".yaml";
+                "/tmp/dynoplan/trajs_cuts_canonical_" + gen_random(6) + ".yaml";
             trajs_canonical.save_file_yaml(filename.c_str());
           }
 
@@ -226,7 +228,7 @@ void idbA(const dynobench::Problem &problem,
             t.states.back() +=
                 noise * Eigen::VectorXd::Random(t.states.back().size());
 
-            if (startsWith(robot->diff_model->name, "quad3d")) {
+            if (startsWith(robot->name, "quad3d")) {
               t.states.front().segment<4>(3).normalize();
               t.states.back().segment<4>(3).normalize();
             }
@@ -237,15 +239,21 @@ void idbA(const dynobench::Problem &problem,
             Motion motion_out;
             CHECK(robot, AT)
             traj_to_motion(traj, *robot, motion_out, true);
-            motions_out.push_back(motion_out);
+            motions_out.push_back(std::move(motion_out));
           }
 
-          motions.insert(motions.begin(), motions_out.begin(),
-                         motions_out.end());
+          motions.insert(motions.begin(),
+                         std::make_move_iterator(motions_out.begin()),
+                         std::make_move_iterator(motions_out.end()));
 
           std::cout << "Afer insert " << motions.size() << std::endl;
           std::cout << "Warning: "
                     << "I am inserting at the beginning" << std::endl;
+
+          std::cout << "i update the idx of the motions " << std::endl;
+          for (size_t i = 0; i < motions.size(); i++) {
+            motions[i].idx = i;
+          }
         }
       }
     }
@@ -275,9 +283,9 @@ void idbA(const dynobench::Problem &problem,
   // write solution to file
 
   {
-    std::string filename = "/tmp/dbastar/i_traj_out.yaml";
+    std::string filename = "/tmp/dynoplan/i_traj_out.yaml";
     std::string filename_id =
-        "/tmp/dbastar/i_traj_out_" + gen_random(6) + ".yaml";
+        "/tmp/dynoplan/i_traj_out_" + gen_random(6) + ".yaml";
     std::cout << "saving traj to: " << filename << std::endl;
     std::cout << "saving traj to: " << filename_id << std::endl;
     create_dir_if_necessary(filename.c_str());

@@ -35,6 +35,7 @@ BOOST_AUTO_TEST_CASE(t_uni1_bugtrap) {
   problem.models_base_path = DYNOBENCH_BASE "models/";
 
   Options_idbAStar options_idbas;
+  options_idbas.timelimit = 50;
   Options_dbastar options_dbastar;
   Options_trajopt options_trajopt;
 
