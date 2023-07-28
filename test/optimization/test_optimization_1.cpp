@@ -21,6 +21,8 @@
 #include <regex>
 
 #include "dynobench/motions.hpp"
+#include "dynobench/planar_rotor.hpp"
+#include "dynobench/planar_rotor_pole.hpp"
 #include <Eigen/Dense>
 #include <iostream>
 
@@ -210,4 +212,99 @@ BOOST_AUTO_TEST_CASE(t_opti_integrator2) {
   create_dir_if_necessary(filename.c_str());
   std::ofstream out(filename);
   traj_out.to_yaml_format(out);
+}
+
+static Eigen::VectorXd default_vector;
+
+// TODO: move to bench
+BOOST_AUTO_TEST_CASE(t_dyn) {
+
+  double tol = 1e-7;
+  double margin_rate = 100;
+  {
+    auto dyn = mk<Dynamics>(mks<dynobench::Model_acrobot>());
+    check_dyn(dyn, tol, default_vector, default_vector, margin_rate);
+  }
+
+  {
+    auto dyn = mk<Dynamics>(mks<dynobench::Model_acrobot>(),
+                            Control_Mode::default_mode);
+    check_dyn(dyn, tol, default_vector, default_vector, margin_rate);
+  }
+
+  {
+    double tol = 1e-7;
+    {
+      auto dyn = mk<Dynamics>(mks<Model_quad2d>());
+      check_dyn(dyn, tol);
+    }
+    {
+      auto dyn_free_time =
+          mk<Dynamics>(mks<Model_quad2d>(), Control_Mode::free_time);
+
+      Eigen::VectorXd x(6);
+      x.setRandom();
+
+      Eigen::VectorXd u(3);
+      u.setRandom();
+      u(2) = std::fabs(u(2));
+
+      check_dyn(dyn_free_time, tol, x, u);
+    }
+  }
+
+  {
+    ptr<Dynamics> dyn = mk<Dynamics>(mks<Model_quad2dpole>());
+    check_dyn(dyn, 1e-6, Eigen::VectorXd(), Eigen::VectorXd(), 200);
+  }
+}
+
+BOOST_AUTO_TEST_CASE(t_multirotor_pole) {
+
+  {
+    // solving without initial guess
+    Problem problem(dynobench_base "envs/quad2dpole_v0/move_with_up.yaml");
+
+    problem.models_base_path = dynobench_base "models/";
+
+    Trajectory traj_in, traj_out;
+    traj_in.num_time_steps = 300;
+
+    Options_trajopt options_trajopt;
+    options_trajopt.solver_id = 0;
+    options_trajopt.smooth_traj = true;
+    options_trajopt.weight_goal = 200;
+    options_trajopt.max_iter = 100;
+
+    Result_opti opti_out;
+
+    BOOST_CHECK_NO_THROW(trajectory_optimization(
+        problem, traj_in, options_trajopt, traj_out, opti_out));
+
+    BOOST_CHECK(opti_out.feasible);
+  }
+
+  {
+    Problem problem(dynobench_base "envs/quad2dpole_v0/window_hard.yaml");
+    problem.models_base_path = dynobench_base "models/";
+
+    Trajectory traj_in, traj_out;
+
+    traj_in.read_from_yaml("../../dynobench/envs/quad2dpole_v0/window_hard/"
+                           "idbastar_v0_db_solution_v0.yaml");
+
+    Options_trajopt options;
+    options.solver_id = 0;
+    options.weight_goal = 200;
+    Result_opti opti_out;
+    BOOST_CHECK_NO_THROW(
+        trajectory_optimization(problem, traj_in, options, traj_out, opti_out));
+    BOOST_TEST(opti_out.feasible);
+
+    options.solver_id = 1;
+
+    BOOST_CHECK_NO_THROW(
+        trajectory_optimization(problem, traj_in, options, traj_out, opti_out));
+    BOOST_TEST(opti_out.feasible);
+  }
 }

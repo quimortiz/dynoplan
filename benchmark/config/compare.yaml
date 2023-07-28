@@ -1,19 +1,19 @@
-trials: 10
-timelimit: 60
+trials: 20
+timelimit: 20
 n_cores: -1 # -1=auto
 
 problems:
   # # # #
-  # - unicycle1_v0/parallelpark_0
-  # - unicycle1_v0/bugtrap_0
-  # - unicycle1_v0/kink_0
+  - unicycle1_v0/parallelpark_0
+  - unicycle1_v0/bugtrap_0
+  - unicycle1_v0/kink_0
   # # # # #
-  # - unicycle1_v1/kink_0
-  # - unicycle1_v2/wall_0
+  - unicycle1_v1/kink_0
+  - unicycle1_v2/wall_0
   # # # # # #
-  # - unicycle2_v0/kink_0
-  # - unicycle2_v0/parallelpark_0
-  # - unicycle2_v0/bugtrap_0
+  - unicycle2_v0/kink_0
+  - unicycle2_v0/parallelpark_0
+  - unicycle2_v0/bugtrap_0
   # # # # # # #
   # - car1_v0/kink_0
   # - car1_v0/bugtrap_0
@@ -32,7 +32,7 @@ problems:
   # - quad2dpole_v0/up
   # - quad2dpole_v0/down
   # - quad2dpole_v0/up_obs
-  - quad2dpole_v0/window_easy
+  # - quad2dpole_v0/window_easy
   # - quad2dpole_v0/window
   # - quad2dpole_v0/window_hard
   # # #
@@ -62,9 +62,9 @@ problems:
 algs:
 
   # Idbastar
-  - idbastar_v0
-  # - sst_v0
+  # - idbastar_v0
   # - geo_v0
+  - sst_v0
 
 
   # - idbastar_tmp
