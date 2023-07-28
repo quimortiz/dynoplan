@@ -135,6 +135,7 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
   std::vector<const AStarNode *> result;
 
   CHECK(solution, AT);
+  // TODO: check what happens if a solution is a single state?
 
   const AStarNode *n = solution;
   while (n != nullptr) {
@@ -143,15 +144,27 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     // si->printState(n->state);
     n = n->came_from;
   }
+
   std::reverse(result.begin(), result.end());
 
   std::cout << "result size " << result.size() << std::endl;
 
+  auto space6 = std::string(6, ' ');
+  if (result.size() == 1) {
+    // eg. if start is closest state to the goal
+
+    if (out) {
+      *out << "  - states:" << std::endl;
+      *out << space6 << "- ";
+      *out << result.front()->state_eig.format(FMT) << std::endl;
+      *out << "    actions: []" << std::endl;
+    }
+    traj_out.states.push_back(result.front()->state_eig);
+  }
+
   if (out) {
     *out << "  - states:" << std::endl;
   }
-
-  auto space6 = std::string(6, ' ');
 
   Eigen::VectorXd __tmp(robot.nx);
   Eigen::VectorXd __offset(robot.get_offset_dim());
@@ -161,6 +174,7 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     int take_until = result.at(i + 1)->intermediate_state;
     if (take_until != -1) {
       if (out) {
+        *out << std::endl;
         *out << space6 + "# (note: we have stopped at intermediate state) "
              << std::endl;
       }
@@ -209,6 +223,7 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     if (take_until != -1)
       take_num_states = take_until + 1;
 
+    DYNO_CHECK_LEQ(take_num_states, xs.size(), AT);
     for (size_t k = 0; k < take_num_states; ++k) {
       if (k < take_num_states - 1) {
         // print the state
@@ -221,7 +236,9 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
         if (out) {
           *out << space6 << "- ";
         }
-        traj_out.states.push_back(xs.at(k));
+        traj_out.states.push_back(result.at(i + 1)->state_eig);
+        // traj_out.states.push_back(xs.at(k)); This was before, fails if I have
+        // change the parent of the last node before it goes out of the queue.
       } else {
         if (out) {
           *out << space6 << "# (last state) ";
@@ -281,6 +298,8 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     if (out)
       *out << std::endl;
   }
+  DYNO_CHECK_LEQ((result.back()->state_eig - traj_out.states.back()).norm(),
+                 1e-6, "");
 };
 
 double automatic_delta(double delta_in, double alpha, RobotOmpl &robot,
@@ -365,6 +384,7 @@ void __add_state_timed(AStarNode *node,
 bool check_lazy_trajectory(LazyTraj &lazy_traj, dynobench::Model_robot &robot,
                            Time_benchmark &time_bench,
                            dynobench::Trajectory &tmp_traj) {
+  // TODO: use collision shape if applicable
   Stopwatch wacht_mem;
   tmp_traj.states = lazy_traj.motion->traj.states;
   tmp_traj.actions = lazy_traj.motion->traj.actions;
@@ -375,11 +395,25 @@ bool check_lazy_trajectory(LazyTraj &lazy_traj, dynobench::Model_robot &robot,
   time_bench.time_transform_primitive += wacht_tp.elapsed_ms();
 
   Stopwatch wacht_check_motion;
-  for (auto &state : tmp_traj.states) {
-    if (!robot.is_state_valid(state)) {
+
+  // TODO: lets do this backwards, it will be more efficient
+  // for (auto &state : tmp_traj.states) {
+  //   if (!robot.is_state_valid(state)) {
+  //     // std::cout << "State is not valid!: " << state.format(FMT) <<
+  //     std::endl;
+  //     // std::cout << "x_lb: " << robot.x_lb.transpose() << std::endl;
+  //     // std::cout << "x_ub: " << robot.x_ub.transpose() << std::endl;
+  //     return false;
+  //   }
+  // }
+
+  for (size_t i = 0; i < tmp_traj.states.size(); i++) {
+    if (!robot.is_state_valid(
+            tmp_traj.states.at(tmp_traj.states.size() - 1 - i))) {
       return false;
     }
   }
+
   time_bench.check_bounds += wacht_check_motion.elapsed_ms();
 
   bool motion_valid;
@@ -625,6 +659,8 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
       std::cout << "FOUND SOLUTION" << std::endl;
       std::cout << "COST: " << best_node->gScore + best_node->hScore
                 << std::endl;
+      std::cout << "x: " << best_node->state_eig.format(FMT) << std::endl;
+      std::cout << "d: " << distance_to_goal << std::endl;
       status = Terminate_status::SOLVED;
       break;
     }
@@ -635,6 +671,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     time_bench.time_lazy_expand += timed_fun_void(
         [&] { expander.expand_lazy(best_node->state_eig, lazy_trajs); });
 
+    // CSTR_(lazy_trajs.size());
     dynobench::Trajectory tmp_traj;
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
@@ -659,6 +696,8 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
           std::cout << "Found a solution with intermetidate checks!"
                     << std::endl;
           tmp_node.state_eig = tmp_traj.states.at(index_to_check);
+          std::cout << "x:" << tmp_node.state_eig.format(FMT) << " d:" << d
+                    << std::endl;
           chosen_index = index_to_check;
           break;
         }
@@ -723,6 +762,11 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
             n->fScore = tentative_g + n->hScore;
             n->came_from = best_node;
             n->used_motion = lazy_traj.motion->idx;
+            // TODO: think if add a flag so that nodes thouching the goal can
+            // not be modified
+            n->intermediate_state = -1; // reset intermediate state.
+            // The motion is taken fully, because otherwise it would be novel
+            // and enter inside the other if.
             if (n->is_in_open) {
               time_bench.time_queue +=
                   timed_fun_void([&] { open.increase(n->handle); });
@@ -738,6 +782,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
         break;
       }
     }
+    // CSTR_(num_expansion_best_node);
   }
 
   time_bench.time_search = watch.elapsed_ms();
@@ -829,6 +874,10 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
   if (status == Terminate_status::SOLVED) {
     dynobench::Feasibility_thresholds thresholds;
+    thresholds.col_tol =
+        5 * 1e-2; // NOTE: for the systems with 0.01 s integration step,
+    // I check collisions only at 0.05s . Thus, an intermediate state could be
+    // slightly in collision.
     thresholds.goal_tol = options_dbastar.delta;
     thresholds.traj_tol = options_dbastar.delta;
     traj_out.update_feasibility(thresholds, true);

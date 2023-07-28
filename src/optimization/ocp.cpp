@@ -1417,7 +1417,12 @@ void trajectory_optimization(const dynobench::Problem &problem,
 
   std::shared_ptr<dynobench::Model_robot> model_robot =
       dynobench::robot_factory(
-          (problem.models_base_path + problem.robotType + ".yaml").c_str());
+          (problem.models_base_path + problem.robotType + ".yaml").c_str(),
+          problem.p_lb, problem.p_ub);
+
+  // std::shared_ptr<dynobench::Model_robot> model_robot =
+  //     dynobench::robot_factory(
+  //         (problem.models_base_path + problem.robotType + ".yaml").c_str());
 
   load_env(*model_robot, problem);
 

@@ -551,6 +551,8 @@ def solve_problem_with_alg(
             str(timelimit),
             "--cfg",
             cfg_out,
+            "--models_base_path",
+            "../dynobench/models/",
         ]
 
     elif alg.startswith("idbastar"):
@@ -565,6 +567,8 @@ def solve_problem_with_alg(
             str(timelimit),
             "--cfg",
             cfg_out,
+            "--models_base_path",
+            "../dynobench/models/",
         ]
 
     else:
@@ -1691,6 +1695,12 @@ def __benchmark(bench_cfg: str):
     # basic analysisi of the results?
 
 
+# TODO: small script to solve all and store the output in the dynpobench, with nice names.
+# Lets store the final solution trajectory, the first db-astar and the last db-astar, and the corresponding solved.
+
+# what to do with the other planners?
+
+
 def benchmark(bench_cfg: str):
     with open(bench_cfg) as f:
         d = yaml.load(f, Loader=yaml.CLoader)
@@ -1801,6 +1811,7 @@ def compare(files: List[str], interactive: bool = False):
     # log file
 
     filename_csv_log = filename_csv + ".log"
+    pathlib.Path(filename_csv_log).parent.mkdir(parents=True, exist_ok=True)
 
     with open(filename_csv_log, "w") as f:
         dd = {
@@ -1843,11 +1854,12 @@ def compare(files: List[str], interactive: bool = False):
     print(all_problems)
     # sys.exit(1)
 
-    all_problems = [
-        "quad2dpole/up_obs",
-        "quadrotor_0/window",
-        "unicycle_first_order_0/bugtrap_0",
-    ]
+    # print hardcoding the problems!
+    # all_problems = [
+    #     "quad2dpole/up_obs",
+    #     "quadrotor_0/window",
+    #     "unicycle_first_order_0/bugtrap_0",
+    # ]
 
     # HARDCODE WHICH PROBLEMS
 
@@ -1879,6 +1891,7 @@ def compare(files: List[str], interactive: bool = False):
 
     filename_log_pdf = filename_pdf + ".log"
 
+    pathlib.Path(filename_log_pdf).parent.mkdir(parents=True, exist_ok=True)
     with open(filename_log_pdf, "w") as f:
         dd = {
             "input": files,
@@ -1982,8 +1995,7 @@ def compare(files: List[str], interactive: bool = False):
                 "unicycle_first_order_0/bugtrap_0": [0, 80],
             }
 
-            ax[0].set_title(Dproblem2title[problem])
-
+            ax[0].set_title(Dproblem2title.get(problem, problem))
             if counter == 3:
                 ax[1].legend(loc="lower right")
 
@@ -1992,7 +2004,8 @@ def compare(files: List[str], interactive: bool = False):
                 ax[0].set_ylabel("cost[s]")
                 ax[1].set_ylabel("success %")
 
-            ax[0].set_ylim(Dproblem2limit[problem][0], Dproblem2limit[problem][1])
+            if problem in Dproblem2limit:
+                ax[0].set_ylim(Dproblem2limit[problem][0], Dproblem2limit[problem][1])
 
             ax[1].set_ylim(-10, 110)
             ax[1].set_xlim(0.5, MAX_TIME_PLOTS)
@@ -2534,7 +2547,11 @@ def create_latex_table(csv_file: str) -> None:
     now = datetime.now()  # current date and time
     date_time = now.strftime("%Y-%m-%d--%H-%M-%S")
 
-    with open(f"../results_new/tex/data_{date_time}.tex", "w") as f:
+    filename = f"../results_new/tex/data_{date_time}.tex"
+
+    pathlib.Path(filename).parent.mkdir(parents=True, exist_ok=True)
+
+    with open(filename, "w") as f:
         f.write(str_)
 
     problems = df["problem"].unique()
@@ -2905,11 +2922,11 @@ def format_latex_str(str_in: str) -> str:
         str_ = str_.replace(k, v)
 
     for k, v in D_key_to_nice_name:
-        print(f"replacing {k} with {v}")
-
-        print(str_)
+        # print(f"replacing {k} with {v}")
+        #
+        # print(str_)
         str_ = str_.replace(k, v)
-        print(str_)
+        # print(str_)
 
     str_ = str_.replace("_", "\\_")
     # print("final string is:")

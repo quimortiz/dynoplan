@@ -233,11 +233,13 @@ public:
   const Eigen::VectorXd &getStateEig() const { return traj.states.front(); }
 };
 
-void load_motion_primitives_new(const std::string &motionsFile,
-                                dynobench::Model_robot &robot,
-                                std::vector<Motion> &motions, int max_motions,
-                                bool cut_actions, bool shuffle,
-                                bool compute_col = true);
+enum class MotionPrimitiveFormat { BOOST, YAML, JSON, MSGPACK, AUTO };
+
+void load_motion_primitives_new(
+    const std::string &motionsFile, dynobench::Model_robot &robot,
+    std::vector<Motion> &motions, int max_motions, bool cut_actions,
+    bool shuffle, bool compute_col = true,
+    MotionPrimitiveFormat format = MotionPrimitiveFormat::AUTO);
 
 void load_motion_primitives(const std::string &motionsFile, RobotOmpl &robot,
                             std::vector<Motion> &motions, int max_motions,

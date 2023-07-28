@@ -283,6 +283,15 @@ struct Expander {
     fakeMotion.traj.states.push_back(Eigen::VectorXd(robot->nx));
     std::random_device rd;
     g = std::mt19937{rd()};
+
+    // std::vector<Motion *> mm;
+    // T_m->list(mm);
+    // for (size_t i = 0; i < mm.size(); i++) {
+    //   std::cout << "idx: " << mm[i]->idx << std::endl;
+    //   std::cout << "x0: " << mm[i]->getStateEig().format(dynobench::FMT)
+    //             << std::endl;
+    //   std::cout << "length: " << mm[i]->traj.states.size() << std::endl;
+    // }
   }
 
   void seed(int seed) { g.seed(seed); }
@@ -296,6 +305,8 @@ struct Expander {
     assert(delta > 0);
 
     Stopwatch sw;
+    // CSTR_(x);
+
     T_m->nearestR(&fakeMotion, delta, neighbors_m);
     time_in_nn += sw.elapsed_ms();
 

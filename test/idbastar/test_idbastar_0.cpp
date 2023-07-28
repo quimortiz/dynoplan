@@ -39,9 +39,14 @@ BOOST_AUTO_TEST_CASE(t_uni1_bugtrap) {
   Options_dbastar options_dbastar;
   Options_trajopt options_trajopt;
 
+  // options_dbastar.motionsFile =
+  //     "../../data/motion_primitives/unicycle1_v0/"
+  //     "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin";
+
   options_dbastar.motionsFile =
       "../../data/motion_primitives/unicycle1_v0/"
-      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin";
+      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin.msgpack";
+
   options_trajopt.solver_id = 1;
   options_dbastar.cost_delta_factor = 1;
   options_idbas.num_primitives_0 = 30;

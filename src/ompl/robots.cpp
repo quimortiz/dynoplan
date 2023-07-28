@@ -3054,11 +3054,43 @@ void load_motion_primitives_new(const std::string &motionsFile,
                                 dynobench::Model_robot &robot,
                                 std::vector<Motion> &motions, int max_motions,
                                 bool cut_actions, bool shuffle,
-                                bool compute_col) {
+                                bool compute_col,
+                                MotionPrimitiveFormat format) {
 
   dynobench::Trajectories trajs;
 
-  trajs.load_file_boost(motionsFile.c_str());
+  if (format == MotionPrimitiveFormat::AUTO) {
+    std::filesystem::path filePath = motionsFile;
+    if (filePath.extension() == ".yaml") {
+      format = MotionPrimitiveFormat::YAML;
+    } else if (filePath.extension() == ".json")
+      format = MotionPrimitiveFormat::JSON;
+    else if (filePath.extension() == ".msgpack")
+      format = MotionPrimitiveFormat::MSGPACK;
+    else if (filePath.extension() == ".bin")
+      format = MotionPrimitiveFormat::BOOST;
+  }
+
+  switch (format) {
+  case MotionPrimitiveFormat::YAML: {
+    trajs.load_file_yaml(motionsFile.c_str());
+  } break;
+
+  case MotionPrimitiveFormat::BOOST: {
+    trajs.load_file_boost(motionsFile.c_str());
+  } break;
+
+  case MotionPrimitiveFormat::JSON: {
+    trajs.load_file_json(motionsFile.c_str());
+  } break;
+
+  case MotionPrimitiveFormat::MSGPACK: {
+    trajs.load_file_msgpack(motionsFile.c_str());
+  } break;
+  case MotionPrimitiveFormat::AUTO: {
+    ERROR_WITH_INFO("should not be here!");
+  }
+  }
 
   if (max_motions < trajs.data.size())
     trajs.data.resize(max_motions);

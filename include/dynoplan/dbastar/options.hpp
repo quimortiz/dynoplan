@@ -23,8 +23,7 @@ struct Options_dbastar {
   std::string motionsFile = "";
   std::vector<Motion> *motions_ptr = nullptr; // pointer to loaded motions
   std::string outFile = "/tmp/dynoplan/out_db.yaml";
-  bool filterDuplicates = false;     // very expensive in high dim systems!
-  bool primitives_new_format = true; // (false=Format of IROS 22)
+  bool filterDuplicates = false; // very expensive in high dim systems!
   float maxCost = std::numeric_limits<float>::infinity();
   int heuristic = 0;
   size_t max_motions = 1e4;

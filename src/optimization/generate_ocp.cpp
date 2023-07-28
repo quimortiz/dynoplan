@@ -111,9 +111,14 @@ generate_problem(const Generate_params &gen_args,
     if (options_trajopt.soft_control_bounds) {
       std::cout << "Experimental" << std::endl;
       Eigen::VectorXd v = Eigen::VectorXd(nu);
+      double delta = 1e-4;
       v.setConstant(100);
-      feats_run.push_back(mk<Control_bounds>(nx, nu, nu, dyn->u_lb, -v));
-      feats_run.push_back(mk<Control_bounds>(nx, nu, nu, dyn->u_ub, v));
+      feats_run.push_back(mk<Control_bounds>(
+          nx, nu, nu,
+          dyn->u_lb + delta * Eigen::VectorXd::Ones(dyn->u_lb.size()), -v));
+      feats_run.push_back(mk<Control_bounds>(
+          nx, nu, nu,
+          dyn->u_ub - delta * Eigen::VectorXd::Ones(dyn->u_lb.size()), v));
     }
 
     // feats_run.push_back(mk<State_bounds>(nx, nu, nx, v, -v);

@@ -8,7 +8,8 @@ project(
   LANGUAGES CXX)
 
 # find_package(pinocchio REQUIRED)
-find_package(Boost REQUIRED COMPONENTS program_options serialization)
+find_package(Boost REQUIRED COMPONENTS program_options serialization
+                                       stacktrace_basic)
 find_package(ompl 1.6 REQUIRED)
 
 include(FindThreads)
@@ -49,6 +50,8 @@ add_subdirectory(dynobench) # use EXCLUDE_FROM_ALL to avoid
 
 add_executable(main_rrt_to ./src/ompl/main_rrt_to.cpp)
 add_executable(main_primitives ./src/motion_primitives/main_primitives.cpp)
+add_executable(from_boost_to_msgpack
+               ./src/motion_primitives/from_boost_to_msgpack.cpp)
 
 add_executable(main_sst ./src/ompl/main_sst.cpp)
 add_executable(main_optimization ./src/optimization/main_optimization.cpp)
@@ -210,6 +213,10 @@ target_link_libraries(
 target_link_libraries(
   main_primitives PRIVATE motion_primitives optimization dynobench::dynobench
                           Boost::program_options Boost::serialization)
+target_link_libraries(
+  from_boost_to_msgpack
+  PRIVATE motion_primitives optimization dynobench::dynobench
+          Boost::program_options Boost::serialization)
 
 target_link_libraries(
   optimization

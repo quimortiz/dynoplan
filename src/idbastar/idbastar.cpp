@@ -31,23 +31,12 @@ void idbA(const dynobench::Problem &problem,
       (problem.models_base_path + problem.robotType + ".yaml").c_str(),
       problem.p_lb, problem.p_ub);
 
-  robot_factory_ompl(problem);
-  std::cout << "Loading motion primitives " << std::endl;
-  if (!options_dbastar_local.primitives_new_format) {
-    CHECK(robot, AT);
-    NOT_IMPLEMENTED;
-    // load_motion_primitives(options_dbastar_local.motionsFile, *robot,
-    // motions,
-    //                        options_idbas.max_motions_primitives,
-    //                        options_dbastar_local.cut_actions, false);
+  CHECK(robot, AT);
+  load_motion_primitives_new(options_dbastar_local.motionsFile, *robot, motions,
+                             options_idbas.max_motions_primitives,
+                             options_dbastar_local.cut_actions, false,
+                             options_dbastar_local.check_cols);
 
-  } else {
-    CHECK(robot, AT);
-    load_motion_primitives_new(options_dbastar_local.motionsFile, *robot,
-                               motions, options_idbas.max_motions_primitives,
-                               options_dbastar_local.cut_actions, false,
-                               options_dbastar_local.check_cols);
-  }
   options_dbastar_local.motions_ptr = &motions;
   std::cout << "Loading motion primitives -- DONE " << std::endl;
 
@@ -255,6 +244,8 @@ void idbA(const dynobench::Problem &problem,
             motions[i].idx = i;
           }
         }
+      } else {
+        std::cout << "Trajectory optimization has failed!" << std::endl;
       }
     }
 
