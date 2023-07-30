@@ -141,88 +141,6 @@ struct Out_info_db {
   }
 };
 
-struct Time_benchmark {
-
-  double extra_time = 0.;
-  double check_bounds = 0.0;
-  double time_lazy_expand = 0.0;
-  double time_alloc_primitive = 0.0;
-  double build_heuristic = 0.0;
-  double time_transform_primitive = 0.0;
-  double time_queue = 0.0;
-  double time_hfun = 0.0;
-  double time_nearestMotion = 0.0;
-  double time_nearestNode = 0.0;
-  double time_nearestNode_add = 0.0;
-  double time_nearestNode_search = 0.0;
-  double time_collisions = 0.0;
-  double prepare_time = 0.0;
-  double total_time = 0.;
-  int expands = 0;
-  int num_nn_motions = 0;
-  int num_nn_states = 0;
-  int num_col_motions = 0;
-  int motions_tree_size = 0;
-  int states_tree_size = 0;
-  double time_search = 0;
-
-  void inline write(std::ostream &out) {
-
-    std::string be = "";
-    std::string af = ": ";
-
-    out << be << STR(extra_time, af) << std::endl;
-    out << be << STR(check_bounds, af) << std::endl;
-    out << be << STR(time_lazy_expand, af) << std::endl;
-    out << be << STR(time_alloc_primitive, af) << std::endl;
-    out << be << STR(time_transform_primitive, af) << std::endl;
-    out << be << STR(build_heuristic, af) << std::endl;
-    out << be << STR(time_queue, af) << std::endl;
-    out << be << STR(time_search, af) << std::endl;
-    out << be << STR(time_nearestMotion, af) << std::endl;
-    out << be << STR(time_nearestNode, af) << std::endl;
-    out << be << STR(time_nearestNode_add, af) << std::endl;
-    out << be << STR(time_nearestNode_search, af) << std::endl;
-    out << be << STR(time_collisions, af) << std::endl;
-    out << be << STR(prepare_time, af) << std::endl;
-    out << be << STR(total_time, af) << std::endl;
-    out << be << STR(expands, af) << std::endl;
-    out << be << STR(num_nn_motions, af) << std::endl;
-    out << be << STR(num_nn_states, af) << std::endl;
-    out << be << STR(num_col_motions, af) << std::endl;
-    out << be << STR(motions_tree_size, af) << std::endl;
-    out << be << STR(states_tree_size, af) << std::endl;
-    out << be << STR(time_hfun, af) << std::endl;
-  };
-
-  inline std::map<std::string, std::string> to_data() const {
-    std::map<std::string, std::string> out;
-
-    out.insert(NAME_AND_STRING(check_bounds));
-    out.insert(NAME_AND_STRING(time_lazy_expand));
-    out.insert(NAME_AND_STRING(time_alloc_primitive));
-    out.insert(NAME_AND_STRING(time_transform_primitive));
-    out.insert(NAME_AND_STRING(build_heuristic));
-    out.insert(NAME_AND_STRING(time_queue));
-    out.insert(NAME_AND_STRING(time_search));
-    out.insert(NAME_AND_STRING(time_nearestMotion));
-    out.insert(NAME_AND_STRING(time_nearestNode));
-    out.insert(NAME_AND_STRING(time_nearestNode_add));
-    out.insert(NAME_AND_STRING(time_nearestNode_search));
-    out.insert(NAME_AND_STRING(time_collisions));
-    out.insert(NAME_AND_STRING(prepare_time));
-    out.insert(NAME_AND_STRING(total_time));
-    out.insert(NAME_AND_STRING(expands));
-    out.insert(NAME_AND_STRING(num_nn_motions));
-    out.insert(NAME_AND_STRING(num_nn_states));
-    out.insert(NAME_AND_STRING(num_col_motions));
-    out.insert(NAME_AND_STRING(motions_tree_size));
-    out.insert(NAME_AND_STRING(states_tree_size));
-    out.insert(NAME_AND_STRING(time_hfun));
-    return out;
-  };
-};
-
 // void generate_env(YAML::Node &env,
 //                   std::vector<fcl::CollisionObjectf *> &obstacles,
 //                   fcl::BroadPhaseCollisionManagerf *bpcm_env);
@@ -243,7 +161,7 @@ struct LazyTraj {
   Motion *motion;
 
   void compute(
-      dynobench::Trajectory &tmp_traj, bool forward = true,
+      dynobench::TrajWrapper &tmp, bool forward = true,
       std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
       int *num_valid_states = nullptr) {
     assert(offset);
@@ -252,15 +170,30 @@ struct LazyTraj {
 
     assert(offset->size());
     if (forward) {
-      robot->transform_primitive(
-          *offset, motion->traj.states, motion->traj.actions, tmp_traj.states,
-          tmp_traj.actions, check_state, num_valid_states);
+      robot->transform_primitive(*offset, motion->traj.states,
+                                 motion->traj.actions, tmp, check_state,
+                                 num_valid_states);
     } else {
       // TODO: change this outside translation invariance
-      robot->transform_primitive(
-          *offset, motion->traj.states, motion->traj.actions, tmp_traj.states,
-          tmp_traj.actions, check_state, num_valid_states);
+      robot->transform_primitive(*offset, motion->traj.states,
+                                 motion->traj.actions, tmp, check_state,
+                                 num_valid_states);
     }
+  }
+
+  void compute(
+      dynobench::Trajectory &tmp, bool forward = true,
+      std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
+      int *num_valid_states = nullptr) {
+    assert(offset);
+    assert(robot);
+    assert(motion);
+
+    assert(offset->size());
+
+    dynobench::TrajWrapper __tmp = dynobench::Trajectory_2_trajWrapper(tmp);
+    compute(__tmp, forward, check_state, num_valid_states);
+    tmp = dynobench::trajWrapper_2_Trajectory(__tmp);
   }
 };
 
@@ -356,5 +289,11 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     const dynobench::Problem &problem,
                                     dynobench::Trajectory &traj_out,
                                     std::ofstream *out = nullptr);
+
+bool check_lazy_trajectory(
+    LazyTraj &lazy_traj, dynobench::Model_robot &robot,
+    Time_benchmark &time_bench, dynobench::TrajWrapper &tmp_traj,
+    std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
+    int *num_valid_states = nullptr);
 
 } // namespace dynoplan

@@ -29,6 +29,34 @@
 using namespace dynoplan;
 using namespace dynobench;
 
+BOOST_AUTO_TEST_CASE(extra_time) {
+
+  Problem problem(DYNOBENCH_BASE "envs/quad2d_v0/quad_bugtrap.yaml");
+  problem.models_base_path = DYNOBENCH_BASE "models/";
+
+  Options_dbastar options_dbastar;
+  options_dbastar.delta = .55;
+  options_dbastar.limit_branching_factor = 20;
+  options_dbastar.max_motions = 350;
+  options_dbastar.search_timelimit = 30000;
+  options_dbastar.motionsFile = DYNOBENCH_BASE
+      "../cloud/motionsV2/good/quad2d_v0/quad2d_v0_all_im.bin.sp.bin.ca.bin";
+
+  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+      (problem.models_base_path + problem.robotType + ".yaml").c_str(),
+      problem.p_lb, problem.p_ub);
+
+  std::vector<Motion> motions;
+  load_motion_primitives_new(
+      options_dbastar.motionsFile, *robot, motions, options_dbastar.max_motions,
+      options_dbastar.cut_actions, false, options_dbastar.check_cols);
+
+  options_dbastar.motions_ptr = &motions;
+  Trajectory traj_out;
+  Out_info_db out_info_db;
+  dbastar(problem, options_dbastar, traj_out, out_info_db);
+}
+
 BOOST_AUTO_TEST_CASE(test_heu_map) {
 
   Problem problem(DYNOBENCH_BASE "envs/unicycle1_v0/bugtrap_0.yaml");
@@ -154,9 +182,9 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
 
   o_uni1.max_motions = 300;
   o_uni1.delta = .3;
-  o_uni1.motionsFile = BASE_PATH
-      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin.small5000."
-      "msgpack";
+  o_uni1.motionsFile = BASE_PATH "unicycle1_v0__ispso__2023_04_03__14_56_"
+                                 "57.bin.im.bin.im.bin.small5000."
+                                 "msgpack";
 
   o_uni2.max_motions = 400;
   o_uni2.delta = .4;

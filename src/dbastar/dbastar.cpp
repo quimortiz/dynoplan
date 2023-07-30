@@ -203,9 +203,16 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     };
 
     auto &traj = motion.traj;
-    std::vector<Eigen::VectorXd> xs = traj.states;
-    std::vector<Eigen::VectorXd> us = traj.actions;
-    robot.transform_primitive(__offset, traj.states, traj.actions, xs, us);
+    Trajectory __traj = motion.traj;
+    dynobench::TrajWrapper traj_wrap =
+        dynobench::Trajectory_2_trajWrapper(__traj);
+
+    // std::vector<Eigen::VectorXd> xs = traj.states;
+    // std::vector<Eigen::VectorXd> us = traj.actions;
+    robot.transform_primitive(__offset, traj.states, traj.actions, traj_wrap);
+    std::vector<Eigen::VectorXd> xs = traj_wrap.get_states();
+    std::vector<Eigen::VectorXd> us = traj_wrap.get_actions();
+
     // TODO: missing additional offset, if any
 
     double jump = robot.lower_bound_time(node_state, xs.front());
@@ -383,19 +390,27 @@ void __add_state_timed(AStarNode *node,
 
 bool check_lazy_trajectory(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
-    Time_benchmark &time_bench, dynobench::Trajectory &tmp_traj,
-    std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
-    int *num_valid_states = nullptr) {
+    Time_benchmark &time_bench, dynobench::TrajWrapper &tmp_traj,
+    std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state,
+    int *num_valid_states) {
 
   // TODO: use collision shape if applicable
   Stopwatch wacht_mem;
-  tmp_traj.states = lazy_traj.motion->traj.states;
-  tmp_traj.actions = lazy_traj.motion->traj.actions;
   time_bench.time_alloc_primitive += wacht_mem.elapsed_ms();
 
   Stopwatch wacht_tp;
   lazy_traj.compute(tmp_traj, true, check_state, num_valid_states);
   time_bench.time_transform_primitive += wacht_tp.elapsed_ms();
+
+  // std::cout << "printing motion" << std::endl;
+  //
+  // std::vector<Eigen::VectorXd> xs = tmp_traj.get_states();
+  // std::vector<Eigen::VectorXd> us = tmp_traj.get_actions();
+  // for (size_t i = 0; i < xs.size(); ++i) {
+  //   std::cout << "x: " << xs[i].transpose() << std::endl;
+  //   if (i < us.size())
+  //     std::cout << "u: " << us[i].transpose() << std::endl;
+  // }
 
   Stopwatch watch_check_motion;
 
@@ -408,9 +423,9 @@ bool check_lazy_trajectory(
 
   } else {
     // checking backwards is usually faster
-    for (size_t i = 0; i < tmp_traj.states.size(); i++) {
+    for (size_t i = 0; i < tmp_traj.get_size(); i++) {
       if (!robot.is_state_valid(
-              tmp_traj.states.at(tmp_traj.states.size() - 1 - i))) {
+              tmp_traj.get_state(tmp_traj.get_size() - 1 - i))) {
         return false;
       }
     }
@@ -653,6 +668,27 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   const size_t num_check_goal =
       4; // Eg, for n = 4 I check: 1/5 , 2/5 , 3/5 , 4/5
 
+  std::function<bool(Eigen::Ref<Eigen::VectorXd>)> ff =
+      [&](Eigen::Ref<Eigen::VectorXd> state) {
+        return robot->is_state_valid(state);
+      };
+
+  // we allocate a trajectory for the largest motion primitive
+
+  dynobench::TrajWrapper traj_wrapper;
+  {
+    std::vector<Motion *> motions;
+    T_m->list(motions);
+    size_t max_traj_size = (*std::max_element(motions.begin(), motions.end(),
+                                              [](Motion *a, Motion *b) {
+                                                return a->traj.states.size() <
+                                                       b->traj.states.size();
+                                              }))
+                               ->traj.states.size();
+
+    traj_wrapper.allocate_size(max_traj_size, robot->nx, robot->nu);
+  }
+
   while (!stop_search()) {
 
     // POP best node in queue
@@ -696,21 +732,18 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
         [&] { expander.expand_lazy(best_node->state_eig, lazy_trajs); });
 
     // CSTR_(lazy_trajs.size());
-    dynobench::Trajectory tmp_traj;
+    // dynobench::Trajectory tmp_traj;
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
 
-      std::function<bool(Eigen::Ref<Eigen::VectorXd>)> ff = [&](auto state) {
-        return robot->is_state_valid(state);
-      };
-
       int num_valid_states = -1;
+      traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
       bool motion_valid = check_lazy_trajectory(
-          lazy_traj, *robot, time_bench, tmp_traj, &ff, &num_valid_states);
+          lazy_traj, *robot, time_bench, traj_wrapper, &ff, &num_valid_states);
 
       // bool motion_valid = check_lazy_trajectory(lazy_traj, *robot,
       // time_bench,
-      //                                           tmp_traj, nullptr,
+      //                                           traj_wrapper, nullptr,
       //                                           nullptr);
 
       if (!motion_valid) {
@@ -719,16 +752,16 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
       // Additional CHECK: if a intermediate state is close to goal. It really
       // helps!
-      tmp_node.state_eig = tmp_traj.states.back();
+      tmp_node.state_eig = traj_wrapper.get_state(traj_wrapper.get_size() - 1);
       int chosen_index = -1;
       Eigen::VectorXd intermediate_sol(robot->nx);
       for (size_t nn = 0; nn < num_check_goal; nn++) {
         size_t index_to_check =
-            float(nn + 1) / (num_check_goal + 1) * tmp_traj.states.size();
-        if (double d = robot->distance(tmp_traj.states.at(index_to_check),
+            float(nn + 1) / (num_check_goal + 1) * traj_wrapper.get_size();
+        if (double d = robot->distance(traj_wrapper.get_state(index_to_check),
                                        problem.goal);
             d <= options_dbastar.delta_factor_goal * options_dbastar.delta) {
-          tmp_node.state_eig = tmp_traj.states.at(index_to_check);
+          tmp_node.state_eig = traj_wrapper.get_state(index_to_check);
           chosen_index = index_to_check;
           std::cout << "Found a solution with intermetidate checks! \n"
                     << "x:" << tmp_node.state_eig.format(FMT) << " d:" << d
@@ -745,14 +778,14 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
       double cost_motion = chosen_index != -1
                                ? chosen_index * robot->ref_dt
-                               : tmp_traj.states.size() * robot->ref_dt;
+                               : (traj_wrapper.get_size() - 1) * robot->ref_dt;
 
       assert(cost_motion >= 0);
 
       double gScore = best_node->gScore + cost_motion +
                       options_dbastar.cost_delta_factor *
                           robot->lower_bound_time(best_node->state_eig,
-                                                  tmp_traj.states.front());
+                                                  traj_wrapper.get_state(0));
 
       // CHECK if new State is NOVEL
       time_bench.time_nearestNode_search += timed_fun_void([&] {
@@ -782,7 +815,9 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
             timed_fun_void([&] { T_n->add(__node); });
 
         if (debug) {
-          expanded_trajs.push_back(tmp_traj);
+
+          expanded_trajs.push_back(
+              dynobench::trajWrapper_2_Trajectory(traj_wrapper));
         }
 
       } else {

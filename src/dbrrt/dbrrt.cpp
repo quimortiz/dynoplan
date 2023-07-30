@@ -95,10 +95,17 @@ void from_solution_to_yaml_and_traj_bwd(dynobench::Model_robot &robot,
     robot.offset(parent->state_eig, __offset);
     // move the primitive with the parent
     dynobench::Trajectory traj;
-    traj.actions = motion.traj.actions;
-    traj.states = motion.traj.states;
+    dynobench::TrajWrapper traj_wrapper;
+
+    traj_wrapper.allocate_size(motion.traj.states.size(),
+                               motion.traj.states.front().size(),
+                               motion.traj.actions.front().size());
+
     robot.transform_primitive(__offset, motion.traj.states, motion.traj.actions,
-                              traj.states, traj.actions);
+                              traj_wrapper);
+
+    traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
+
     std::cout << "after transformation" << std::endl;
     traj.to_yaml_format(std::cout);
 
@@ -231,14 +238,21 @@ void reverse_motions(std::vector<Motion> &motions_rev,
   for (auto &m : motions) {
     Motion mrev;
 
-    // robot->canonical_state(m.traj.states.back(), xf_canonical);
+    // robot->canonical_state(m.traj.states.back(),
+    // xf_canonical);
     robot.offset(m.traj.states.back(), offset);
     dynobench::Trajectory traj_new;
-    traj_new.states = m.traj.states;
-    traj_new.actions = m.traj.actions;
+
+    dynobench::TrajWrapper traj_wrapper;
+
+    traj_wrapper.allocate_size(m.traj.states.size(),
+                               m.traj.states.front().size(),
+                               m.traj.actions.front().size());
 
     robot.transform_primitive(-offset, m.traj.states, m.traj.actions,
-                              traj_new.states, traj_new.actions);
+                              traj_wrapper);
+
+    traj_new = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
 
     mrev.traj = traj_new;
     mrev.cost = m.cost;
@@ -420,6 +434,23 @@ void dbrrtConnect(const dynobench::Problem &problem,
     return false;
   };
 
+  dynobench::TrajWrapper traj_wrapper;
+  {
+    std::vector<Motion *> motions;
+    T_m->list(motions);
+    size_t max_traj_size = (*std::max_element(motions.begin(), motions.end(),
+                                              [](Motion *a, Motion *b) {
+                                                return a->traj.states.size() <
+                                                       b->traj.states.size();
+                                              }))
+                               ->traj.states.size();
+
+    traj_wrapper.allocate_size(max_traj_size, robot->nx, robot->nu);
+  }
+
+  Eigen::VectorXd __expand_start(robot->nx);
+  Eigen::VectorXd __expand_end(robot->nx);
+
   while (!stop_search()) {
     if (time_bench.expands % print_every == 0)
       print_search_status();
@@ -475,51 +506,36 @@ void dbrrtConnect(const dynobench::Problem &problem,
 
     double min_distance = std::numeric_limits<double>::max();
     int best_index = -1;
-    dynobench::Trajectory chosen_traj, tmp_traj;
+    dynobench::Trajectory chosen_traj_debug;
     LazyTraj chosen_lazy_traj;
 
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
+      traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
+      bool motion_valid = check_lazy_trajectory(lazy_traj, *robot, time_bench,
+                                                traj_wrapper, nullptr, nullptr);
 
-      Stopwatch wacht_mem;
-      tmp_traj.states = lazy_traj.motion->traj.states;
-      tmp_traj.actions = lazy_traj.motion->traj.actions;
-      time_bench.time_alloc_primitive += wacht_mem.elapsed_ms();
-
-      Stopwatch wacht_tp;
-      lazy_traj.compute(tmp_traj);
-      time_bench.time_transform_primitive += wacht_tp.elapsed_ms();
-
-      if (options_dbrrt.debug)
-        trajs.push_back(tmp_traj);
-
-      bool motion_valid = true;
-      for (auto &state : tmp_traj.states) {
-        if (!robot->is_state_valid(state)) {
-          motion_valid = false;
-          break;
-        }
-      }
-      if (!motion_valid)
-        continue;
-
-      {
-        Stopwatch watch_cc;
-        motion_valid = dynobench::is_motion_collision_free(tmp_traj, *robot);
-        time_bench.time_collisions += watch_cc.elapsed_ms();
-        time_bench.num_col_motions++;
+      if (options_dbrrt.debug) {
+        trajs.push_back(dynobench::trajWrapper_2_Trajectory(traj_wrapper));
       }
 
       if (!motion_valid)
         continue;
 
-      double d = robot->distance(tmp_traj.states.back(), x_target);
+      double d = robot->distance(
+          traj_wrapper.get_state(traj_wrapper.get_size() - 1), x_target);
 
       if (d < min_distance) {
         min_distance = d;
         best_index = i;
-        chosen_traj = tmp_traj;
         chosen_lazy_traj = lazy_traj;
+
+        __expand_start = traj_wrapper.get_state(0);
+        __expand_end = traj_wrapper.get_state(traj_wrapper.get_size() - 1);
+
+        if (options_dbrrt.debug) {
+          chosen_traj_debug = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
+        }
 
         if (options_dbrrt.choose_first_motion_valid)
           break;
@@ -528,7 +544,7 @@ void dbrrtConnect(const dynobench::Problem &problem,
 
     if (best_index != -1) {
       AStarNode *new_node = new AStarNode();
-      new_node->state_eig = chosen_traj.states.back();
+      new_node->state_eig = __expand_end;
       new_node->hScore =
           robot->lower_bound_time(new_node->state_eig, problem.goal);
       new_node->came_from = near_node;
@@ -537,8 +553,7 @@ void dbrrtConnect(const dynobench::Problem &problem,
       new_node->gScore =
           near_node->gScore + chosen_lazy_traj.motion->cost +
           options_dbrrt.cost_jump *
-              robot->lower_bound_time(near_node->state_eig,
-                                      chosen_traj.states.front());
+              robot->lower_bound_time(near_node->state_eig, __expand_start);
 
       new_node->fScore = new_node->gScore + new_node->hScore;
 
@@ -568,9 +583,9 @@ void dbrrtConnect(const dynobench::Problem &problem,
 
       if (options_dbrrt.debug) {
         if (expand_forward)
-          chosen_trajs_fwd.push_back(chosen_traj);
+          chosen_trajs_fwd.push_back(chosen_traj_debug);
         else
-          chosen_trajs_bwd.push_back(chosen_traj);
+          chosen_trajs_bwd.push_back(chosen_traj_debug);
       }
 
       double di = robot->distance(tmp->state_eig, new_node->state_eig);
@@ -647,7 +662,9 @@ void dbrrtConnect(const dynobench::Problem &problem,
                                   ".yaml");
 
           if (result.feasible == 1) {
-            std::cout << "success: optimization is feasible!" << std::endl;
+            std::cout << "success: optimization is "
+                         "feasible!"
+                      << std::endl;
             info_out.solved = true;
 
             if (result.cost < best_cost_opt) {
@@ -676,7 +693,8 @@ void dbrrtConnect(const dynobench::Problem &problem,
         }
       }
     } else {
-      std::cout << "Warning: all expansions failed in state "
+      std::cout << "Warning: all expansions failed "
+                   "in state "
                 << near_node->state_eig.format(FMT) << std::endl;
     }
   }
@@ -785,27 +803,33 @@ void dbrrtConnect(const dynobench::Problem &problem,
 
     // out << "result:" << std::endl;
     //
-    // from_solution_to_yaml_and_traj(*robot, motions, solution, problem,
-    // traj_out,
+    // from_solution_to_yaml_and_traj(*robot, motions,
+    // solution, problem, traj_out,
     //                                &out);
     //
-    // std::vector<Trajectory> trajs_out(all_solutions_raw.size());
+    // std::vector<Trajectory>
+    // trajs_out(all_solutions_raw.size());
     //
-    // for (size_t i = 0; i < all_solutions_raw.size(); i++) {
+    // for (size_t i = 0; i <
+    // all_solutions_raw.size(); i++) {
     //
     //   std::string filename =
-    //       "/tmp/dynoplan/dbrrt-" + std::to_string(i) + ".yaml";
+    //       "/tmp/dynoplan/dbrrt-" +
+    //       std::to_string(i) + ".yaml";
     //
     //   create_dir_if_necessary(filename);
-    //   std::cout << "writing to " << filename << std::endl;
-    //   std::ofstream out(filename);
-    //   from_solution_to_yaml_and_traj(*robot, motions,
-    //   all_solutions_raw.at(i),
-    //                                  problem, trajs_out.at(i), &out);
+    //   std::cout << "writing to " << filename <<
+    //   std::endl; std::ofstream out(filename);
+    //   from_solution_to_yaml_and_traj(*robot,
+    //   motions, all_solutions_raw.at(i),
+    //                                  problem,
+    //                                  trajs_out.at(i),
+    //                                  &out);
     //   std::string filename2 =
-    //       "/tmp/dynoplan/dbrrt-" + std::to_string(i) + ".traj.yaml";
-    //   std::cout << "writing to " << filename2 << std::endl;
-    //   std::ofstream out2(filename2);
+    //       "/tmp/dynoplan/dbrrt-" +
+    //       std::to_string(i) + ".traj.yaml";
+    //   std::cout << "writing to " << filename2 <<
+    //   std::endl; std::ofstream out2(filename2);
     //   create_dir_if_necessary(filename2);
     //   trajs_out.at(i).to_yaml_format(out2);
     // }
@@ -965,6 +989,23 @@ void dbrrt(const dynobench::Problem &problem,
   add_state_timed(start_node, T_n, time_bench);
   discovered_nodes.push_back(start_node);
 
+  dynobench::TrajWrapper traj_wrapper;
+  {
+    std::vector<Motion *> motions;
+    T_m->list(motions);
+    size_t max_traj_size = (*std::max_element(motions.begin(), motions.end(),
+                                              [](Motion *a, Motion *b) {
+                                                return a->traj.states.size() <
+                                                       b->traj.states.size();
+                                              }))
+                               ->traj.states.size();
+
+    traj_wrapper.allocate_size(max_traj_size, robot->nx, robot->nu);
+  }
+
+  Eigen::VectorXd __expand_start(robot->nx);
+  Eigen::VectorXd __expand_end(robot->nx);
+
   while (true) {
 
     if (static_cast<size_t>(time_bench.expands) >= options_dbrrt.max_expands) {
@@ -1032,52 +1073,32 @@ void dbrrt(const dynobench::Problem &problem,
 
     double min_distance = std::numeric_limits<double>::max();
     int best_index = -1;
-    dynobench::Trajectory chosen_traj, tmp_traj;
+    dynobench::Trajectory chosen_traj_debug;
     LazyTraj chosen_lazy_traj;
 
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
 
       auto &lazy_traj = lazy_trajs[i];
-
-      Stopwatch wacht_mem;
-      tmp_traj.states = lazy_traj.motion->traj.states;
-      tmp_traj.actions = lazy_traj.motion->traj.actions;
-      time_bench.time_alloc_primitive += wacht_mem.elapsed_ms();
-
-      Stopwatch wacht_tp;
-      lazy_traj.compute(tmp_traj);
-      time_bench.time_transform_primitive += wacht_tp.elapsed_ms();
-
-      if (options_dbrrt.debug)
-        trajs.push_back(tmp_traj);
-
-      bool motion_valid = true;
-      for (auto &state : tmp_traj.states) {
-        if (!robot->is_state_valid(state)) {
-          motion_valid = false;
-          break;
-        }
-      }
-      if (!motion_valid)
-        continue;
-
-      {
-        Stopwatch watch_cc;
-        motion_valid = is_motion_collision_free(tmp_traj, *robot);
-        time_bench.time_collisions += watch_cc.elapsed_ms();
-        time_bench.num_col_motions++;
-      }
+      traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
+      bool motion_valid = check_lazy_trajectory(lazy_traj, *robot, time_bench,
+                                                traj_wrapper, nullptr, nullptr);
 
       if (!motion_valid)
         continue;
 
-      double d = robot->distance(tmp_traj.states.back(), x_target);
+      double d = robot->distance(
+          traj_wrapper.get_state(traj_wrapper.get_size() - 1), x_target);
 
       if (d < min_distance) {
         min_distance = d;
         best_index = i;
-        chosen_traj = tmp_traj;
         chosen_lazy_traj = lazy_traj;
+        __expand_start = traj_wrapper.get_state(0);
+        __expand_end = traj_wrapper.get_state(traj_wrapper.get_size() - 1);
+
+        if (options_dbrrt.debug) {
+          chosen_traj_debug = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
+        }
 
         if (options_dbrrt.choose_first_motion_valid)
           break;
@@ -1087,7 +1108,7 @@ void dbrrt(const dynobench::Problem &problem,
     if (best_index != -1) {
 
       AStarNode *new_node = new AStarNode();
-      new_node->state_eig = chosen_traj.states.back();
+      new_node->state_eig = __expand_end;
       new_node->hScore =
           robot->lower_bound_time(new_node->state_eig, problem.goal);
       new_node->came_from = near_node;
@@ -1096,25 +1117,34 @@ void dbrrt(const dynobench::Problem &problem,
       new_node->gScore =
           near_node->gScore + chosen_lazy_traj.motion->cost +
           options_dbrrt.cost_jump *
-              robot->lower_bound_time(near_node->state_eig,
-                                      chosen_traj.states.front());
+              robot->lower_bound_time(near_node->state_eig, __expand_start);
 
       new_node->fScore = new_node->gScore + new_node->hScore;
 
       if (options_dbrrt.ao_rrt &&
           new_node->gScore + new_node->hScore >
               options_dbrrt.best_cost_prune_factor * cost_bound) {
-        // std::cout << "warning: "
-        //           << "cost of new is above bound" << std::endl;
+        // std::cout << "warning:
+        // "
+        //           << "cost of
+        //           new is above
+        //           bound"
+        //           <<
+        //           std::endl;
         continue;
       }
 
       nearest_state_timed(new_node, tmp, T_n, time_bench);
-      // TODO: this considers also time in the case of AORRT...
+      // TODO: this considers
+      // also time in the case of
+      // AORRT...
 
       if (robot->distance(tmp->state_eig, new_node->state_eig) <
           options_dbrrt.delta / 2.) {
-        std::cout << "warning: node already in the tree" << std::endl;
+        std::cout << "warning: node "
+                     "already in the "
+                     "tree"
+                  << std::endl;
         if (options_dbrrt.ao_rrt) {
 
           if (new_node->gScore >=
@@ -1122,9 +1152,12 @@ void dbrrt(const dynobench::Problem &problem,
             delete new_node;
             continue;
           }
-          std::cout << "but adding because best cost! -- " << new_node->gScore
-                    << " " << tmp->gScore << std::endl;
-          // TODO: should I rewire the tree?
+          std::cout << "but adding "
+                       "because best "
+                       "cost! -- "
+                    << new_node->gScore << " " << tmp->gScore << std::endl;
+          // TODO: should I
+          // rewire the tree?
 
         } else {
           delete new_node;
@@ -1136,7 +1169,7 @@ void dbrrt(const dynobench::Problem &problem,
       discovered_nodes.push_back(new_node);
 
       if (options_dbrrt.debug) {
-        chosen_trajs.push_back(chosen_traj);
+        chosen_trajs.push_back(chosen_traj_debug);
       }
 
       double di = robot->distance(new_node->state_eig, problem.goal);
@@ -1154,7 +1187,8 @@ void dbrrt(const dynobench::Problem &problem,
           std::vector<AStarNode *> active_nodes;
           T_n->list(active_nodes);
           plot_search_tree(active_nodes, motions, *robot,
-                           ("/tmp/dynoplan/db_rrt_tree_" +
+                           ("/tmp/dynoplan/"
+                            "db_rrt_tree_" +
                             std::to_string(info_out.trajs_raw.size()) + ".yaml")
                                .c_str());
         }
@@ -1164,17 +1198,22 @@ void dbrrt(const dynobench::Problem &problem,
 
         CSTR_V(new_node->state_eig);
         info_out.solved_raw = true;
-        std::cout << "success! GOAL_REACHED" << std::endl;
+        std::cout << "success! "
+                     "GOAL_REACHED"
+                  << std::endl;
 
-        // TODO: dont write to much to file!!
-        std::ofstream file_debug("/tmp/dynoplan/db_rrt_debug_" +
+        // TODO: dont write to
+        // much to file!!
+        std::ofstream file_debug("/tmp/dynoplan/"
+                                 "db_rrt_debug_" +
                                  std::to_string(info_out.trajs_raw.size()) +
                                  ".yaml");
         dynobench::Trajectory traj_db;
         from_solution_to_yaml_and_traj(*robot, motions, solution, problem,
                                        traj_db, &file_debug);
 
-        traj_db.to_yaml_format("/tmp/dynoplan/db_rrt_traj_" +
+        traj_db.to_yaml_format("/tmp/dynoplan/"
+                               "db_rrt_traj_" +
                                std::to_string(info_out.trajs_raw.size()) +
                                ".yaml");
 
@@ -1188,12 +1227,18 @@ void dbrrt(const dynobench::Problem &problem,
           trajectory_optimization(problem, traj_db, options_trajopt, traj_opt,
                                   result);
 
-          traj_opt.to_yaml_format("/tmp/dynoplan/db_rrt_traj_opt_" +
+          traj_opt.to_yaml_format("/tmp/dynoplan/"
+                                  "db_rrt_traj_"
+                                  "opt_" +
                                   std::to_string(info_out.trajs_opt.size()) +
                                   ".yaml");
 
           if (result.feasible == 1) {
-            std::cout << "success: optimization is feasible!" << std::endl;
+            std::cout << "success: "
+                         "optimization"
+                         " is "
+                         "feasible!"
+                      << std::endl;
             info_out.solved = true;
 
             if (result.cost < best_cost_opt) {
@@ -1203,7 +1248,11 @@ void dbrrt(const dynobench::Problem &problem,
             info_out.trajs_opt.push_back(traj_opt);
 
             if (options_dbrrt.extract_primitives) {
-              // ADD motions to the end of the list, and rebuild the tree.
+              // ADD motions to
+              // the end of the
+              // list, and
+              // rebuild the
+              // tree.
               size_t number_of_cuts = 5;
               dynobench::Trajectories new_trajectories =
                   cut_trajectory(traj_opt, number_of_cuts, robot);
@@ -1219,7 +1268,8 @@ void dbrrt(const dynobench::Problem &problem,
                 t.states.back() +=
                     noise * Eigen::VectorXd::Random(t.states.back().size());
 
-                if (startsWith(robot->name, "quad3d")) {
+                if (startsWith(robot->name, "quad3"
+                                            "d")) {
                   t.states.front().segment<4>(3).normalize();
                   t.states.back().segment<4>(3).normalize();
                 }
@@ -1232,8 +1282,10 @@ void dbrrt(const dynobench::Problem &problem,
                 motion_out.traj = traj;
                 motion_out.cost = traj.cost;
                 motion_out.idx = motions.size() + motions_out.size();
-                std::cout << "cost of motion is " << motion_out.cost
-                          << std::endl;
+                std::cout << "cost of "
+                             "motion "
+                             "is "
+                          << motion_out.cost << std::endl;
                 motions_out.push_back(std::move(motion_out));
               }
 
@@ -1241,9 +1293,14 @@ void dbrrt(const dynobench::Problem &problem,
                              std::make_move_iterator(motions_out.begin()),
                              std::make_move_iterator(motions_out.end()));
 
-              std::cout << "Afer insert " << motions.size() << std::endl;
+              std::cout << "Afer "
+                           "insert "
+                        << motions.size() << std::endl;
               std::cout << "Warning: "
-                        << "I am inserting at the end" << std::endl;
+                        << "I am "
+                           "inserting "
+                           "at the end"
+                        << std::endl;
 
               T_m->clear();
 
@@ -1251,7 +1308,11 @@ void dbrrt(const dynobench::Problem &problem,
                 T_m->add(&m);
               }
 
-              std::cout << "TODO: insert also the nodes in the tree"
+              std::cout << "TODO: "
+                           "insert "
+                           "also the "
+                           "nodes in "
+                           "the tree"
                         << std::endl;
             }
 
@@ -1261,7 +1322,10 @@ void dbrrt(const dynobench::Problem &problem,
             }
 
           } else {
-            std::cout << "warning: optimization failed" << std::endl;
+            std::cout << "warning: "
+                         "optimization"
+                         " failed"
+                      << std::endl;
           }
         }
 
@@ -1272,11 +1336,16 @@ void dbrrt(const dynobench::Problem &problem,
           }
         } else {
           std::cout << "warning"
-                    << "i am pruning with cost of raw solution" << std::endl;
+                    << "i am pruning "
+                       "with cost of "
+                       "raw solution"
+                    << std::endl;
           DYNO_CHECK_LEQ(new_node->gScore, cost_bound, AT);
           cost_bound = new_node->gScore;
           solution = new_node;
-          std::cout << "New solution found! Cost " << cost_bound << std::endl;
+          std::cout << "New solution "
+                       "found! Cost "
+                    << cost_bound << std::endl;
 
           if (options_dbrrt.ao_rrt_rebuild_tree) {
 
@@ -1284,15 +1353,21 @@ void dbrrt(const dynobench::Problem &problem,
               std::vector<AStarNode *> active_nodes;
               T_n->list(active_nodes);
               plot_search_tree(active_nodes, motions, *robot,
-                               ("/tmp/dynoplan/db_rrt_tree_before_prune_" +
+                               ("/tmp/"
+                                "dynoplan/"
+                                "db_rrt_tree_"
+                                "before_"
+                                "prune_" +
                                 std::to_string(info_out.trajs_raw.size()) +
                                 ".yaml")
                                    .c_str());
             }
 
             T_n->clear();
-            std::cout << "Tree size before prunning " << T_n->size()
-                      << std::endl;
+            std::cout << "Tree size "
+                         "before "
+                         "prunning "
+                      << T_n->size() << std::endl;
             for (auto &n : discovered_nodes) {
               if (n->gScore + n->hScore <=
                   options_dbrrt.best_cost_prune_factor * cost_bound) {
@@ -1300,13 +1375,19 @@ void dbrrt(const dynobench::Problem &problem,
                 add_state_timed(n, T_n, time_bench);
               }
             }
-            std::cout << "Tree after prunning " << T_n->size() << std::endl;
+            std::cout << "Tree after "
+                         "prunning "
+                      << T_n->size() << std::endl;
 
             if (options_dbrrt.debug) {
               std::vector<AStarNode *> active_nodes;
               T_n->list(active_nodes);
               plot_search_tree(active_nodes, motions, *robot,
-                               ("/tmp/dynoplan/db_rrt_tree_after_prune_" +
+                               ("/tmp/"
+                                "dynoplan/"
+                                "db_rrt_tree_"
+                                "after_"
+                                "prune_" +
                                 std::to_string(info_out.trajs_raw.size()) +
                                 ".yaml")
                                    .c_str());
@@ -1315,7 +1396,9 @@ void dbrrt(const dynobench::Problem &problem,
         }
       }
     } else {
-      std::cout << "Warning: all expansions failed in state "
+      std::cout << "Warning: all "
+                   "expansions failed "
+                   "in state "
                 << near_node->state_eig.format(FMT) << std::endl;
     }
   }
@@ -1390,16 +1473,18 @@ void dbrrt(const dynobench::Problem &problem,
 
     for (size_t i = 0; i < all_solutions_raw.size(); i++) {
 
-      std::string filename =
-          "/tmp/dynoplan/dbrrt-" + std::to_string(i) + ".yaml";
+      std::string filename = "/tmp/dynoplan/"
+                             "dbrrt-" +
+                             std::to_string(i) + ".yaml";
 
       create_dir_if_necessary(filename);
       std::cout << "writing to " << filename << std::endl;
       std::ofstream out(filename);
       from_solution_to_yaml_and_traj(*robot, motions, all_solutions_raw.at(i),
                                      problem, trajs_out.at(i), &out);
-      std::string filename2 =
-          "/tmp/dynoplan/dbrrt-" + std::to_string(i) + ".traj.yaml";
+      std::string filename2 = "/tmp/dynoplan/"
+                              "dbrrt-" +
+                              std::to_string(i) + ".traj.yaml";
       std::cout << "writing to " << filename2 << std::endl;
       std::ofstream out2(filename2);
       create_dir_if_necessary(filename2);

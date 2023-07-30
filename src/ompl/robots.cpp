@@ -3096,7 +3096,8 @@ void load_motion_primitives_new(const std::string &motionsFile,
     trajs.load_file_msgpack(motionsFile.c_str());
   } break;
   case MotionPrimitiveFormat::AUTO: {
-    ERROR_WITH_INFO("should not be here!");
+    ERROR_WITH_INFO(
+        "Incompatible format for motion primitives: should not be here!");
   }
   }
 
