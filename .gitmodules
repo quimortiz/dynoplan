@@ -4,3 +4,6 @@
 [submodule "deps/nigh"]
 	path = deps/nigh
 	url = https://github.com/UNC-Robotics/nigh.git
+[submodule "dynomotions"]
+	path = dynomotions
+	url = git@github.com:quimortiz/dynomotions.git
