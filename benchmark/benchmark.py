@@ -539,6 +539,8 @@ def solve_problem_with_alg(
             str(timelimit),
             "--cfg",
             cfg_out,
+            "--models_base_path",
+            "../dynobench/models/",
         ]
     elif alg.startswith("geo"):
         cmd = [

@@ -108,11 +108,11 @@ void plot_search_tree(std::vector<AStarNode *> nodes,
           << std::endl;
       // get the motion
 
-      LazyTraj lazy_traj;
-      lazy_traj.offset.resize(robot.get_offset_dim());
-      robot.offset(n->came_from->state_eig, lazy_traj.offset);
-      lazy_traj.robot = &robot;
-      lazy_traj.motion = &motions.at(n->used_motion);
+      Eigen::VectorXd offset(robot.get_offset_dim());
+      robot.offset(n->came_from->state_eig, offset);
+      LazyTraj lazy_traj{.offset = &offset,
+                         .robot = &robot,
+                         .motion = &motions.at(n->used_motion)};
 
       dynobench::Trajectory traj;
       traj.states = lazy_traj.motion->traj.states;
@@ -381,9 +381,12 @@ void __add_state_timed(AStarNode *node,
   time_bench.time_nearestNode_add += out.second;
 };
 
-bool check_lazy_trajectory(LazyTraj &lazy_traj, dynobench::Model_robot &robot,
-                           Time_benchmark &time_bench,
-                           dynobench::Trajectory &tmp_traj) {
+bool check_lazy_trajectory(
+    LazyTraj &lazy_traj, dynobench::Model_robot &robot,
+    Time_benchmark &time_bench, dynobench::Trajectory &tmp_traj,
+    std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
+    int *num_valid_states = nullptr) {
+
   // TODO: use collision shape if applicable
   Stopwatch wacht_mem;
   tmp_traj.states = lazy_traj.motion->traj.states;
@@ -391,34 +394,56 @@ bool check_lazy_trajectory(LazyTraj &lazy_traj, dynobench::Model_robot &robot,
   time_bench.time_alloc_primitive += wacht_mem.elapsed_ms();
 
   Stopwatch wacht_tp;
-  lazy_traj.compute(tmp_traj);
+  lazy_traj.compute(tmp_traj, true, check_state, num_valid_states);
   time_bench.time_transform_primitive += wacht_tp.elapsed_ms();
 
-  Stopwatch wacht_check_motion;
+  Stopwatch watch_check_motion;
 
-  // TODO: lets do this backwards, it will be more efficient
-  // for (auto &state : tmp_traj.states) {
-  //   if (!robot.is_state_valid(state)) {
-  //     // std::cout << "State is not valid!: " << state.format(FMT) <<
-  //     std::endl;
-  //     // std::cout << "x_lb: " << robot.x_lb.transpose() << std::endl;
-  //     // std::cout << "x_ub: " << robot.x_ub.transpose() << std::endl;
-  //     return false;
-  //   }
-  // }
-
-  for (size_t i = 0; i < tmp_traj.states.size(); i++) {
-    if (!robot.is_state_valid(
-            tmp_traj.states.at(tmp_traj.states.size() - 1 - i))) {
+  if (check_state) {
+    // bounds are check when doing the rollout
+    assert(num_valid_states);
+    if (*num_valid_states < lazy_traj.motion->traj.states.size()) {
       return false;
+    }
+
+  } else {
+    // checking backwards is usually faster
+    for (size_t i = 0; i < tmp_traj.states.size(); i++) {
+      if (!robot.is_state_valid(
+              tmp_traj.states.at(tmp_traj.states.size() - 1 - i))) {
+        return false;
+      }
     }
   }
 
-  time_bench.check_bounds += wacht_check_motion.elapsed_ms();
+  time_bench.check_bounds += watch_check_motion.elapsed_ms();
 
   bool motion_valid;
+  auto &motion = lazy_traj.motion;
   time_bench.time_collisions += timed_fun_void([&] {
-    motion_valid = dynobench::is_motion_collision_free(tmp_traj, robot);
+    if (robot.invariance_reuse_col_shape) {
+      Eigen::VectorXd offset = *lazy_traj.offset;
+      assert(offset.size() == 2 || offset.size() == 3);
+      Eigen::Vector3d __offset;
+      if (offset.size() == 2) {
+        __offset = Eigen::Vector3d(offset(0), offset(1), 0);
+      } else {
+        __offset = offset.head<3>();
+      }
+      assert(motion);
+      assert(motion->collision_manager);
+      assert(robot.env.get());
+      std::vector<fcl::CollisionObject<double> *> objs;
+      motion->collision_manager->getObjects(objs);
+      motion->collision_manager->shift(__offset);
+      fcl::DefaultCollisionData<double> collision_data;
+      motion->collision_manager->collide(robot.env.get(), &collision_data,
+                                         fcl::DefaultCollisionFunction<double>);
+      motion->collision_manager->shift(-__offset);
+      motion_valid = !collision_data.result.isCollision();
+    } else {
+      motion_valid = dynobench::is_motion_collision_free(tmp_traj, robot);
+    }
   });
 
   time_bench.num_col_motions++;
@@ -428,7 +453,6 @@ bool check_lazy_trajectory(LazyTraj &lazy_traj, dynobench::Model_robot &robot,
 
 void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
              Trajectory &traj_out, Out_info_db &out_info_db) {
-
   std::cout << "*** options_dbastar ***" << std::endl;
   options_dbastar.print(std::cout);
   std::cout << "***" << std::endl;
@@ -675,8 +699,19 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     dynobench::Trajectory tmp_traj;
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
-      bool motion_valid =
-          check_lazy_trajectory(lazy_traj, *robot, time_bench, tmp_traj);
+
+      std::function<bool(Eigen::Ref<Eigen::VectorXd>)> ff = [&](auto state) {
+        return robot->is_state_valid(state);
+      };
+
+      int num_valid_states = -1;
+      bool motion_valid = check_lazy_trajectory(
+          lazy_traj, *robot, time_bench, tmp_traj, &ff, &num_valid_states);
+
+      // bool motion_valid = check_lazy_trajectory(lazy_traj, *robot,
+      // time_bench,
+      //                                           tmp_traj, nullptr,
+      //                                           nullptr);
 
       if (!motion_valid) {
         continue;
@@ -693,12 +728,11 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
         if (double d = robot->distance(tmp_traj.states.at(index_to_check),
                                        problem.goal);
             d <= options_dbastar.delta_factor_goal * options_dbastar.delta) {
-          std::cout << "Found a solution with intermetidate checks!"
-                    << std::endl;
           tmp_node.state_eig = tmp_traj.states.at(index_to_check);
-          std::cout << "x:" << tmp_node.state_eig.format(FMT) << " d:" << d
-                    << std::endl;
           chosen_index = index_to_check;
+          std::cout << "Found a solution with intermetidate checks! \n"
+                    << "x:" << tmp_node.state_eig.format(FMT) << " d:" << d
+                    << std::endl;
           break;
         }
       }

@@ -238,23 +238,28 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
 struct LazyTraj {
 
-  Eigen::VectorXd offset;
+  Eigen::VectorXd *offset;
   dynobench::Model_robot *robot;
   Motion *motion;
 
-  void compute(dynobench::Trajectory &tmp_traj, bool forward = true) {
-    assert(offset.size());
+  void compute(
+      dynobench::Trajectory &tmp_traj, bool forward = true,
+      std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
+      int *num_valid_states = nullptr) {
+    assert(offset);
     assert(robot);
     assert(motion);
+
+    assert(offset->size());
     if (forward) {
-      robot->transform_primitive(offset, motion->traj.states,
-                                 motion->traj.actions, tmp_traj.states,
-                                 tmp_traj.actions);
+      robot->transform_primitive(
+          *offset, motion->traj.states, motion->traj.actions, tmp_traj.states,
+          tmp_traj.actions, check_state, num_valid_states);
     } else {
       // TODO: change this outside translation invariance
-      robot->transform_primitive(offset, motion->traj.states,
-                                 motion->traj.actions, tmp_traj.states,
-                                 tmp_traj.actions);
+      robot->transform_primitive(
+          *offset, motion->traj.states, motion->traj.actions, tmp_traj.states,
+          tmp_traj.actions, check_state, num_valid_states);
     }
   }
 };
@@ -335,10 +340,7 @@ struct Expander {
     lazy_trajs.reserve(std::min(neighbors_m.size(), max_k));
     for (size_t i = 0; i < std::min(neighbors_m.size(), max_k); i++) {
       auto &m = neighbors_m.at(i);
-      LazyTraj lazy_traj;
-      lazy_traj.offset = offset;
-      lazy_traj.robot = robot;
-      lazy_traj.motion = m;
+      LazyTraj lazy_traj{.offset = &offset, .robot = robot, .motion = m};
       lazy_trajs.push_back(lazy_traj);
     }
   }

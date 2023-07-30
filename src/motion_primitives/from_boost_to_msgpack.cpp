@@ -35,8 +35,8 @@ int main() {
   for (auto &f : files) {
     Trajectories trajs;
     trajs.load_file_boost(f.c_str());
-    trajs.data.resize(100);
-    std::string fileout = f + ".small.msgpack";
+    trajs.data.resize(5000);
+    std::string fileout = f + ".small5000.msgpack";
     files_out.push_back(fileout);
     trajs.save_file_msgpack((fileout).c_str());
   }

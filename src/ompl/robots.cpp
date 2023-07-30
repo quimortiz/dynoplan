@@ -2975,6 +2975,14 @@ robot_factory_ompl(const dynobench::Problem &problem) {
   std::shared_ptr<RobotOmpl> out;
 
   std::cout << "Robot Factory: loading file: " << robot_model_file << std::endl;
+
+  std::cout << "Robot Factory: loading file: " << robot_model_file << std::endl;
+
+  if (!std::filesystem::exists(robot_model_file)) {
+    ERROR_WITH_INFO(
+        (std::string("file: ") + robot_model_file + " not found: ").c_str());
+  }
+
   YAML::Node node = YAML::LoadFile(robot_model_file);
 
   assert(node["dynamics"]);
@@ -3178,8 +3186,8 @@ void traj_to_motion(const dynobench::Trajectory &traj,
 }
 
 void compute_col_shape(Motion &m, dynobench::Model_robot &robot) {
-  Eigen::VectorXd x(robot.nx);
-  for (auto &state : m.states) {
+  for (auto &x : m.traj.states) {
+
     auto &ts_data = robot.ts_data;
     auto &col_geo = robot.collision_geometries;
     robot.transformation_collision_geometries(x, ts_data);
