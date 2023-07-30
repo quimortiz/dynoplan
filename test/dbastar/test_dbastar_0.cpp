@@ -25,6 +25,7 @@
 #include <iostream>
 
 #define DYNOBENCH_BASE "../../dynobench/"
+#define BASE_PATH_MOTIONS "../../dynomotions/"
 
 using namespace dynoplan;
 using namespace dynobench;
@@ -39,8 +40,10 @@ BOOST_AUTO_TEST_CASE(extra_time) {
   options_dbastar.limit_branching_factor = 20;
   options_dbastar.max_motions = 350;
   options_dbastar.search_timelimit = 30000;
-  options_dbastar.motionsFile = DYNOBENCH_BASE
-      "../cloud/motionsV2/good/quad2d_v0/quad2d_v0_all_im.bin.sp.bin.ca.bin";
+
+  options_dbastar.motionsFile =
+      BASE_PATH_MOTIONS "quad2d_v0_all_im.bin.sp.bin.ca.bin."
+                        "small5000.msgpack";
 
   std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
       (problem.models_base_path + problem.robotType + ".yaml").c_str(),
@@ -176,41 +179,43 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
 
   Options_dbastar o_uni1, o_uni2, o_car, o_quad2d, o_quad3d, o_quad2dpole;
 
-#define BASE_PATH "../../dynomotions/"
-
   // TODO: use less primitive so that the test runs faster!!
 
   o_uni1.max_motions = 300;
   o_uni1.delta = .3;
-  o_uni1.motionsFile = BASE_PATH "unicycle1_v0__ispso__2023_04_03__14_56_"
-                                 "57.bin.im.bin.im.bin.small5000."
-                                 "msgpack";
+  o_uni1.motionsFile =
+      BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_"
+                        "57.bin.im.bin.im.bin.small5000."
+                        "msgpack";
 
   o_uni2.max_motions = 400;
   o_uni2.delta = .4;
-  o_uni2.motionsFile = BASE_PATH "unicycle2_v0__ispso__2023_04_03__15_36_01."
-                                 "bin.im.bin.im.bin.small5000.msgpack";
+  o_uni2.motionsFile =
+      BASE_PATH_MOTIONS "unicycle2_v0__ispso__2023_04_03__15_36_01."
+                        "bin.im.bin.im.bin.small5000.msgpack";
 
   o_car.max_motions = 400;
   o_car.delta = .3;
-  o_car.motionsFile = BASE_PATH "car1_v0_all.bin.sp.bin.small5000.msgpack";
+  o_car.motionsFile =
+      BASE_PATH_MOTIONS "car1_v0_all.bin.sp.bin.small5000.msgpack";
 
   o_quad2d.max_motions = 400;
   o_quad2d.delta = .5;
-  o_quad2d.motionsFile = BASE_PATH "quad2d_v0_all_im.bin.sp.bin.ca.bin."
-                                   "small5000.msgpack";
+  o_quad2d.motionsFile = BASE_PATH_MOTIONS "quad2d_v0_all_im.bin.sp.bin.ca.bin."
+                                           "small5000.msgpack";
   o_quad2d.new_invariance = true;
 
   o_quad3d.delta = .8;
   o_quad3d.max_motions = 3000;
-  o_quad3d.motionsFile = BASE_PATH "quad3d_v0_all3.bin.im.bin.sp1.bin.ca.bin."
-                                   "small5000.msgpack";
+  o_quad3d.motionsFile =
+      BASE_PATH_MOTIONS "quad3d_v0_all3.bin.im.bin.sp1.bin.ca.bin."
+                        "small5000.msgpack";
   o_quad3d.new_invariance = true;
 
   o_quad2dpole.delta = .8;
   o_quad2dpole.max_motions = 4000;
-  o_quad2dpole.motionsFile =
-      BASE_PATH "quad2dpole_all.bin.im.bin.sp1.bin.ca.bin.small5000.msgpack";
+  o_quad2dpole.motionsFile = BASE_PATH_MOTIONS
+      "quad2dpole_all.bin.im.bin.sp1.bin.ca.bin.small5000.msgpack";
   o_quad2dpole.new_invariance = true;
 
   std::vector<Options_dbastar> options{
