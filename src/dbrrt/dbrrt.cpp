@@ -450,6 +450,7 @@ void dbrrtConnect(const dynobench::Problem &problem,
 
   Eigen::VectorXd __expand_start(robot->nx);
   Eigen::VectorXd __expand_end(robot->nx);
+  Eigen::VectorXd aux_last_state(robot->nx);
 
   while (!stop_search()) {
     if (time_bench.expands % print_every == 0)
@@ -512,8 +513,9 @@ void dbrrtConnect(const dynobench::Problem &problem,
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
       traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
-      bool motion_valid = check_lazy_trajectory(lazy_traj, *robot, time_bench,
-                                                traj_wrapper, nullptr, nullptr);
+      bool motion_valid =
+          check_lazy_trajectory(lazy_traj, *robot, time_bench, traj_wrapper,
+                                aux_last_state, nullptr, nullptr);
 
       if (options_dbrrt.debug) {
         trajs.push_back(dynobench::trajWrapper_2_Trajectory(traj_wrapper));
@@ -1005,6 +1007,7 @@ void dbrrt(const dynobench::Problem &problem,
 
   Eigen::VectorXd __expand_start(robot->nx);
   Eigen::VectorXd __expand_end(robot->nx);
+  Eigen::VectorXd aux_last_state(robot->nx);
 
   while (true) {
 
@@ -1080,8 +1083,9 @@ void dbrrt(const dynobench::Problem &problem,
 
       auto &lazy_traj = lazy_trajs[i];
       traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
-      bool motion_valid = check_lazy_trajectory(lazy_traj, *robot, time_bench,
-                                                traj_wrapper, nullptr, nullptr);
+      bool motion_valid =
+          check_lazy_trajectory(lazy_traj, *robot, time_bench, traj_wrapper,
+                                aux_last_state, nullptr, nullptr);
 
       if (!motion_valid)
         continue;

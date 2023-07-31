@@ -391,12 +391,26 @@ void __add_state_timed(AStarNode *node,
 bool check_lazy_trajectory(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
     Time_benchmark &time_bench, dynobench::TrajWrapper &tmp_traj,
+    Eigen::Ref<Eigen::VectorXd> aux_last_state,
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state,
     int *num_valid_states) {
 
   // TODO: use collision shape if applicable
   Stopwatch wacht_mem;
   time_bench.time_alloc_primitive += wacht_mem.elapsed_ms();
+
+  // preliminary check only on bounds of last state
+  if (robot.transform_primitive_last_state_available) {
+
+    robot.transform_primitive_last_state(
+        *lazy_traj.offset, lazy_traj.motion->traj.states,
+        lazy_traj.motion->traj.actions, aux_last_state);
+    // check if in bounds
+
+    if (!robot.is_state_valid(aux_last_state)) {
+      return false;
+    }
+  }
 
   Stopwatch wacht_tp;
   lazy_traj.compute(tmp_traj, true, check_state, num_valid_states);
@@ -621,7 +635,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
   double last_f_score = start_node->fScore;
   auto print_search_status = [&] {
-    std::cout << "expands: " << time_bench.expands
+    std::cout << "expands: " << time_bench.expands << " open: " << open.size()
               << " best distance: " << best_distance_to_goal
               << " fscore: " << last_f_score << std::endl;
   };
@@ -689,6 +703,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     traj_wrapper.allocate_size(max_traj_size, robot->nx, robot->nu);
   }
 
+  Eigen::VectorXd aux_last_state(robot->nx);
   while (!stop_search()) {
 
     // POP best node in queue
@@ -738,8 +753,12 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
       int num_valid_states = -1;
       traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
-      bool motion_valid = check_lazy_trajectory(
-          lazy_traj, *robot, time_bench, traj_wrapper, &ff, &num_valid_states);
+
+      // if available, check only last state first!
+
+      bool motion_valid =
+          check_lazy_trajectory(lazy_traj, *robot, time_bench, traj_wrapper,
+                                aux_last_state, &ff, &num_valid_states);
 
       // bool motion_valid = check_lazy_trajectory(lazy_traj, *robot,
       // time_bench,
@@ -763,7 +782,9 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
             d <= options_dbastar.delta_factor_goal * options_dbastar.delta) {
           tmp_node.state_eig = traj_wrapper.get_state(index_to_check);
           chosen_index = index_to_check;
-          std::cout << "Found a solution with intermetidate checks! \n"
+          std::cout << "Found a solution with "
+                       "intermetidate checks! "
+                       "\n"
                     << "x:" << tmp_node.state_eig.format(FMT) << " d:" << d
                     << std::endl;
           break;
@@ -822,7 +843,8 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
       } else {
         for (auto &n : neighbors_n) {
-          // STATE is not novel, we udpate the similar nodes
+          // STATE is not novel, we udpate
+          // the similar nodes
           if (double tentative_g =
                   gScore +
                   robot->lower_bound_time(tmp_node.state_eig, n->state_eig);
@@ -831,11 +853,15 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
             n->fScore = tentative_g + n->hScore;
             n->came_from = best_node;
             n->used_motion = lazy_traj.motion->idx;
-            // TODO: think if add a flag so that nodes thouching the goal can
-            // not be modified
-            n->intermediate_state = -1; // reset intermediate state.
-            // The motion is taken fully, because otherwise it would be novel
-            // and enter inside the other if.
+            // TODO: think if add a flag
+            // so that nodes thouching the
+            // goal can not be modified
+            n->intermediate_state = -1; // reset intermediate
+                                        // state.
+            // The motion is taken fully,
+            // because otherwise it would
+            // be novel and enter inside
+            // the other if.
             if (n->is_in_open) {
               time_bench.time_queue +=
                   timed_fun_void([&] { open.increase(n->handle); });

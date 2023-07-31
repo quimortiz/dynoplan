@@ -72,6 +72,9 @@ BOOST_AUTO_TEST_CASE(test_heu_map) {
   load_env(*robot, problem);
 
   Options_dbastar options;
+  options.max_size_heu_map = 2000;
+  options.num_sample_trials = 4000;
+
   std::vector<Heuristic_node> heu_map;
   generate_heuristic_map(problem, robot, options, heu_map);
 
@@ -92,7 +95,7 @@ BOOST_AUTO_TEST_CASE(test_heu_map) {
 
   double h1 = hh->h(problem.goal);
   double h2 = hh->h(problem.start);
-  double h3 = hh->h(Eigen::Vector3d(4, 5, 0));
+  double h3 = hh->h(Eigen::Vector3d(5, 5, 0));
   double h4 = hh->h(Eigen::Vector3d(4, 5.5, 1.57));
   double h5 = hh->h(Eigen::Vector3d(1, 5, 0));
 
@@ -100,7 +103,15 @@ BOOST_AUTO_TEST_CASE(test_heu_map) {
   std::vector<double> order_expected = {h1, h3, h4, h5, h2};
 
   std::sort(order_h.begin(), order_h.end());
-  BOOST_TEST(order_h == order_expected);
+
+  std::stringstream ss;
+  print_vec(order_h.data(), order_h.size(), ss);
+
+  std::stringstream ss2;
+  print_vec(order_expected.data(), order_expected.size(), ss2);
+
+  BOOST_TEST(order_h == order_expected,
+             "odrder_h " + ss.str() + " " + "order_expected " + ss2.str());
 }
 
 BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {

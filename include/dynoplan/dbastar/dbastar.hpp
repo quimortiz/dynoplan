@@ -293,6 +293,7 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
 bool check_lazy_trajectory(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
     Time_benchmark &time_bench, dynobench::TrajWrapper &tmp_traj,
+    Eigen::Ref<Eigen::VectorXd> aux_last_state,
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
     int *num_valid_states = nullptr);
 
