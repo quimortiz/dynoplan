@@ -24,7 +24,7 @@ jobs:
         submodules: recursive
 
     - name: Install system dependencies
-      run: sudo apt update  && sudo apt install libboost-all-dev libfcl-dev cmake libeigen3-dev libyaml-cpp-dev liblz4-dev python3-pip texlive latexmk -y
+      run: sudo apt update  && sudo apt install libboost-all-dev libfcl-dev cmake libeigen3-dev libyaml-cpp-dev liblz4-dev python3-pip texlive latexmk texlive-latex-extra -y
 
     - name: install crocoddyl
       run: |
