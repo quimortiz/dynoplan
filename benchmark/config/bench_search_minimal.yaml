@@ -4,10 +4,8 @@ n_cores: 1 # -1=auto
 
 problems:
   - unicycle1_v0/bugtrap_0
-  - unicycle2_v0/bugtrap_0
   - quad2d_v0/quad_bugtrap
   - car1_v0/bugtrap_0
-  - quadrotor_v0/quad_one_obs
   - quadrotor_v0/window
   - quad2dpole_v0/window
 

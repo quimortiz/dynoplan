@@ -1,6 +1,6 @@
 trials: 1
-timelimit: 60
-n_cores: -1 # -1=auto
+timelimit: 40
+n_cores: 1 # -1=auto
 
 problems:
   - unicycle1_v0/bugtrap_0

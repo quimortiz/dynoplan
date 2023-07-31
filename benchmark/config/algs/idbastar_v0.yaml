@@ -9,30 +9,30 @@ default:
 # you can set parameters per dynamial system
 unicycle1_v0:
   default:
-    motionsFile: ../cloud/motionsV2/good/unicycle1_v0/unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin
+    motionsFile: ../dynomotions_full/unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin.msgpack
     num_primitives_0: 100
 
 unicycle1_v1:
   default:
-    motionsFile: ../cloud/motionsV2/good/unicycle1_v1/tmp_motions_unicycle1_v1.bin.sp.bin
+    motionsFile: ../dynomotions_full/tmp_motions_unicycle1_v1.bin.sp.bin.msgpack
     num_primitives_0: 100
 
 unicycle1_v2:
   default:
     delta_0: .15
-    motionsFile: ../cloud/motionsV2/good/unicycle1_v2/tmp_motions_unicycle1_v2.bin.sp.bin
+    motionsFile: ../dynomotions_full/tmp_motions_unicycle1_v2.bin.sp.bin.msgpack
     num_primitives_0: 100
     # soft_control_bounds: true
 
 unicycle2_v0:
   default:
     delta_0: .5
-    motionsFile: ../cloud/motionsV2/good/unicycle2_v0/unicycle2_v0__ispso__2023_04_03__15_36_01.bin.im.bin.im.bin
+    motionsFile: ../dynomotions_full/unicycle2_v0__ispso__2023_04_03__15_36_01.bin.im.bin.im.bin.msgpack
     num_primitives_0: 200
 
 car1_v0:
   default:
-    motionsFile: ../cloud/motionsV2/good/car1_v0/car1_v0_all.bin.sp.bin
+    motionsFile: ../dynomotions_full/car1_v0_all.bin.sp.bin.msgpack
     num_primitives_0: 400
     delta: .5
     max_motions_primitives: 20000
@@ -40,7 +40,7 @@ car1_v0:
 quad2d_v0:
   default:
     # motionsFile: "../cloud/motionsV2/good/quad2d_v0/quad2d_v0_all.bin.sp1.bin"
-    motionsFile: ../cloud/motionsV2/good/quad2d_v0/quad2d_v0_all_im.bin.sp.bin.ca.bin
+    motionsFile: ../dynomotions_full/quad2d_v0_all_im.bin.sp.bin.ca.bin.msgpack
     #TODO: try ./cloud/motionsV2/good/quad2d_v0/quad2d_v0_all_im.bin.sp.bin.ca.bin.so2.bin.yaml
     num_primitives_0: 400
     delta_0: .5
@@ -73,7 +73,7 @@ quad2dpole_v0:
   default:
     # idbastar
     # motionsFile: ../cloud/motionsV2/good/quad2dpole_v0/quad2dpole_all.bin.sp1.bin.ca.bin
-    motionsFile: ../cloud/motionsV2/good/quad2dpole_v0/quad2dpole_all.bin.im.bin.sp1.bin.ca.bin
+    motionsFile: ../dynomotions_full/quad2dpole_all.bin.im.bin.sp1.bin.ca.bin.msgpack
     delta_0: .8
     num_primitives_0: 4000
     # dbastar
@@ -95,7 +95,7 @@ acrobot_v0:
     weight_goal: 600
     delta_factor_goal: .7
     # motionsFile: "../cloud/motionsV2/good/acrobot_v0/acrobot_v0_all.bin.sp.bin.so.bin"
-    motionsFile: ../cloud/motionsV2/good/acrobot_v0/acrobot_v0_all2.bin.sp.bin # THIS IS FINE
+    motionsFile: ../dynomotions_full/acrobot_v0_all2.bin.sp.bin.msgpack # THIS IS FINE
     # motionsFile: ../build/acrobot_v0_all2.bin.im.bin.sp1.bin # NOT WORKING -- TO FEW.
     num_primitives_0: 100000
     max_motions_primitives: 200000
@@ -114,7 +114,7 @@ quad3d_v0:
     search_timelimit: 60000
     max_iter: 100
     weight_goal: 100
-    motionsFile: ../cloud/motionsV2/good/quad3d_v0/quad3d_v0_all3.bin.im.bin.sp1.bin.ca.bin
+    motionsFile: ../dynomotions_full/quad3d_v0_all3.bin.im.bin.sp1.bin.ca.bin.msgpack
 
     soft_control_bounds: true
 
@@ -154,7 +154,7 @@ quad3d_omplapp:
     weight_goal: 300
     # solver_id: 0 # working
     # motionsFile: ../cloud/motionsV2/good/quad3d_omplapp/quad3dompl_all.bin.sp.bin.ca.bin
-    motionsFile: ../cloud/motionsV2/good/quad3d_omplapp/quad3dompl_all.bin.im.bin.sp1.bin.ca.bin
+    motionsFile: ../dynomotions_full/quad3dompl_all.bin.im.bin.sp1.bin.ca.bin.msgpack
     delta_0: .8
     # num_primitives_0: 5000
     num_primitives_0: 2000

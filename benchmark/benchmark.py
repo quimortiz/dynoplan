@@ -18,6 +18,14 @@ import argparse
 import os
 import shutil
 from scipy.interpolate import interp1d
+from matplotlib.backends.backend_pdf import PdfPages
+import matplotlib.pyplot as plt
+import matplotlib
+
+from datetime import datetime
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
 
 D_key_to_nice_name = [
@@ -83,15 +91,9 @@ def generate_texpdf(filename_tex: str) -> None:
     f_stdout = open("/tmp/dynoplan/latexmk_out.log", "w")
     f_stderr = open("/tmp/dynoplan/latexmk_err.log", "w")
 
-    cmd = f"latexmk -f -pdf -output-directory=/tmp/dynoplan/tex/ {filename_tex}.tex".split()
-
-    #     /tmp/dynoplan/tex/
-    # #
-    # #
-    # #         summary_timeopt_2023-07-07--10-57-08.tex.pdf
-    # #
-    # #     filename_pdf, '/tmp/tmp_compare.pdf')
-    #
+    out_dir = "/tmp/dynoplan/tex/"
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
+    cmd = f"latexmk -f -pdf -output-directory={out_dir} -interaction=nonstopmode {filename_tex}.tex".split()
 
     print("running cmd: ", " ".join(cmd))
     subprocess.run(cmd, stdout=f_stdout, stderr=f_stderr)
@@ -205,7 +207,7 @@ bench_cfg = args.bench_cfg
 file_in = args.file_in
 dynamics = args.dynamics
 
-MAX_TIME_PLOTS = 180
+MAX_TIME_PLOTS = 120
 
 
 do_compare = False
@@ -247,10 +249,6 @@ import sys
 sys.path.append("..")
 
 # import viewer.viewer_cli as viewer_cli
-import matplotlib.pyplot as plt
-import matplotlib
-
-from datetime import datetime
 
 
 def plot_stats(motions: list, robot_model: str, filename: str):
@@ -263,10 +261,6 @@ def plot_stats(motions: list, robot_model: str, filename: str):
         all_states.extend(m["states"])
         all_start_states.append(m["start"])
         all_end_states.append(m["goal"])
-
-    import numpy as np
-    import matplotlib.pyplot as plt
-    from matplotlib.backends.backend_pdf import PdfPages
 
     all_actions = np.array(all_actions)
     all_states = np.array(all_states)
@@ -1021,7 +1015,6 @@ def compare_time(
     # Lets use .8 as threshold?
 
     # PLOT
-    from matplotlib.backends.backend_pdf import PdfPages
 
     filename_pdf = f"../results_new_timeopt/plots/plot_time_{date_time}.pdf"
     pathlib.Path(filename_pdf).parent.mkdir(parents=True, exist_ok=True)
@@ -1846,6 +1839,15 @@ def compare(files: List[str], interactive: bool = False):
 
     create_latex_table(filename_csv)
 
+    # create the fancy table
+
+    print("creating fancy table!")
+    try:
+        print("Creating Fancy table...")
+        fancy_table([filename_csv], [], ["idbastar_v0", "sst_v0", "geo_v0"])
+    except:
+        print("Errror creating fancy table")
+
     # check
     # print("checking data")
     # with open(filename_csv, 'r') as myFile:
@@ -1884,8 +1886,6 @@ def compare(files: List[str], interactive: bool = False):
     # print("D", D)
 
     # now print the data!
-
-    from matplotlib.backends.backend_pdf import PdfPages
 
     filename_pdf = f"../results_new/plots/plot_{date_time}.pdf"
 
@@ -1970,9 +1970,9 @@ def compare(files: List[str], interactive: bool = False):
 
                             # cost_lb != np.nan && cost_ub != np.nan):
 
-                print("cost_mean", cost_mean)
-                print("cost_lb", cost_lb)
-                print("cost_ub", cost_ub)
+                # print("cost_mean", cost_mean)
+                # print("cost_lb", cost_lb)
+                # print("cost_ub", cost_ub)
 
                 ax[0].fill_between(
                     times,
@@ -2104,10 +2104,10 @@ def get_av_cost_new(all_costs_np) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         # print(column)
         # print(non_nan)
         if non_nan >= int(num_instances / 2):
-            print("success rate is enough")
+            # print("success rate is enough")
             # cc = column[~np.isnan(column)]
             cc = np.nan_to_num(column, nan=float("inf"))
-            print("cc", cc)
+            # print("cc", cc)
             cc.sort()
 
             median.append(cc[max(int(0.5 * (len(cc) - 1)), 0)])
@@ -2556,6 +2556,8 @@ def create_latex_table(csv_file: str) -> None:
     with open(filename, "w") as f:
         f.write(str_)
 
+    generate_texpdf(filename)
+
     problems = df["problem"].unique()
     print("problems", problems)
     for problem in problems:
@@ -2566,8 +2568,12 @@ def create_latex_table(csv_file: str) -> None:
 
         problem_ = problem.replace("/", "--")
 
-        with open(f"../results_new/tex/data_{problem_}_{date_time}.tex", "w") as f:
+        filename = f"../results_new/tex/data_{problem_}_{date_time}.tex"
+        with open(filename, "w") as f:
             f.write(str_)
+        generate_texpdf(filename)
+
+        # compile the latex file
 
 
 def visualize_primitives(
@@ -2625,13 +2631,15 @@ def visualize_primitives(
 def fancy_table(
     filenames: List[str], benchmark_problems: List[str], benchmark_algs: List[str]
 ):
+    print(f"filenames {filenames}")
+    print(f"benchmark_problems {benchmark_problems}")
+    print(f"benchmark_algs {benchmark_algs}")
+
     df = pandas.DataFrame()
 
     for file in filenames:
         __df = pandas.read_csv(file)
         df = pandas.concat([df, __df], axis=0)
-
-    print(list(df.columns))
 
     def get_data(frame, alg: str, problem: str, field: str, **kwargs):
         print(alg, problem, field)
@@ -2696,6 +2704,8 @@ def fancy_table(
     problems = df.problem.unique()
 
     problems = sorted(list(problems))
+
+    print(f"problems in data {problems}")
 
     with open("/tmp/problems_list.yaml", "w") as f:
         yaml.dump({"problems": problems}, f)
@@ -2942,6 +2952,9 @@ def format_latex_str(str_in: str) -> str:
 
 
 def parse_for_component_analysis(files: List[str]):
+    print("input to parse_for_component_analysis")
+    print(f"{files}")
+
     visualize = False
     max_it = 1
 
@@ -2949,7 +2962,8 @@ def parse_for_component_analysis(files: List[str]):
     field_search = "time_search"
     field_nn = "time_nearestNode"
     field_col = "time_collisions"
-    field_mm = "time_nearestMotion"
+    field_mm1 = "time_transform_primitive"
+    field_mm2 = "time_lazy_expand"
 
     Ds = []
     for file in files:
@@ -2979,7 +2993,7 @@ def parse_for_component_analysis(files: List[str]):
         for it in range(max_it):
             counter_search += infos_raw[it][field_search]
             counter_nn += infos_raw[it][field_nn]
-            counter_mm += infos_raw[it][field_mm]
+            counter_mm += infos_raw[it][field_mm1] + infos_raw[it][field_mm2]
             counter_col += infos_raw[it][field_col]
 
         print(f"counter_ddp {counter_ddp}")
@@ -2994,6 +3008,10 @@ def parse_for_component_analysis(files: List[str]):
             "counter_nn": counter_nn,
             "counter_mm": counter_mm,
             "counter_col": counter_col,
+            "counter_search_extra": counter_search
+            - counter_nn
+            - counter_mm
+            - counter_col,
         }
 
         file_out = "/tmp/componentes.yaml"
@@ -3036,23 +3054,29 @@ def parse_for_component_analysis(files: List[str]):
         if visualize:
             plt.show()
 
+        D["problem_file"] = _D["problem_file"]
+        D["robot_type"] = _D["robot_type"]
+        D["delta"] = _D["options_idbastar"]["delta_0"]
+        D["prim"] = _D["options_idbastar"]["num_primitives_0"]
+
         # fig, ax = plt.subplots()
-        for _it in range(max_it):
-            D = {
-                "problem_file": _D["problem_file"],
-                "robot_type": _D["robot_type"],
-                "delta": _D["options_idbastar"]["delta_0"],
-                "prim": _D["options_idbastar"]["num_primitives_0"],
-                "counter_ddp": infos_opt[_it][field_ddp],
-                "counter_search_extra": infos_raw[_it][field_search]
-                - infos_raw[_it][field_nn]
-                - infos_raw[_it][field_mm]
-                - infos_raw[_it][field_col],
-                "counter_nn": infos_raw[_it][field_nn],
-                "counter_mm": infos_raw[_it][field_mm],
-                "counter_col": infos_raw[_it][field_col],
-            }
-            Ds.append(D)
+        # for _it in range(max_it):
+        #     D = {
+        #         "problem_file": _D["problem_file"],
+        #         "robot_type": _D["robot_type"],
+        #         "delta": _D["options_idbastar"]["delta_0"],
+        #         "prim": _D["options_idbastar"]["num_primitives_0"],
+        #         "counter_ddp": infos_opt[_it][field_ddp],
+        #         "counter_search_extra": infos_raw[_it][field_search]
+        #         - infos_raw[_it][field_nn]
+        #         - infos_raw[_it][field_mm1]
+        #         - infos_raw[_it][field_mm2]
+        #         - infos_raw[_it][field_col],
+        #         "counter_nn": infos_raw[_it][field_nn],
+        #         "counter_mm": infos_raw[_it][field_mm],
+        #         "counter_col": infos_raw[_it][field_col],
+        #     }
+        Ds.append(D)
 
         # keys = Ds[0].keys()
         # bottom = np.zeros(max_it)
@@ -3111,9 +3135,9 @@ def parse_for_component_analysis(files: List[str]):
     # generate it
     Dkey_to_label = {
         "counter_ddp": "Optimization",
-        "counter_search_extra": "Search-Extra",
+        "counter_search_extra": "Search-Other",
         "counter_nn": "Search-NN",
-        "counter_mm": "Search-Primitives",
+        "counter_mm": "Search-Expansion",
         "counter_col": "Search-Collision",
     }
 
@@ -3122,7 +3146,8 @@ def parse_for_component_analysis(files: List[str]):
         p = ax.bar(x, vv, width, label=Dkey_to_label[key], bottom=bottom)
         bottom += vv
 
-    ax.set_ylim([0, 20])
+    MAX_Y = 15
+    ax.set_ylim([0, MAX_Y])
     ax.set_ylabel("Time [s]")
     # locs, labels = ax.yticks()  # Get the current locations and labels.
 
@@ -3300,6 +3325,8 @@ if __name__ == "__main__":
         #          "../results_new/summary/summary_2023-06-21--13-56-25.csv"]
 
         fancy_table(D["files"], D["benchmark_problems"], D["benchmark_algs"])
+
+        # files: summary_2023-07-31--00-26-05.csv
 
     if do_compare:
         # folders = ["geo_v0/04-04-2023--15-59-51",

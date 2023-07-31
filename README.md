@@ -10,9 +10,9 @@
 
 
 
-The first version [kinodynamic-motion-planning-benchmark](https://github.com/imrCLab/kinodynamic-motion-planning-benchmark) is now deprecated. 
+The first version [kinodynamic-motion-planning-benchmark](https://github.com/imrCLab/kinodynamic-motion-planning-benchmark) is now deprecated.
 
-## Robots and Problem Description 
+## Robots and Problem Description
 
 Kinodynamic motion planning problem are defined in [Dynobench](https://github.com/quimortiz/dynobench)
 
@@ -28,7 +28,7 @@ we provide several exectuables and libraries to fit different use cases
 
 ## Testing
 
-Check the tests to learn how to use the code! 
+Check the tests to learn how to use the code!
 
 ## Planners
 
@@ -54,29 +54,53 @@ Yes, you need OMPL 1.6 for planners RRT + TO and  SST  . You will need OMPL 1.6 
 
 You will find a small set of motion primitives for each system in  [dynobench](https://github.com/quimortiz/dynobench).
 I you want more primitives, e.g. to run our planner, use
-wget ... 
+wget ...
 
 
-## Benchmark 
+## Benchmark
 
-Results of the benchmark in TRO are in folder XX. 
-To replicate the results, use branch XX
-and run the script : 
+Results of reported in our TRO paper are in folder XX. To replicate the results use commit: `xxxxx`
+
+
+First, download primitives with:
+
+```
+bash -x download_primitives.bash
+```
+
+Primitvies are stored in a new `dynomotions_full` directory. Next, move to the `build` directory and run commands:
 
 Benchmark between planners
+
 ```
-python3
+python3 ../benchmark/benchmark.py -m bench -bc    ../benchmark/config/compare.yaml
 ```
 
 Study of heuristic functions
+
 ```
-python3
+python3 ../benchmark/benchmark.py -m bench_search -bc    ../benchmark/config/bench_search.yaml
 ```
 
-Study of strategy for trajectoy optimization with free terminal time 
+Study of strategy for trajectoy optimization with free terminal time
 ```
-python3
+python3 ../benchmark/benchmark.py -m bench_time -bc    ../benchmark/config/bench_time.yam
 ```
+
+Study of time spent in each component
+
+```
+python3   ../benchmark/benchmark.py -m study  -bc ../benchmark/config/bench_abblation_study.yaml
+```
+
+You can modify each config file to change the number of runs, the evaluated problems and the maximum time.
+The configurations files we used for `TRO` have prefix `TRO`.
+
+The paramteres for each algorithm are in `.yaml` files inside the `benchmark/config/algs` directory, severalfro example `idbastar_v0.yaml`.
+
+
+
+
 
 
 
@@ -100,4 +124,3 @@ COOL TRO paper
   archiveprefix = {arXiv}
 }
 ```
-
