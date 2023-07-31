@@ -126,7 +126,7 @@ python3 ../benchmark/benchmark.py -m bench_search -bc    ../benchmark/config/ben
 
 Study of strategy for trajectoy optimization with free terminal time
 ```
-python3 ../benchmark/benchmark.py -m bench_time -bc    ../benchmark/config/bench_time.yam
+python3 ../benchmark/benchmark.py -m bench_time -bc    ../benchmark/config/bench_time.yaml
 ```
 
 Study of time spent in each component
