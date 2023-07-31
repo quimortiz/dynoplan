@@ -22,13 +22,9 @@ Kinodynamic motion planning problem are defined in [Dynobench](https://github.co
 </p >
 
 
-## How to use
+## Examples and Tests
 
-we provide several exectuables and libraries for different different use cases
-
-## Testing
-
-Check the tests to learn how to use the code!
+Check the tests in `test` to learn how to use the code!
 
 ## Planners
 
