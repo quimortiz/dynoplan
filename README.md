@@ -1,6 +1,6 @@
 # Dynoplan 🦖
 
-
+Dynoplan is a small library for solving kinodynamic motion planning problems, as defined in [Dynobench](https://github.com/quimortiz/dynobench) :t-rex:. It implements 3 different algorithms: Trajectory Optimization with geometric initial guess (RRT*-TO), Sample based Motion Planning (SST*), and Iterative Search and Optimization (iDb-A*).
 
 <p align="center">
 <img src="assets/example1.png" width=60% height=auto>
@@ -22,13 +22,9 @@ Kinodynamic motion planning problem are defined in [Dynobench](https://github.co
 </p >
 
 
-## How to use
+## Examples and Tests
 
-we provide several exectuables and libraries for different different use cases
-
-## Testing
-
-Check the tests to learn how to use the code!
+Check the tests in `test` to learn how to use the code!
 
 ## Planners
 
@@ -126,7 +122,7 @@ python3 ../benchmark/benchmark.py -m bench_search -bc    ../benchmark/config/ben
 
 Study of strategy for trajectoy optimization with free terminal time
 ```
-python3 ../benchmark/benchmark.py -m bench_time -bc    ../benchmark/config/bench_time.yam
+python3 ../benchmark/benchmark.py -m bench_time -bc    ../benchmark/config/bench_time.yaml
 ```
 
 Study of time spent in each component
