@@ -101,6 +101,11 @@ def generate_texpdf(filename_tex: str) -> None:
     f_stdout.close()
     f_stderr.close()
 
+    print("latexmk stdout:")
+    os.system("cat /tmp/dynoplan/latexmk_out.log")
+    print("latexmk stderr:")
+    os.system("cat /tmp/dynoplan/latexmk_err.log")
+
     p = Path(filename_tex)
     pdf_name = "/tmp/dynoplan/tex/" + str(p.stem) + ".tex.pdf"
 
