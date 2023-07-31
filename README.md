@@ -55,13 +55,14 @@ We need OMPL 1.6 for planners RRT + TO and  SST. We recommend to install OMPL in
 
 ## Motion Primitives
 
-You will find a small set of motion primitives for each system in  [dynobench](https://github.com/quimortiz/dynobench).
+You will find a small set of motion primitives for each system in [dynobench](https://github.com/quimortiz/dynobench). 5000 primitives per system are in [dynomotions](https://github.com/quimortiz/dynomotions). This primitives are required for running the test. 
 
-A large set of primitives for each system can be downloaded from Google Drive. This can be done manually with a web browser or using the command line with [gdown](https://github.com/wkentaro/gdown). For example:
+Finally, the comple set of primitives for each system can be downloaded from Google Drive. This can be done manually with a web browser or using the command line with [gdown](https://github.com/wkentaro/gdown). This is required to run the benchmark. For example:
 
 ```
 gdown --fuzzy "https://drive.google.com/file/d/1r_ecGwdfvWnVWxPsvR4d8Hjcayxg5PsB/view?usp=drive_link"
 ```
+We provide the script `download_primitives.bash` to download all primitives, that will be stored in folder `dynomotions_full`.
 
 All primitive in two ZIP files:  https://drive.google.com/drive/folders/1-Nvctva17I8aFsWvHfdQFWTIDUNWwgcM?usp=drive_link
 
@@ -97,18 +98,11 @@ https://drive.google.com/file/d/1IvwN-e1jn5P0P1ILaVwSrUnIeBlFxhHI/view?usp=drive
 * Unicycle 1 v1
 https://drive.google.com/file/d/1OLuw5XICTueoZuleXOuD6vNh3PCWfHif/view?usp=drive_link
 
-Tests in `dynoplan` expect he primitves to be in the folder
-`cloud/motionsV2/good/NAME_SYSTEM`, e.g.
-`cloud/motionsV2/good/acrobot_v0`
-
-
-
 
 
 ## Benchmark
 
-Results of reported in our TRO paper are in folder XX. To replicate the results use commit: `xxxxx`
-
+Results of reported in our TRO paper are in folder `tro_results`. To replicate the results use commit: `xxxxx`. The code is under continuous development, but the benchmark should work also with newer commits. If you experience any problem, please open an ISSUE. 
 
 First, download primitives with:
 
@@ -144,10 +138,7 @@ python3   ../benchmark/benchmark.py -m study  -bc ../benchmark/config/bench_abbl
 You can modify each config file to change the number of runs, the evaluated problems and the maximum time.
 The configurations files we used for `TRO` have prefix `TRO`.
 
-The paramteres for each algorithm are in `.yaml` files inside the `benchmark/config/algs` directory, severalfro example `idbastar_v0.yaml`.
-
-
-
+The paramteres for each algorithm are in `.yaml` files inside the `benchmark/config/algs` directory, for example `idbastar_v0.yaml`.
 
 
 
