@@ -28,10 +28,10 @@ Check the tests in `test` to learn how to use the code!
 
 ## Planners
 
-- Trajectory Optimization (Several Algorithms on top of Differential Dynamic Programming (Croccoddyl))
-- RRT*-TO (Geometric Planner RRT* (OMPL)  + Trajectory Optimzation)
-- iDb-A* (Iterative disccontinuity bounded search and Trajecgory Optimization)
-- SST* (Stable Sparse Tree (OMPL))
+- Trajectory Optimization: several algorithms for optimization with free terminal time, built on top of Differential Dynamic Programming (Crocoddyl). 
+- RRT*-TO: Geometric Planner RRT* (OMPL)  + Trajectory Optimzation
+- iDb-A*: Iterative disccontinuity bounded search and Trajectory Optimization
+- SST*: Stable Sparse Tree (OMPL)
 - Dbrrt, AO-dbrrt and DBrrtConnect, DB-SST* (coming soon!)
 
 ## Building
@@ -51,7 +51,7 @@ We need OMPL 1.6 for planners RRT + TO and  SST. We recommend to install OMPL in
 
 ## Motion Primitives
 
-You will find a small set of motion primitives for each system in [dynobench](https://github.com/quimortiz/dynobench). 5000 primitives per system are in [dynomotions](https://github.com/quimortiz/dynomotions). This primitives are required for running the test. 
+You will find a small set of motion primitives for each system in [dynobench](https://github.com/quimortiz/dynobench). 5000 primitives per system are available in [dynomotions](https://github.com/quimortiz/dynomotions). These primitives are required for running the test. 
 
 Finally, the comple set of primitives for each system can be downloaded from Google Drive. This can be done manually with a web browser or using the command line with [gdown](https://github.com/wkentaro/gdown). This is required to run the benchmark. For example:
 
