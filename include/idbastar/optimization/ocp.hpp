@@ -181,6 +181,8 @@ struct Result_opti {
   void write_yaml(std::ostream &out);
 
   void write_yaml_db(std::ostream &out);
+
+  void write_yaml_joint(std::ostream &out);
 };
 
 std::vector<Eigen::VectorXd>

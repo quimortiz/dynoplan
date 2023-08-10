@@ -16,6 +16,9 @@
 #include "dynobench/robot_models.hpp"
 #include "idbastar/optimization/croco_models.hpp"
 
+#include "dynobench/joint_robot.hpp"
+#include <iterator>
+
 using vstr = std::vector<std::string>;
 using V2d = Eigen::Vector2d;
 using V3d = Eigen::Vector3d;
@@ -2516,7 +2519,6 @@ void __trajectory_optimization(
   opti_out.xs_out = xs_out;
   opti_out.us_out = us_out;
   opti_out.cost = us_out.size() * dt;
-
   traj.states = xs_out;
   traj.actions = us_out;
 
@@ -2603,23 +2605,26 @@ void trajectory_optimization(const dynobench::Problem &problem,
   double time_ddp_total = 0;
   Stopwatch watch;
   Options_trajopt options_trajopt_local = options_trajopt;
+  
+  std::shared_ptr<dynobench::Model_robot> model_robot = dynobench::joint_robot_factory();
 
-  std::shared_ptr<dynobench::Model_robot> model_robot =
-      dynobench::robot_factory(
-          (problem.models_base_path + problem.robotType + ".yaml").c_str());
+  // std::shared_ptr<dynobench::Model_robot> model_robot =
+      // dynobench::robot_factory(
+          // (problem.models_base_path + problem.robotType + ".yaml").c_str());
+ 
 
   load_env(*model_robot, problem);
 
-  size_t _nx = model_robot->nx;
+  size_t _nx = model_robot->nx; // state
   size_t _nu = model_robot->nu;
 
   Trajectory tmp_init_guess(init_guess), tmp_solution;
 
-  if (options_trajopt_local.welf_format) {
-    std::shared_ptr<dynobench::Model_quad3d> robot_derived =
-        std::dynamic_pointer_cast<dynobench::Model_quad3d>(model_robot);
-    tmp_init_guess = from_welf_to_quim(init_guess, robot_derived->u_nominal);
-  }
+  // if (options_trajopt_local.welf_format) {
+  //   std::shared_ptr<dynobench::Model_quad3d> robot_derived =
+  //       std::dynamic_pointer_cast<dynobench::Model_quad3d>(model_robot);
+  //   tmp_init_guess = from_welf_to_quim(init_guess, robot_derived->u_nominal);
+  // }
 
   if (startsWith(problem.robotType, "quad3d")) {
     for (auto &s : tmp_init_guess.states) {
@@ -3152,6 +3157,28 @@ void trajectory_optimization(const dynobench::Problem &problem,
 void Result_opti::write_yaml(std::ostream &out) {
   out << "feasible: " << feasible << std::endl;
   out << "success: " << success << std::endl;
+  out << "cost: " << 2*cost << std::endl;
+  if (data.size()) {
+    out << "info:" << std::endl;
+    for (const auto &[k, v] : data) {
+      out << "  " << k << ": " << v << std::endl;
+    }
+  }
+  out << "result:" << std::endl;
+  // out << "xs_out: " << std::endl;
+  out << "  - states:" << std::endl;
+  for (auto &x : xs_out)
+    out << "      - "<< x.format(FMT) << std::endl;
+
+  // out << "us_out: " << std::endl;
+  out << "    actions:" << std::endl;
+  for (auto &u : us_out)
+    out << "      - "<< u.format(FMT) << std::endl;
+}
+
+void Result_opti::write_yaml_joint(std::ostream &out) {
+  out << "feasible: " << feasible << std::endl;
+  out << "success: " << success << std::endl;
   out << "cost: " << cost << std::endl;
   if (data.size()) {
     out << "info:" << std::endl;
@@ -3159,14 +3186,22 @@ void Result_opti::write_yaml(std::ostream &out) {
       out << "  " << k << ": " << v << std::endl;
     }
   }
-
-  out << "xs_out: " << std::endl;
+  out << "result:" << std::endl;
+  // out << "xs_out: " << std::endl;
+  out << "  - states:" << std::endl;
   for (auto &x : xs_out)
-    out << "  - " << x.format(FMT) << std::endl;
+      out << "      - "<< x.head<3>().format(FMT) << std::endl;
+  out << "  - states:" << std::endl;
+  for (auto &x : xs_out)
+      out << "      - "<< x.segment<3>(3).format(FMT) << std::endl;
 
-  out << "us_out: " << std::endl;
+  out << "    actions:" << std::endl;
   for (auto &u : us_out)
-    out << "  - " << u.format(FMT) << std::endl;
+    out << "      - "<< u.head<2>().format(FMT) << std::endl;
+  out << "    actions:" << std::endl;
+  for (auto &u : us_out)
+    out << "      - "<< u.segment<2>(2).format(FMT) << std::endl;
+
 }
 
 void Result_opti::write_yaml_db(std::ostream &out) {
