@@ -28,7 +28,7 @@ Check the tests in `test` to learn how to use the code!
 
 ## Planners
 
-- Trajectory Optimization: several algorithms for optimization with free terminal time, built on top of Differential Dynamic Programming (Crocoddyl). 
+- Trajectory Optimization: several algorithms for optimization with free terminal time, built on top of Differential Dynamic Programming (Crocoddyl).
 - RRT*-TO: Geometric Planner RRT* (OMPL)  + Trajectory Optimzation
 - iDb-A*: Iterative disccontinuity bounded search and Trajectory Optimization
 - SST*: Stable Sparse Tree (OMPL)
@@ -51,7 +51,7 @@ We need OMPL 1.6 for planners RRT + TO and  SST. We recommend to install OMPL in
 
 ## Motion Primitives
 
-You will find a small set of motion primitives for each system in [dynobench](https://github.com/quimortiz/dynobench). 5000 primitives per system are available in [dynomotions](https://github.com/quimortiz/dynomotions). These primitives are required for running the test. 
+You will find a small set of motion primitives for each system in [dynobench](https://github.com/quimortiz/dynobench). 5000 primitives per system are available in [dynomotions](https://github.com/quimortiz/dynomotions). These primitives are required for running the test.
 
 Finally, the comple set of primitives for each system can be downloaded from Google Drive. This can be done manually with a web browser or using the command line with [gdown](https://github.com/wkentaro/gdown). This is required to run the benchmark. For example:
 
@@ -96,9 +96,55 @@ https://drive.google.com/file/d/1OLuw5XICTueoZuleXOuD6vNh3PCWfHif/view?usp=drive
 
 
 
+## How to generate motion primitives for new systems
+
+
+Step one: Implement the Dynamics in Dynobench, Following the tutorial for the `Integrator2_2d` in the `README`
+
+```
+
+
+
+
+```
+
+Step two: Solve Optimization Problems with Random Start and Goals
+
+```
+
+./main_primitives --mode_gen_id 0  --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/   --max_num_primitives 200 --out_file /tmp/my_motions.bin
+```
+Primitives will be store in `/tmp/my_motions.bin` and `/tmp/my_motions.bin.yaml`
+
+
+Step Three: Improve the quality of the primitives
+
+```
+./main_primitives --mode_gen_id 1  --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/   --max_num_primitives 200  --in_file /tmp/my_motions.bin --solver_id 1
+
+```
+
+By default, primitives are stored in `/tmp/my_motions.bin.im.bin` and `/tmp/my_motions.bin.im.bin.yaml`
+
+
+Step Fours: Randomnly cut primitives
+
+```
+m4 main_primitives &&    ./main_primitives --mode_gen_id 2 --in_file     /tmp/my_motions.bin.im.bin    --max_num_primitives -1   --max_splits 1  --max_length_cut 50  --min_length_cut 5 --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/
+```
+
+By default, primitives will be stored in `/tmp/my_motions.bin.im.bin.sp.bin` and `/tmp/my_motions.bin.im.bin.sp.bin.yaml`
+
+
+
+Done!
+
+`main_primitives` provide more utils, such as conversion between formats, computing statistics, generating primitives with random rollouts, sorting primitives and resampling of primitives
+
+
 ## Benchmark
 
-Results of reported in our TRO paper are in folder `tro_results`. To replicate the results use commit: `xxxxx`. The code is under continuous development, but the benchmark should work also with newer commits. If you experience any problem, please open an ISSUE. 
+Results of reported in our TRO paper are in folder `tro_results`. To replicate the results use commit: `xxxxx`. The code is under continuous development, but the benchmark should work also with newer commits. If you experience any problem, please open an ISSUE.
 
 First, download primitives with:
 
