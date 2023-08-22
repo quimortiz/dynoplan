@@ -367,10 +367,10 @@ generate_problem(const Generate_params &gen_args,
       auto ptr_derived = std::dynamic_pointer_cast<dynobench::Joint_robot>(
           gen_args.model_robot);
 
-      CHECK(ptr_derived, "this only works for joint robot");
+      // CHECK(ptr_derived, "this only works for joint robot");
       std::vector<int> goal_times = ptr_derived->goal_times;
 
-      CHECK((goal_times.size() == 0 || goal_times.size() == 2), "");
+      // CHECK((goal_times.size() == 0 || goal_times.size() == 2), "");
 
       print_vec(goal_times.data(), goal_times.size());
       CSTR_(gen_args.N);
@@ -379,24 +379,26 @@ generate_problem(const Generate_params &gen_args,
              goal_times.at(1) == gen_args.N + 1),
             "");
 
-      if (goal_times.size() &&
-          (goal_times.at(0) <= t + 1 || goal_times.at(1) <= t + 1)) {
-
-        std::cout << "warning, adding special goal cost" << std::endl;
+      if (goal_times.size()) {
         Eigen::VectorXd weights = Eigen::VectorXd::Zero(nx);
-        if (goal_times.at(0) <= t + 1) {
-          weights.head(3).setOnes();
-        } else if (goal_times.at(1) <= t + 1) {
-          weights.tail(3).setOnes();
+        for (size_t j = 0; j < goal_times.size(); j++) {
+          if (goal_times.at(j) <= t + 1) {
+            size_t start_index = std::accumulate(
+                ptr_derived->nxs.begin(), ptr_derived->nxs.begin() + j, 0);
+            size_t nx = ptr_derived->nxs.at(j);
+            weights.segment(start_index, nx).setOnes();
+          }
         }
 
-        CSTR_V(weights);
-        ptr<Cost> state_feature = mk<State_cost_model>(
-            gen_args.model_robot, nx, nu,
-            gen_args.penalty * options_trajopt.weight_goal * weights,
-            gen_args.goal);
+        if (weights.sum() > 1e-12) {
+          std::cout << "warning, adding special goal cost" << std::endl;
+          ptr<Cost> state_feature = mk<State_cost_model>(
+              gen_args.model_robot, nx, nu,
+              gen_args.penalty * options_trajopt.weight_goal * weights,
+              gen_args.goal);
 
-        feats_run.emplace_back(state_feature);
+          feats_run.emplace_back(state_feature);
+        }
       }
     }
 
@@ -2530,9 +2532,9 @@ void __trajectory_optimization(
 
         CSTR_(ts.size());
         for (auto &g : ptr_derived->goal_times) {
-          std::cout << g <<std::endl;
-          std::cout << ts[g-1] << std::endl;
-          g = int((ts[g-1] / ptr_derived->ref_dt) + 2);
+          std::cout << g << std::endl;
+          std::cout << ts[g - 1] << std::endl;
+          g = int((ts[g - 1] / ptr_derived->ref_dt) + 2);
         }
 
         for (const auto &g : ptr_derived->goal_times) {
@@ -2546,7 +2548,7 @@ void __trajectory_optimization(
             max_goal_time = t;
           }
         }
-        CHECK_EQ(max_goal_time, xs_out.size() , AT);
+        CHECK_EQ(max_goal_time, xs_out.size(), AT);
       }
 
       if (startsWith(model_robot->name, "quad3d")) {
@@ -2669,36 +2671,34 @@ void trajectory_optimization(const dynobench::Problem &problem,
                              const Options_trajopt &options_trajopt,
                              Trajectory &traj, Result_opti &opti_out) {
 
-
   double time_ddp_total = 0;
   Stopwatch watch;
   Options_trajopt options_trajopt_local = options_trajopt;
-  
-  // std::shared_ptr<dynobench::Model_robot> model_robot = dynobench::joint_robot_factory();
-  // std::vector<int> vector_state;
+
+  // std::shared_ptr<dynobench::Model_robot> model_robot =
+  // dynobench::joint_robot_factory(); std::vector<int> vector_state;
   // std::vector<int> vector_action;
   // std::vector<std::shared_ptr<dynobench::Model_robot>> vector_robot;
   // for (size_t i = 0; i < problem.robotTypes.size(); i++){
   //   std::shared_ptr<dynobench::Model_robot> robot =
   //       dynobench::robot_factory(
-  //           (problem.models_base_path + problem.robotTypes[i] + ".yaml").c_str());
+  //           (problem.models_base_path + problem.robotTypes[i] +
+  //           ".yaml").c_str());
   //   vector_state.push_back(robot->nx);
   //   vector_action.push_back(robot->nu);
   //   vector_robot.push_back(robot);
   // }
-  std::shared_ptr<dynobench::Model_robot> model_robot = dynobench::joint_robot_factory(problem.robotTypes);
+  std::shared_ptr<dynobench::Model_robot> model_robot =
+      dynobench::joint_robot_factory(problem.robotTypes);
 
   auto ptr_derived =
       std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
 
   CHECK(ptr_derived, "only joint robot is supported");
-  if (problem.goal_times.size())
-  {
+  if (problem.goal_times.size()) {
     ptr_derived->goal_times = problem.goal_times;
     traj.multi_robot_index_goal = ptr_derived->goal_times;
   }
-
-
 
   // std::shared_ptr<dynobench::Model_robot> model_robot =
   // dynobench::robot_factory(
@@ -3168,7 +3168,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
       options_trajopt_local.debug_file_name =
           "/tmp/dbastar/debug_file_trajopt_after_freetime_proxi.yaml";
 
-      #if 0
+#if 0
       if (problem.goal_times.size() > 0) {
 
         std::cout << "warning: I have to adjust the goal times, if they were "
@@ -3210,8 +3210,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
           CHECK_EQ(max_goal_time, num_new_actions + 1, AT);
         }
       }
-      #endif
-
+#endif
 
       std::cout << "new goal times are " << std::endl;
       for (auto &g : ptr_derived->goal_times) {
@@ -3222,25 +3221,17 @@ void trajectory_optimization(const dynobench::Problem &problem,
       __trajectory_optimization(problem, model_robot, tmp_solution,
                                 options_trajopt_local, traj, opti_out);
 
+      if (problem.goal_times.size()) {
+        traj.multi_robot_index_goal = ptr_derived->goal_times;
 
-        if (problem.goal_times.size())
-        {
-          traj.multi_robot_index_goal = ptr_derived->goal_times;
-
-          int max_index = 0 ; 
-          for(auto& t : ptr_derived->goal_times){
-            if(t > max_index){
-              max_index = t;
-            }
+        int max_index = 0;
+        for (auto &t : ptr_derived->goal_times) {
+          if (t > max_index) {
+            max_index = t;
           }
-          CHECK_EQ(max_index , traj.states.size() , AT);
         }
-
-
-
-
-
-
+        CHECK_EQ(max_index, traj.states.size(), AT);
+      }
 
       time_ddp_total += std::stod(opti_out.data.at("ddp_time"));
       CSTR_(time_ddp_total);
