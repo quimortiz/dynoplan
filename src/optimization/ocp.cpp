@@ -431,8 +431,9 @@ generate_problem(const Generate_params &gen_args,
           mk<State_cost>(nx, nu, nx, state_weights, state_ref);
       feats_run.push_back(state_feature);
     }
-
-    if (startsWith(gen_args.name, "quad3d")) {
+    // I ADDED THE CONDITION HERE FOR THE TEST TO RUN:
+    // TODO QUIM
+    if (startsWith(gen_args.name, "quad3d") && !startsWith(gen_args.name, "quad3dpayload")) {
       if (control_mode == Control_Mode::default_mode) {
         std::cout << "adding regularization on w and v, q" << std::endl;
         Vxd state_weights(13);
