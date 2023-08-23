@@ -39,13 +39,13 @@ jobs:
 
         curl http://robotpkg.openrobots.org/packages/debian/robotpkg.key | sudo apt-key add -
         sudo apt update
-        sudo apt install robotpkg-py310-crocoddyl -y
+        sudo apt install robotpkg-py310-crocoddyl==1.9.0r1 -y
 
     - name: Install latest ompl
       run: |
         mkdir __local
         git clone https://github.com/ompl/ompl
-        cd ompl && mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=~/__local  && make install -j8
+        cd ompl && mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=~/__local  && make install -j2
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
