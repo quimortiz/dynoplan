@@ -620,9 +620,7 @@ void generate_primitives(const Options_trajopt &options_trajopt,
       CSTR_V(d);
 
       goal = start + d;
-      Eigen::VectorXd tmp_goal;
-      robot_model->ensure(goal, tmp_goal);
-      goal = tmp_goal;
+      robot_model->ensure(goal);
 
       // check that it is in the limits!
       if (robot_model->is_state_valid(goal)) {

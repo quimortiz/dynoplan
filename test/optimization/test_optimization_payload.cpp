@@ -29,12 +29,17 @@ BOOST_AUTO_TEST_CASE(t_payload_optimization_easy) {
   init_guess1.num_time_steps = 100;
   init_guess2.num_time_steps = 100;
 
-  Trajectory sol;
+  Trajectory sol1, sol2;
   Result_opti result1, result2;
 
-  trajectory_optimization(problem1, init_guess1, options, sol, result1);
+  trajectory_optimization(problem1, init_guess1, options, sol1, result1);
   BOOST_TEST(result1.feasible);
-  trajectory_optimization(problem2, init_guess2, options, sol, result2);
+
+  trajectory_optimization(problem2, init_guess2, options, sol2, result2);
+
+  sol1.to_yaml_format("/tmp/dynoplan_sol1.yaml");
+  sol2.to_yaml_format("/tmp/dynoplan_sol2.yaml");
+
   BOOST_TEST(result2.feasible);
 
 }
