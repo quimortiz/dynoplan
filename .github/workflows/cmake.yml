@@ -39,7 +39,7 @@ jobs:
 
         curl http://robotpkg.openrobots.org/packages/debian/robotpkg.key | sudo apt-key add -
         sudo apt update
-        sudo apt install robotpkg-py310-crocoddyl==1.9.0r1 -y
+        sudo apt install robotpkg-py310-crocoddyl=1.9.0r1 -y
 
     - name: Install latest ompl
       run: |
