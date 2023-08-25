@@ -42,4 +42,21 @@ BOOST_AUTO_TEST_CASE(t_payload_optimization_easy) {
 
   BOOST_TEST(result2.feasible);
 
+  Problem problem3(
+      dynobench_base
+      "envs/quad3d_payload/quad3d_payload_one_obs/quad3d_payload_one_obs.yaml");
+
+  problem3.models_base_path = dynobench_base "models/";
+
+  Trajectory init_guess3( dynobench_base  "envs/quad3d_payload/trajectories/"
+                         "quad3d_payload_one_obs_init_guess.yaml");
+
+  Result_opti result3;
+  Trajectory sol3;
+
+  trajectory_optimization(problem3, init_guess3, options, sol3, result3);
+  BOOST_TEST(result3.feasible);
+
+  sol3.to_yaml_format("/tmp/dynoplan_sol3.yaml");
+
 }
