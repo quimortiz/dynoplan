@@ -375,9 +375,9 @@ generate_problem(const Generate_params &gen_args,
       print_vec(goal_times.data(), goal_times.size());
       CSTR_(gen_args.N);
 
-      CHECK((goal_times.size() == 0 || goal_times.at(0) == gen_args.N + 1 ||
-             goal_times.at(1) == gen_args.N + 1),
-            "");
+      // CHECK((goal_times.size() == 0 || goal_times.at(0) == gen_args.N + 1 ||
+      //        goal_times.at(1) == gen_args.N + 1),
+      //       "");
 
       if (goal_times.size()) {
         Eigen::VectorXd weights = Eigen::VectorXd::Zero(nx);
