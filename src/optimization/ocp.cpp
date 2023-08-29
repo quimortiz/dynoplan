@@ -639,11 +639,23 @@ generate_problem(const Generate_params &gen_args,
 
     CHECK_EQ(static_cast<size_t>(gen_args.goal.size()),
              gen_args.model_robot->nx, AT);
+
+    Eigen::VectorXd goal_weight = gen_args.model_robot->goal_weight;
+    
+    if (!goal_weight.size()) {
+      goal_weight.resize(gen_args.model_robot->nx);
+      goal_weight.setOnes();
+    }
+
+    CSTR_V(goal_weight);
+
     ptr<Cost> state_feature =
         mk<State_cost_model>(gen_args.model_robot, nx, nu,
                              gen_args.penalty * options_trajopt.weight_goal *
-                                 Vxd::Ones(gen_args.model_robot->nx),
+                             goal_weight,
+                                 // Vxd::Ones(gen_args.model_robot->nx),
                              gen_args.goal);
+    //QUIM TODO: continuehere -- remove weights on quaternions!
 
     feats_terminal.push_back(state_feature);
   }

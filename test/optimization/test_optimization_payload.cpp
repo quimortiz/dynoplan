@@ -60,3 +60,62 @@ BOOST_AUTO_TEST_CASE(t_payload_optimization_easy) {
   sol3.to_yaml_format("/tmp/dynoplan_sol3.yaml");
 
 }
+
+BOOST_AUTO_TEST_CASE(t_two_uav) {
+
+
+  Problem problem( dynobench_base "envs/quad3d_payload/quad3d_payload_one_obs/" "quad3d_payload_one_obs_0_2_pm_hard.yaml");
+
+
+  problem.models_base_path = dynobench_base "models/";
+  Trajectory init_guess ( dynobench_base "envs/quad3d_payload/trajectories/quad3d_payload_2_pm_hard_init_guess.yaml");
+
+
+  Result_opti result;
+  Trajectory sol;
+
+  Options_trajopt options;
+  options.weight_goal = 50;
+  options.max_iter = 200;
+
+  trajectory_optimization(problem, init_guess, options, sol, result);
+  BOOST_TEST(result.feasible);
+
+
+  sol.to_yaml_format("/tmp/dynoplan_two_uav.yaml");
+}
+
+BOOST_AUTO_TEST_CASE(t_two_uav_easy) {
+// dynobench/envs/
+
+  Problem problem( dynobench_base "envs/quad3d_payload/empty1_2_pm_easy.yaml");
+                  // quad3d_payload_one_obs/" "quad3d_payload_one_obs_0_2_pm_easy.yaml");
+
+
+  problem.models_base_path = dynobench_base "models/";
+  // Trajectory init_guess ( dynobench_base "envs/quad3d_payload/trajectories/quad3d_payload_2_pm_hard_init_guess.yaml");
+
+
+  Trajectory init_guess ;
+  init_guess.num_time_steps = 300;
+
+  Result_opti result;
+  Trajectory sol;
+
+  Options_trajopt options;
+  // options.soft_control_bounds = true;
+  options.weight_goal = 50;
+  options.max_iter = 200;
+  // options.control_bounds = false;
+  options.u_bound_scale = 2.0;
+
+  trajectory_optimization(problem, init_guess, options, sol, result);
+  BOOST_TEST(result.feasible);
+
+
+  sol.to_yaml_format("/tmp/dynoplan_two_uav.yaml");
+}
+
+
+
+
