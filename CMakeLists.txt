@@ -22,6 +22,9 @@ message(STATUS "OMPL_VERSION: ${OMPL_VERSION}")
 find_package(fcl REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(crocoddyl REQUIRED)
+
+message(STATUS "CROCO_VERSION: ${CROCODDYL_VERSION}")
+
 find_package(Eigen3 REQUIRED)
 
 message(STATUS "FCL_INCLUDE_DIRS: ${FCL_INCLUDE_DIRS}")

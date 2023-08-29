@@ -388,6 +388,8 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
 
     if (cost_scale < 0) {
       auto data_to_key = [robot, fun](_T const &m) {
+        // DYNO_CHECK_EQ(fun(m).size(), 3, ""); //
+        // assert(fun(m).size() == 3);
         Eigen::Vector3d __x = fun(m);
         return std::tuple(Eigen::Vector2d(__x.head(2)), __x(2));
       };
@@ -499,6 +501,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
     auto data_to_key = [robot, fun](_T const &m) {
       using Vector13d = Eigen::Matrix<double, 13, 1>;
       Vector13d __x = fun(m);
+      // const Eigen::VectorXd &__x = fun(m);
       return std::tuple(Eigen::Vector3d(__x(0), __x(1), __x(2)),
                         Eigen::Quaterniond(__x(3), __x(4), __x(5), __x(6)),
                         Eigen::Vector3d(__x(7), __x(8), __x(9)),

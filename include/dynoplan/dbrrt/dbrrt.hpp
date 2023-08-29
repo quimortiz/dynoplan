@@ -8,11 +8,12 @@ namespace dynoplan {
 
 struct Options_dbrrt {
 
+  bool use_connect = false; //  use unidirectional or bidirectional (connect)
   double prob_expand_forward = 0.5;
   bool extract_primitives = false;
   bool add_to_search_tree = false;
   bool do_optimization = false;
-  bool fix_seed = false;
+  int seed = -1;
   double cost_jump = 1;
   double best_cost_prune_factor = .9;
   double cost_weight = .01;
@@ -27,7 +28,7 @@ struct Options_dbrrt {
   bool new_invariance = true;
   double delta = .3;
   int max_expands = 10000;
-  double search_timelimit = 10000;
+  double timelimit = 10000; // in ms second
   bool use_nigh_nn = true;
   size_t max_motions = 1000;
   std::vector<Motion> *motions_ptr = nullptr; // pointer to loaded motions
@@ -53,6 +54,7 @@ struct Options_dbrrt {
     APPLYXn(INOUTARGS_dbrrt);
 #undef X
 
+    loader.set(VAR_WITH_NAME(use_connect));
     loader.set(VAR_WITH_NAME(prob_expand_forward));
     loader.set(VAR_WITH_NAME(add_to_search_tree));
     loader.set(VAR_WITH_NAME(extract_primitives));
@@ -61,13 +63,13 @@ struct Options_dbrrt {
     loader.set(VAR_WITH_NAME(goal_region));
     loader.set(VAR_WITH_NAME(debug));
     loader.set(VAR_WITH_NAME(new_invariance));
-    loader.set(VAR_WITH_NAME(search_timelimit));
+    loader.set(VAR_WITH_NAME(timelimit));
     loader.set(VAR_WITH_NAME(max_expands));
     loader.set(VAR_WITH_NAME(delta));
     loader.set(VAR_WITH_NAME(max_motions));
     loader.set(VAR_WITH_NAME(use_nigh_nn));
 
-    loader.set(VAR_WITH_NAME(fix_seed));
+    loader.set(VAR_WITH_NAME(seed));
     loader.set(VAR_WITH_NAME(motionsFile));
     loader.set(VAR_WITH_NAME(cut_actions));
     loader.set(VAR_WITH_NAME(check_cols));
@@ -103,14 +105,22 @@ struct Options_dbrrt {
 };
 
 void dbrrt(const dynobench::Problem &problem,
+           std::shared_ptr<dynobench::Model_robot> robot,
            const Options_dbrrt &options_dbrrt,
            const Options_trajopt &options_trajopt,
            dynobench::Trajectory &traj_out, dynobench::Info_out &out_info_db);
 
 void dbrrtConnect(const dynobench::Problem &problem,
+                  std::shared_ptr<dynobench::Model_robot> robot,
                   const Options_dbrrt &options_dbrrt,
                   const Options_trajopt &options_trajopt,
                   dynobench::Trajectory &traj_out,
                   dynobench::Info_out &info_out);
+
+void idbrrt(const dynobench::Problem &problem,
+            std::shared_ptr<dynobench::Model_robot> robot,
+            const Options_dbrrt &options_dbrrt,
+            const Options_trajopt &options_trajopt,
+            dynobench::Trajectory &traj_out, dynobench::Info_out &info_out);
 
 } // namespace dynoplan

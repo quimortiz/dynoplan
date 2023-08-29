@@ -193,7 +193,9 @@ void check_problem_with_finite_diff(
     const std::vector<Vxd> &us) {
   std::cout << "Checking with finite diff " << std::endl;
   options.use_finite_diff = true;
-  options.disturbance = 1e-4;
+  // options.disturbance = 1e-4;
+  // options.disturbance = 1e-5;
+  options.disturbance = 1e-6;
   std::cout << "gen problem " << STR_(AT) << std::endl;
   size_t nx, nu;
   ptr<crocoddyl::ShootingProblem> problem_fdiff =
