@@ -1545,6 +1545,85 @@ Acceleration_cost_acrobot::Acceleration_cost_acrobot(size_t nx, size_t nu)
   f.setZero();
 }
 
+// 6 Payload
+// 6 Cable
+// 6
+// 7
+// 7
+// TOTAL:  32
+Payload_n_acceleration_cost::Payload_n_acceleration_cost(
+    const std::shared_ptr<dynobench::Model_robot> &model_robot, double k_acc)
+    : Cost(32, 8, 32), k_acc(k_acc), model(model_robot) {
+
+  name = "acceleration";
+
+  f2.resize(32);
+  f.resize(32);
+  f.setZero();
+  f2.setZero();
+
+  acc_u.resize(32, 8);
+  acc_x.resize(32, 32);
+  acc_u.setZero();
+  acc_x.setZero();
+
+  Jv_u.resize(32, 8);
+  Jv_x.resize(32, 32);
+
+  // TODO@ KHALED -> we need this generic!!
+  selector.resize(32);
+  selector.setZero();
+  // lets put only the entries that are about acceleration
+
+  selector.segment(3, 3).setOnes();
+  selector.segment(6 + 3, 3).setOnes();
+  selector.segment(2 * 6 + 3, 3).setOnes();
+
+  selector.segment(3 * 6 + 4, 3).setOnes();
+  selector.segment(3 * 6 + 7 + 4, 3).setOnes();
+}
+
+void Payload_n_acceleration_cost::calc(
+    Eigen::Ref<Eigen::VectorXd> r, const Eigen::Ref<const Eigen::VectorXd> &x,
+    const Eigen::Ref<const Eigen::VectorXd> &u) {
+
+  // CSTR_V(x);
+  // CSTR_V(u);
+  // CSTR_V(f);
+  assert(model);
+  model->calcV(f, x, u);
+  // CSTR_V(f);
+  // CSTR_V(selector);
+  r = k_acc * f.cwiseProduct(selector);
+  // I have to choose some entries...
+}
+
+void Payload_n_acceleration_cost::calcDiff(
+    Eigen::Ref<Eigen::VectorXd> Lx, Eigen::Ref<Eigen::VectorXd> Lu,
+    Eigen::Ref<Eigen::MatrixXd> Lxx, Eigen::Ref<Eigen::MatrixXd> Luu,
+    Eigen::Ref<Eigen::MatrixXd> Lxu, const Eigen::Ref<const Eigen::VectorXd> &x,
+    const Eigen::Ref<const Eigen::VectorXd> &u) {
+
+  assert(model);
+  model->calcV(f, x, u);
+  f2 = k_acc * f.cwiseProduct(selector);
+
+  model->calcDiffV(Jv_x, Jv_u, x, u);
+
+  // set to zeros some of the entries
+
+  acc_x = Jv_x.array().colwise() * selector.array();
+  acc_u = Jv_u.array().colwise() * selector.array();
+
+  const double k_acc2 = k_acc * k_acc;
+  Lx += k_acc * f2.transpose() * acc_x;
+  Lu += k_acc * f2.transpose() * acc_u;
+
+  Lxx += k_acc2 * acc_x.transpose() * acc_x;
+  Luu += k_acc2 * acc_u.transpose() * acc_u;
+  Lxu += k_acc2 * acc_x.transpose() * acc_u;
+}
+
 void Acceleration_cost_acrobot::calc(
     Eigen::Ref<Eigen::VectorXd> r, const Eigen::Ref<const Eigen::VectorXd> &x,
     const Eigen::Ref<const Eigen::VectorXd> &u) {

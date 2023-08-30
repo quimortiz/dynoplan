@@ -15,6 +15,7 @@
 #include "dynobench/general_utils.hpp"
 #include "dynobench/robot_models.hpp"
 #include "idbastar/optimization/croco_models.hpp"
+#include "dynobench/quadrotor_payload_n.hpp"
 
 using vstr = std::vector<std::string>;
 using V2d = Eigen::Vector2d;
@@ -529,6 +530,36 @@ generate_problem(const Generate_params &gen_args,
         feats_run.push_back(state_feature);
       }
     }
+
+
+    if (startsWith(gen_args.name, "point")) {
+      // TODO: refactor so that the features are local to the robots!!
+      if (control_mode == Control_Mode::default_mode) {
+        std::cout << "adding regularization on the acceleration! " << std::endl;
+        std::cout << "adding regularization on the cable position -- Lets say we want more or less 30 degress" << std::endl;
+
+        auto
+        ptr_derived =
+            std::dynamic_pointer_cast<dynobench::Model_quad3dpayload_n>(
+                gen_args.model_robot);
+
+
+        // Additionally, add regularization!!
+        ptr<Cost> state_feature =
+            mk<State_cost>(nx, nu, nx, ptr_derived->state_weights, ptr_derived->state_ref);
+        feats_run.push_back(state_feature);
+
+        double k_acc = .1;
+        ptr<Cost> acc_cost = mk<Payload_n_acceleration_cost>(gen_args.model_robot, .1);
+        feats_run.push_back(acc_cost);
+      }
+      else {
+        // QUIM TODO: Check if required!!
+        NOT_IMPLEMENTED;
+
+      }
+    }
+
 
     if (startsWith(gen_args.name, "acrobot")) {
       // TODO: refactor so that the features are local to the robots!!

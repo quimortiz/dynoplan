@@ -93,11 +93,11 @@ BOOST_AUTO_TEST_CASE(t_two_uav_easy) {
 
 
   problem.models_base_path = dynobench_base "models/";
-  // Trajectory init_guess ( dynobench_base "envs/quad3d_payload/trajectories/quad3d_payload_2_pm_hard_init_guess.yaml");
 
-
-  Trajectory init_guess ;
-  init_guess.num_time_steps = 300;
+  Trajectory init_guess ( dynobench_base "envs/quad3d_payload/trajectories/quad3d_payload_2_pm_hover_initial_guess.yaml");
+  // Trajectory init_guess;
+  // init_guess.num_time_steps = 1000;
+  // Trajectory init_guess ;
 
   Result_opti result;
   Trajectory sol;
@@ -106,6 +106,7 @@ BOOST_AUTO_TEST_CASE(t_two_uav_easy) {
   // options.soft_control_bounds = true;
   options.weight_goal = 50;
   options.max_iter = 200;
+  options.smooth_traj = false;
   // options.control_bounds = false;
   // options.u_bound_scale = 2.0;
 
