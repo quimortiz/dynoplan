@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(t_two_uav_easy) {
   options.weight_goal = 50;
   options.max_iter = 200;
   // options.control_bounds = false;
-  options.u_bound_scale = 2.0;
+  // options.u_bound_scale = 2.0;
 
   trajectory_optimization(problem, init_guess, options, sol, result);
   BOOST_TEST(result.feasible);
