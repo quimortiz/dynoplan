@@ -1167,7 +1167,7 @@ bool check_problem(ptr<crocoddyl::ShootingProblem> problem,
     check = check_equal(d_diff->Lu, d->Lu, tol, tol);
     if (!check)
       equal = false;
-    WARN(check, std::string("Lu:") + AT);
+    WARN(check, std::string("Lu:") + std::to_string(i) + ":" + AT);
     check = check_equal(d_diff->Fx, d->Fx, tol, tol);
     if (!check)
       equal = false;
@@ -1320,7 +1320,7 @@ void check_problem_with_finite_diff(
     const std::vector<Vxd> &us) {
   std::cout << "Checking with finite diff " << std::endl;
   options.use_finite_diff = true;
-  options.disturbance = 1e-4;
+  options.disturbance = 1e-5;
   std::cout << "gen problem " << STR_(AT) << std::endl;
   size_t nx, nu;
   ptr<crocoddyl::ShootingProblem> problem_fdiff =

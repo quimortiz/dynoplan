@@ -1557,18 +1557,18 @@ Payload_n_acceleration_cost::Payload_n_acceleration_cost(
 
   name = "acceleration";
 
-  f2.resize(32);
   f.resize(32);
   f.setZero();
-  f2.setZero();
 
   acc_u.resize(32, 8);
   acc_x.resize(32, 32);
-  acc_u.setZero();
-  acc_x.setZero();
-
   Jv_u.resize(32, 8);
   Jv_x.resize(32, 32);
+
+  acc_u.setZero();
+  acc_x.setZero();
+  Jv_u.setZero();
+  Jv_x.setZero();
 
   // TODO@ KHALED -> we need this generic!!
   selector.resize(32);
@@ -1606,7 +1606,6 @@ void Payload_n_acceleration_cost::calcDiff(
 
   assert(model);
   model->calcV(f, x, u);
-  f2 = k_acc * f.cwiseProduct(selector);
 
   model->calcDiffV(Jv_x, Jv_u, x, u);
 
@@ -1616,9 +1615,8 @@ void Payload_n_acceleration_cost::calcDiff(
   acc_u = Jv_u.array().colwise() * selector.array();
 
   const double k_acc2 = k_acc * k_acc;
-  Lx += k_acc * f2.transpose() * acc_x;
-  Lu += k_acc * f2.transpose() * acc_u;
-
+  Lx += k_acc2 * f.cwiseProduct(selector).transpose() * acc_x;
+  Lu += k_acc2 * f.cwiseProduct(selector).transpose() * acc_u;
   Lxx += k_acc2 * acc_x.transpose() * acc_x;
   Luu += k_acc2 * acc_u.transpose() * acc_u;
   Lxu += k_acc2 * acc_x.transpose() * acc_u;

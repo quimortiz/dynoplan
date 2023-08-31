@@ -553,7 +553,6 @@ struct Payload_n_acceleration_cost : Cost {
 
   Eigen::VectorXd selector;
   Eigen::VectorXd f;
-  Eigen::VectorXd f2;
   Eigen::MatrixXd acc_u;
   Eigen::MatrixXd acc_x;
 
