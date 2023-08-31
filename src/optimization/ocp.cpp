@@ -13,9 +13,9 @@
 #include "crocoddyl/core/utils/timer.hpp"
 
 #include "dynobench/general_utils.hpp"
+#include "dynobench/quadrotor_payload_n.hpp"
 #include "dynobench/robot_models.hpp"
 #include "idbastar/optimization/croco_models.hpp"
-#include "dynobench/quadrotor_payload_n.hpp"
 
 using vstr = std::vector<std::string>;
 using V2d = Eigen::Vector2d;
@@ -531,35 +531,31 @@ generate_problem(const Generate_params &gen_args,
       }
     }
 
-
     if (startsWith(gen_args.name, "point")) {
       // TODO: refactor so that the features are local to the robots!!
       if (control_mode == Control_Mode::default_mode) {
         std::cout << "adding regularization on the acceleration! " << std::endl;
-        std::cout << "adding regularization on the cable position -- Lets say we want more or less 30 degress" << std::endl;
+        std::cout << "adding regularization on the cable position -- Lets say "
+                     "we want more or less 30 degress"
+                  << std::endl;
 
-        auto
-        ptr_derived =
+        auto ptr_derived =
             std::dynamic_pointer_cast<dynobench::Model_quad3dpayload_n>(
                 gen_args.model_robot);
 
-
         // Additionally, add regularization!!
-        ptr<Cost> state_feature =
-            mk<State_cost>(nx, nu, nx, ptr_derived->state_weights, ptr_derived->state_ref);
+        ptr<Cost> state_feature = mk<State_cost>(
+            nx, nu, nx, ptr_derived->state_weights, ptr_derived->state_ref);
         feats_run.push_back(state_feature);
 
-        double k_acc = .1;
-        ptr<Cost> acc_cost = mk<Payload_n_acceleration_cost>(gen_args.model_robot, .1);
+        ptr<Cost> acc_cost = mk<Payload_n_acceleration_cost>(
+            gen_args.model_robot, gen_args.model_robot->k_acc);
         feats_run.push_back(acc_cost);
-      }
-      else {
+      } else {
         // QUIM TODO: Check if required!!
         NOT_IMPLEMENTED;
-
       }
     }
-
 
     if (startsWith(gen_args.name, "acrobot")) {
       // TODO: refactor so that the features are local to the robots!!
@@ -672,7 +668,7 @@ generate_problem(const Generate_params &gen_args,
              gen_args.model_robot->nx, AT);
 
     Eigen::VectorXd goal_weight = gen_args.model_robot->goal_weight;
-    
+
     if (!goal_weight.size()) {
       goal_weight.resize(gen_args.model_robot->nx);
       goal_weight.setOnes();
@@ -680,13 +676,12 @@ generate_problem(const Generate_params &gen_args,
 
     CSTR_V(goal_weight);
 
-    ptr<Cost> state_feature =
-        mk<State_cost_model>(gen_args.model_robot, nx, nu,
-                             gen_args.penalty * options_trajopt.weight_goal *
-                             goal_weight,
-                                 // Vxd::Ones(gen_args.model_robot->nx),
-                             gen_args.goal);
-    //QUIM TODO: continuehere -- remove weights on quaternions!
+    ptr<Cost> state_feature = mk<State_cost_model>(
+        gen_args.model_robot, nx, nu,
+        gen_args.penalty * options_trajopt.weight_goal * goal_weight,
+        // Vxd::Ones(gen_args.model_robot->nx),
+        gen_args.goal);
+    // QUIM TODO: continuehere -- remove weights on quaternions!
 
     feats_terminal.push_back(state_feature);
   }
