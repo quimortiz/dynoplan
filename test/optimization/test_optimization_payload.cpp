@@ -6,6 +6,8 @@ using namespace dynoplan;
 using namespace dynobench;
 
 #define dynobench_base "../../dynobench/"
+// if you are running from coltrans-planning
+// #define dynobench_base "../deps/dynoplan/dynobench/"
 
 BOOST_AUTO_TEST_CASE(t_payload_hello) {
 
@@ -75,7 +77,7 @@ BOOST_AUTO_TEST_CASE(t_two_uav) {
   Trajectory sol;
 
   Options_trajopt options;
-  options.weight_goal = 200;
+  options.weight_goal = 50;
   options.max_iter = 200;
 
   trajectory_optimization(problem, init_guess, options, sol, result);
