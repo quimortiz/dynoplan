@@ -1551,19 +1551,25 @@ Acceleration_cost_acrobot::Acceleration_cost_acrobot(size_t nx, size_t nu)
 // 7
 // 7
 // TOTAL:  32
+// nx (point): 
+// 6 payload: (pos, vel)
+// 6*num_robots (qc_0, wc_0, qc_1, wc_1, ...,qc_{n-1}, wc_{n-1}), cable vector and omega
+// 7* num_robots (q, w): (q_0, w_0, ..., q_{n-1}, w_{n-1}), quat and omega 
 Payload_n_acceleration_cost::Payload_n_acceleration_cost(
     const std::shared_ptr<dynobench::Model_robot> &model_robot, double k_acc)
-    : Cost(32, 8, 32), k_acc(k_acc), model(model_robot) {
+    : Cost(model_robot->nx, model_robot->nu, model_robot->nx), k_acc(k_acc), model(model_robot) {
 
   name = "acceleration";
-
-  f.resize(32);
+  int nx = model_robot->nx;
+  int nu = model_robot->nu;
+  int num_robots = int((nx - 6)/13);
+  f.resize(nx);
   f.setZero();
 
-  acc_u.resize(32, 8);
-  acc_x.resize(32, 32);
-  Jv_u.resize(32, 8);
-  Jv_x.resize(32, 32);
+  acc_u.resize(nx, nu);
+  acc_x.resize(nx, nx);
+  Jv_u.resize(nx, nu);
+  Jv_x.resize(nx, nx);
 
   acc_u.setZero();
   acc_x.setZero();
@@ -1571,16 +1577,21 @@ Payload_n_acceleration_cost::Payload_n_acceleration_cost(
   Jv_x.setZero();
 
   // TODO@ KHALED -> we need this generic!!
-  selector.resize(32);
+  selector.resize(nx);
   selector.setZero();
   // lets put only the entries that are about acceleration
-
+  // selector for the accelerations: a_payload, wc_dot, w_dot (angular acc cable and uav) 
   selector.segment(3, 3).setOnes();
-  selector.segment(6 + 3, 3).setOnes();
-  selector.segment(2 * 6 + 3, 3).setOnes();
+  for (int i = 0; i < num_robots; ++i) {
+    selector.segment(6 + 6*i + 3,3 ).setOnes();
+    selector.segment(6 + 6*num_robots + 7*i + 4, 3).setOnes();
+  }
+  
+  // selector.segment(6 + 3, 3).setOnes();
+  // selector.segment(2 * 6 + 3, 3).setOnes();
 
-  selector.segment(3 * 6 + 4, 3).setOnes();
-  selector.segment(3 * 6 + 7 + 4, 3).setOnes();
+  // selector.segment(3 * 6 + 4, 3).setOnes();
+  // selector.segment(3 * 6 + 7 + 4, 3).setOnes();
 }
 
 void Payload_n_acceleration_cost::calc(
@@ -1595,7 +1606,7 @@ void Payload_n_acceleration_cost::calc(
   // CSTR_V(f);
   // CSTR_V(selector);
   r = k_acc * f.cwiseProduct(selector);
-  // I have to choose some entries...
+  // I have to choose some entries...: DONE 
 }
 
 void Payload_n_acceleration_cost::calcDiff(
