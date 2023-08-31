@@ -13,6 +13,7 @@
 #include "crocoddyl/core/utils/timer.hpp"
 
 #include "dynobench/general_utils.hpp"
+#include "dynobench/quadrotor_payload_n.hpp"
 #include "dynobench/robot_models.hpp"
 #include "idbastar/optimization/croco_models.hpp"
 
@@ -530,6 +531,32 @@ generate_problem(const Generate_params &gen_args,
       }
     }
 
+    if (startsWith(gen_args.name, "point")) {
+      // TODO: refactor so that the features are local to the robots!!
+      if (control_mode == Control_Mode::default_mode) {
+        std::cout << "adding regularization on the acceleration! " << std::endl;
+        std::cout << "adding regularization on the cable position -- Lets say "
+                     "we want more or less 30 degress"
+                  << std::endl;
+
+        auto ptr_derived =
+            std::dynamic_pointer_cast<dynobench::Model_quad3dpayload_n>(
+                gen_args.model_robot);
+
+        // Additionally, add regularization!!
+        ptr<Cost> state_feature = mk<State_cost>(
+            nx, nu, nx, ptr_derived->state_weights, ptr_derived->state_ref);
+        feats_run.push_back(state_feature);
+
+        ptr<Cost> acc_cost = mk<Payload_n_acceleration_cost>(
+            gen_args.model_robot, gen_args.model_robot->k_acc);
+        feats_run.push_back(acc_cost);
+      } else {
+        // QUIM TODO: Check if required!!
+        NOT_IMPLEMENTED;
+      }
+    }
+
     if (startsWith(gen_args.name, "acrobot")) {
       // TODO: refactor so that the features are local to the robots!!
       if (control_mode == Control_Mode::default_mode) {
@@ -639,11 +666,22 @@ generate_problem(const Generate_params &gen_args,
 
     CHECK_EQ(static_cast<size_t>(gen_args.goal.size()),
              gen_args.model_robot->nx, AT);
-    ptr<Cost> state_feature =
-        mk<State_cost_model>(gen_args.model_robot, nx, nu,
-                             gen_args.penalty * options_trajopt.weight_goal *
-                                 Vxd::Ones(gen_args.model_robot->nx),
-                             gen_args.goal);
+
+    Eigen::VectorXd goal_weight = gen_args.model_robot->goal_weight;
+
+    if (!goal_weight.size()) {
+      goal_weight.resize(gen_args.model_robot->nx);
+      goal_weight.setOnes();
+    }
+
+    CSTR_V(goal_weight);
+
+    ptr<Cost> state_feature = mk<State_cost_model>(
+        gen_args.model_robot, nx, nu,
+        gen_args.penalty * options_trajopt.weight_goal * goal_weight,
+        // Vxd::Ones(gen_args.model_robot->nx),
+        gen_args.goal);
+    // QUIM TODO: continuehere -- remove weights on quaternions!
 
     feats_terminal.push_back(state_feature);
   }
@@ -1129,7 +1167,7 @@ bool check_problem(ptr<crocoddyl::ShootingProblem> problem,
     check = check_equal(d_diff->Lu, d->Lu, tol, tol);
     if (!check)
       equal = false;
-    WARN(check, std::string("Lu:") + AT);
+    WARN(check, std::string("Lu:") + std::to_string(i) + ":" + AT);
     check = check_equal(d_diff->Fx, d->Fx, tol, tol);
     if (!check)
       equal = false;
@@ -1282,7 +1320,7 @@ void check_problem_with_finite_diff(
     const std::vector<Vxd> &us) {
   std::cout << "Checking with finite diff " << std::endl;
   options.use_finite_diff = true;
-  options.disturbance = 1e-4;
+  options.disturbance = 1e-5;
   std::cout << "gen problem " << STR_(AT) << std::endl;
   size_t nx, nu;
   ptr<crocoddyl::ShootingProblem> problem_fdiff =
