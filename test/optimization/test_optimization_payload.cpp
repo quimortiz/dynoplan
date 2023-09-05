@@ -77,7 +77,8 @@ BOOST_AUTO_TEST_CASE(t_two_uav) {
   Trajectory sol;
 
   Options_trajopt options;
-  options.weight_goal = 50;
+  options.solver_id = 1;
+  options.weight_goal = 100;
   options.max_iter = 200;
 
   trajectory_optimization(problem, init_guess, options, sol, result);
@@ -105,6 +106,7 @@ BOOST_AUTO_TEST_CASE(t_two_uav_easy) {
   Trajectory sol;
 
   Options_trajopt options;
+
   // options.soft_control_bounds = true;
   options.weight_goal = 200;
   options.max_iter = 200;
