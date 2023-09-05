@@ -2,9 +2,9 @@ name: CMake
 
 on:
   push:
-    branches: [ "main", "coltrans" ]
+    branches: [ "main-do-not-run", "coltrans-do-not-run" ]
   pull_request:
-    branches: [ "main" , "coltrans" ]
+    branches: [ "main-do-not-run" , "coltrans-do-not-run" ]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
