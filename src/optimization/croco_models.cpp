@@ -1602,7 +1602,7 @@ void Payload_n_acceleration_cost::calc(
   // CSTR_V(u);
   // CSTR_V(f);
   assert(model);
-  model->calcV(f, x, u);
+  model->calcV(f, x.head(model->nx), u.head(model->nu));
   // CSTR_V(f);
   // CSTR_V(selector);
   r = k_acc * f.cwiseProduct(selector);
@@ -1616,9 +1616,9 @@ void Payload_n_acceleration_cost::calcDiff(
     const Eigen::Ref<const Eigen::VectorXd> &u) {
 
   assert(model);
-  model->calcV(f, x, u);
+  model->calcV(f, x.head(model->nx), u.head(model->nu));
 
-  model->calcDiffV(Jv_x, Jv_u, x, u);
+  model->calcDiffV(Jv_x, Jv_u, x.head(model->nx), u.head(model->nu));
 
   // set to zeros some of the entries
 
@@ -1626,11 +1626,11 @@ void Payload_n_acceleration_cost::calcDiff(
   acc_u = Jv_u.array().colwise() * selector.array();
 
   const double k_acc2 = k_acc * k_acc;
-  Lx += k_acc2 * f.cwiseProduct(selector).transpose() * acc_x;
-  Lu += k_acc2 * f.cwiseProduct(selector).transpose() * acc_u;
-  Lxx += k_acc2 * acc_x.transpose() * acc_x;
-  Luu += k_acc2 * acc_u.transpose() * acc_u;
-  Lxu += k_acc2 * acc_x.transpose() * acc_u;
+  Lx.head(model->nx) += k_acc2 * f.cwiseProduct(selector).transpose() * acc_x;
+  Lu.head(model->nu) += k_acc2 * f.cwiseProduct(selector).transpose() * acc_u;
+  Lxx.block(0,0,model->nx, model->nx) += k_acc2 * acc_x.transpose() * acc_x;
+  Luu.block(0,0,model->nu, model->nu) += k_acc2 * acc_u.transpose() * acc_u;
+  Lxu.block(0,0,model->nx, model->nu) += k_acc2 * acc_x.transpose() * acc_u;
 }
 
 void Acceleration_cost_acrobot::calc(

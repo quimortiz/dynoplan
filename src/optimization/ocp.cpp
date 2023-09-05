@@ -533,7 +533,7 @@ generate_problem(const Generate_params &gen_args,
 
     if (startsWith(gen_args.name, "point")) {
       // TODO: refactor so that the features are local to the robots!!
-      if (control_mode == Control_Mode::default_mode) {
+      if (control_mode == Control_Mode::default_mode || control_mode == Control_Mode::free_time) {
         std::cout << "adding regularization on the acceleration! " << std::endl;
         std::cout << "adding regularization on the cable position -- Lets say "
                      "we want more or less 30 degress"

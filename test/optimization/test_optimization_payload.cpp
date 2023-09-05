@@ -5,9 +5,9 @@
 using namespace dynoplan;
 using namespace dynobench;
 
-// #define dynobench_base "../../dynobench/"
-// if you are running from coltrans-planning
-#define dynobench_base "../deps/dynoplan/dynobench/"
+#define dynobench_base "../../dynobench/"
+// // if you are running from coltrans-planning
+// #define dynobench_base "../deps/dynoplan/dynobench/"
 
 BOOST_AUTO_TEST_CASE(t_payload_hello) {
 
@@ -50,7 +50,8 @@ BOOST_AUTO_TEST_CASE(t_payload_optimization_easy) {
 
   problem3.models_base_path = dynobench_base "models/";
 
-  Trajectory init_guess3( dynobench_base  "envs/quad3d_payload/trajectories/"
+  Trajectory init_guess3(dynobench_base
+                         "envs/quad3d_payload/trajectories/"
                          "quad3d_payload_one_obs_init_guess.yaml");
 
   Result_opti result3;
@@ -60,18 +61,21 @@ BOOST_AUTO_TEST_CASE(t_payload_optimization_easy) {
   BOOST_TEST(result3.feasible);
 
   sol3.to_yaml_format("/tmp/dynoplan_sol3.yaml");
-
 }
 
 BOOST_AUTO_TEST_CASE(t_two_uav) {
 
-
-  Problem problem( dynobench_base "envs/quad3d_payload/quad3d_payload_one_obs/" "quad3d_payload_one_obs_0_2_pm_hard.yaml");
-
+  Problem problem(dynobench_base "envs/quad3d_payload/quad3d_payload_one_obs/"
+                                 "quad3d_payload_one_obs_0_2_pm_hard.yaml");
 
   problem.models_base_path = dynobench_base "models/";
-  Trajectory init_guess ( dynobench_base "envs/quad3d_payload/trajectories/quad3d_payload_2_pm_hard_init_guess.yaml");
 
+  Trajectory init_guess(dynobench_base
+                        "envs/quad3d_payload/trajectories/"
+                        "quad3d_payload_2_pm_hard_init_guess.yaml");
+
+  // Trajectory init_guess( dynobench_base
+  //                       "envs/quad3d_payload/quad3d_payload_one_obs/shorter_traj.yaml");
 
   Result_opti result;
   Trajectory sol;
@@ -84,20 +88,21 @@ BOOST_AUTO_TEST_CASE(t_two_uav) {
   trajectory_optimization(problem, init_guess, options, sol, result);
   BOOST_TEST(result.feasible);
 
-
   sol.to_yaml_format("/tmp/dynoplan_two_uav.yaml");
 }
 
 BOOST_AUTO_TEST_CASE(t_two_uav_easy) {
-// dynobench/envs/
+  // dynobench/envs/
 
-  Problem problem( dynobench_base "envs/quad3d_payload/empty1_2_pm_easy.yaml");
-                  // quad3d_payload_one_obs/" "quad3d_payload_one_obs_0_2_pm_easy.yaml");
-
+  Problem problem(dynobench_base "envs/quad3d_payload/empty1_2_pm_easy.yaml");
+  // quad3d_payload_one_obs/" "quad3d_payload_one_obs_0_2_pm_easy.yaml");
 
   problem.models_base_path = dynobench_base "models/";
 
-  Trajectory init_guess ( dynobench_base "envs/quad3d_payload/trajectories/quad3d_payload_2_pm_hover_initial_guess.yaml");
+  Trajectory init_guess(dynobench_base
+                        "envs/quad3d_payload/trajectories/"
+                        "quad3d_payload_2_pm_hover_initial_guess.yaml");
+
   // Trajectory init_guess;
   // init_guess.num_time_steps = 1000;
   // Trajectory init_guess ;
@@ -117,25 +122,19 @@ BOOST_AUTO_TEST_CASE(t_two_uav_easy) {
   trajectory_optimization(problem, init_guess, options, sol, result);
   BOOST_TEST(result.feasible);
 
-
   sol.to_yaml_format("/tmp/dynoplan_two_uav.yaml");
 }
 
-
-
-
-
-
 BOOST_AUTO_TEST_CASE(t_three_uav) {
 
-
-  Problem problem( dynobench_base "envs/quad3d_payload/quad3d_payload_one_obs/" "quad3d_payload_one_obs_3_pm_hard.yaml" );
-
+  Problem problem(dynobench_base "envs/quad3d_payload/quad3d_payload_one_obs/"
+                                 "quad3d_payload_one_obs_3_pm_hard.yaml");
 
   problem.models_base_path = dynobench_base "models/";
 
-  Trajectory init_guess ( dynobench_base "envs/quad3d_payload/trajectories/quad3d_payload_one_obs_3_pm_hard_initial_guess.yaml");
-
+  Trajectory init_guess(dynobench_base
+                        "envs/quad3d_payload/trajectories/"
+                        "quad3d_payload_one_obs_3_pm_hard_initial_guess.yaml");
 
   Result_opti result;
   Trajectory sol;
@@ -146,7 +145,6 @@ BOOST_AUTO_TEST_CASE(t_three_uav) {
 
   trajectory_optimization(problem, init_guess, options, sol, result);
   BOOST_TEST(result.feasible);
-
 
   sol.to_yaml_format("/tmp/dynoplan_three_uav.yaml");
 }
