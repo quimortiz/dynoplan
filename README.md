@@ -120,7 +120,7 @@ By default, primitives are stored in `/tmp/my_motions.bin.im.bin` and `/tmp/my_m
 * Step Fours: Randomnly cut primitives
 
 ```
-m4 main_primitives &&    ./main_primitives --mode_gen_id 2 --in_file     /tmp/my_motions.bin.im.bin    --max_num_primitives -1   --max_splits 1  --max_length_cut 50  --min_length_cut 5 --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/
+./main_primitives --mode_gen_id 2 --in_file     /tmp/my_motions.bin.im.bin    --max_num_primitives -1   --max_splits 1  --max_length_cut 50  --min_length_cut 5 --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/
 ```
 
 By default, primitives will be stored in `/tmp/my_motions.bin.im.bin.sp.bin` and `/tmp/my_motions.bin.im.bin.sp.bin.yaml`
