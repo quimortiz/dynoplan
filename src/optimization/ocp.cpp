@@ -67,6 +67,9 @@ public:
 
 void Options_trajopt::add_options(po::options_description &desc) {
 
+  
+    set_from_boostop(desc, VAR_WITH_NAME(check_with_finite_diff));
+
   set_from_boostop(desc, VAR_WITH_NAME(name));
   set_from_boostop(desc, VAR_WITH_NAME(soft_control_bounds));
   set_from_boostop(desc, VAR_WITH_NAME(rollout_warmstart));
@@ -105,6 +108,9 @@ void Options_trajopt::read_from_yaml(const char *file) {
 }
 
 void Options_trajopt::__read_from_node(const YAML::Node &node) {
+
+    set_from_yaml(node, VAR_WITH_NAME(check_with_finite_diff));
+
 
   set_from_yaml(node, VAR_WITH_NAME(name));
   set_from_yaml(node, VAR_WITH_NAME(soft_control_bounds));
@@ -150,6 +156,9 @@ void Options_trajopt::read_from_yaml(YAML::Node &node) {
 
 void Options_trajopt::print(std::ostream &out, const std::string &be,
                             const std::string &af) const {
+
+  out << be << STR(check_with_finite_diff, af) << std::endl;
+
 
   out << be << STR(name, af) << std::endl;
   out << be << STR(shift_repeat, af) << std::endl;
@@ -1510,7 +1519,6 @@ void __trajectory_optimization(
   size_t ddp_iterations = 0;
   double ddp_time = 0;
 
-  bool check_with_finite_diff = true;
 
   std::string name = problem.robotType;
   size_t _nx = model_robot->nx;
@@ -1947,7 +1955,7 @@ void __trajectory_optimization(
         CHECK_EQ(us.size(), window_optimize_i, AT);
       }
 
-      if (!options_trajopt_local.use_finite_diff && check_with_finite_diff) {
+      if (!options_trajopt_local.use_finite_diff && options_trajopt_local.check_with_finite_diff) {
 
         options_trajopt_local.use_finite_diff = true;
         options_trajopt_local.disturbance = 1e-4;
@@ -2374,7 +2382,7 @@ void __trajectory_optimization(
 
           // check finite diff
           if (!options_trajopt_local.use_finite_diff &&
-              check_with_finite_diff) {
+              options_trajopt_local.check_with_finite_diff) {
             check_problem_with_finite_diff(options_trajopt_local, gen_args,
                                            problem_croco, xs, us);
           }
@@ -2446,7 +2454,7 @@ void __trajectory_optimization(
       }
 
       solve_for_fixed_penalty(gen_args, options_trajopt_local, xs_init_p,
-                              us_init_p, nx, nu, check_with_finite_diff, N,
+                              us_init_p, nx, nu, options_trajopt_local.check_with_finite_diff, N,
                               name, ddp_iterations, ddp_time, _xs_out, _us_out);
 
       xs_init_p = _xs_out;
