@@ -2689,7 +2689,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
   //   vector_robot.push_back(robot);
   // }
   std::shared_ptr<dynobench::Model_robot> model_robot =
-      dynobench::joint_robot_factory(problem.robotTypes);
+      dynobench::joint_robot_factory(problem.robotTypes, problem.p_lb, problem.p_ub);
 
   auto ptr_derived =
       std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
