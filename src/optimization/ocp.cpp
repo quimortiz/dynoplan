@@ -67,6 +67,7 @@ public:
 
 void Options_trajopt::add_options(po::options_description &desc) {
 
+  set_from_boostop(desc, VAR_WITH_NAME(time_ref));
   set_from_boostop(desc, VAR_WITH_NAME(time_weight));
   set_from_boostop(desc, VAR_WITH_NAME(check_with_finite_diff));
 
@@ -109,6 +110,7 @@ void Options_trajopt::read_from_yaml(const char *file) {
 
 void Options_trajopt::__read_from_node(const YAML::Node &node) {
 
+  set_from_yaml(node, VAR_WITH_NAME(time_ref));
   set_from_yaml(node, VAR_WITH_NAME(time_weight));
   set_from_yaml(node, VAR_WITH_NAME(check_with_finite_diff));
 
@@ -157,6 +159,7 @@ void Options_trajopt::read_from_yaml(YAML::Node &node) {
 void Options_trajopt::print(std::ostream &out, const std::string &be,
                             const std::string &af) const {
 
+  out << be << STR(time_ref, af) << std::endl;
   out << be << STR(time_weight, af) << std::endl;
   out << be << STR(check_with_finite_diff, af) << std::endl;
 
@@ -330,6 +333,7 @@ generate_problem(const Generate_params &gen_args,
   if (gen_args.free_time && !gen_args.free_time_linear) {
     control_mode = Control_Mode::free_time;
     additional_params.insert({"time_weight", options_trajopt.time_weight});
+    additional_params.insert({"time_ref", options_trajopt.time_ref});
   } else if (gen_args.contour_control) {
     control_mode = Control_Mode::contour;
   } else if (gen_args.free_time_linear && gen_args.free_time) {
