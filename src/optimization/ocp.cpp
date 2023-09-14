@@ -67,8 +67,8 @@ public:
 
 void Options_trajopt::add_options(po::options_description &desc) {
 
-  
-    set_from_boostop(desc, VAR_WITH_NAME(check_with_finite_diff));
+  set_from_boostop(desc, VAR_WITH_NAME(time_weight));
+  set_from_boostop(desc, VAR_WITH_NAME(check_with_finite_diff));
 
   set_from_boostop(desc, VAR_WITH_NAME(name));
   set_from_boostop(desc, VAR_WITH_NAME(soft_control_bounds));
@@ -109,8 +109,8 @@ void Options_trajopt::read_from_yaml(const char *file) {
 
 void Options_trajopt::__read_from_node(const YAML::Node &node) {
 
-    set_from_yaml(node, VAR_WITH_NAME(check_with_finite_diff));
-
+  set_from_yaml(node, VAR_WITH_NAME(time_weight));
+  set_from_yaml(node, VAR_WITH_NAME(check_with_finite_diff));
 
   set_from_yaml(node, VAR_WITH_NAME(name));
   set_from_yaml(node, VAR_WITH_NAME(soft_control_bounds));
@@ -157,8 +157,8 @@ void Options_trajopt::read_from_yaml(YAML::Node &node) {
 void Options_trajopt::print(std::ostream &out, const std::string &be,
                             const std::string &af) const {
 
+  out << be << STR(time_weight, af) << std::endl;
   out << be << STR(check_with_finite_diff, af) << std::endl;
-
 
   out << be << STR(name, af) << std::endl;
   out << be << STR(shift_repeat, af) << std::endl;
@@ -324,9 +324,12 @@ generate_problem(const Generate_params &gen_args,
     CHECK(false, AT);
   }
 
+  std::map<std::string, double> additional_params;
+
   Control_Mode control_mode;
   if (gen_args.free_time && !gen_args.free_time_linear) {
     control_mode = Control_Mode::free_time;
+    additional_params.insert({"time_weight", options_trajopt.time_weight});
   } else if (gen_args.contour_control) {
     control_mode = Control_Mode::contour;
   } else if (gen_args.free_time_linear && gen_args.free_time) {
@@ -336,7 +339,7 @@ generate_problem(const Generate_params &gen_args,
   }
   std::cout << "control_mode:" << static_cast<int>(control_mode) << std::endl;
 
-  ptr<Dynamics> dyn = create_dynamics(gen_args.model_robot, control_mode);
+  ptr<Dynamics> dyn = create_dynamics(gen_args.model_robot, control_mode, additional_params);
 
   if (control_mode == Control_Mode::contour) {
     dyn->x_ub.tail<1>()(0) = gen_args.max_alpha;
@@ -542,7 +545,8 @@ generate_problem(const Generate_params &gen_args,
 
     if (startsWith(gen_args.name, "point")) {
       // TODO: refactor so that the features are local to the robots!!
-      if (control_mode == Control_Mode::default_mode || control_mode == Control_Mode::free_time) {
+      if (control_mode == Control_Mode::default_mode ||
+          control_mode == Control_Mode::free_time) {
         std::cout << "adding regularization on the acceleration! " << std::endl;
         std::cout << "adding regularization on the cable position -- Lets say "
                      "we want more or less 30 degress"
@@ -1519,7 +1523,6 @@ void __trajectory_optimization(
   size_t ddp_iterations = 0;
   double ddp_time = 0;
 
-
   std::string name = problem.robotType;
   size_t _nx = model_robot->nx;
   size_t _nu = model_robot->nu;
@@ -1955,7 +1958,8 @@ void __trajectory_optimization(
         CHECK_EQ(us.size(), window_optimize_i, AT);
       }
 
-      if (!options_trajopt_local.use_finite_diff && options_trajopt_local.check_with_finite_diff) {
+      if (!options_trajopt_local.use_finite_diff &&
+          options_trajopt_local.check_with_finite_diff) {
 
         options_trajopt_local.use_finite_diff = true;
         options_trajopt_local.disturbance = 1e-4;
@@ -2454,7 +2458,8 @@ void __trajectory_optimization(
       }
 
       solve_for_fixed_penalty(gen_args, options_trajopt_local, xs_init_p,
-                              us_init_p, nx, nu, options_trajopt_local.check_with_finite_diff, N,
+                              us_init_p, nx, nu,
+                              options_trajopt_local.check_with_finite_diff, N,
                               name, ddp_iterations, ddp_time, _xs_out, _us_out);
 
       xs_init_p = _xs_out;

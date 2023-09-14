@@ -24,8 +24,8 @@ namespace dynoplan {
 
 struct Options_trajopt {
 
-
-bool check_with_finite_diff = false;
+  double time_weight = .7;
+  bool check_with_finite_diff = false;
   bool soft_control_bounds = false;
   bool CALLBACKS = true;
   std::string solver_name;
