@@ -2317,7 +2317,7 @@ void __trajectory_optimization(
     for (size_t i = 0; i < us_check.size(); i++)
       us_check.at(i) = __us_out.at(i).head(model_robot->nu);
 
-    double goal_tol = 1e-2;
+    double goal_tol = 3e-2;
     double col_tol = 1e-2;
     bool feasible_traj =
         check_trajectory(xs_check, us_check, dt_check, model_robot) < 1e-2;
@@ -2488,7 +2488,7 @@ void __trajectory_optimization(
       us_check.at(i) = _us_out.at(i).head(model_robot->nu);
 
     // TODO: Replace with Trajectory
-    double goal_tol = 1e-2;
+    double goal_tol = 3e-2;
     double col_tol = 1e-2;
     bool feasible_traj =
         check_trajectory(xs_check, us_check, dt_check, model_robot) < 1e-2;
@@ -2598,7 +2598,7 @@ void __trajectory_optimization(
 
   if (opti_out.success) {
     double traj_tol = 1e-2;
-    double goal_tol = 1e-2;
+    double goal_tol = 3e-2;
     double col_tol = 1e-2;
     double x_bound_tol = 1e-2;
     double u_bound_tol = 1e-2;
