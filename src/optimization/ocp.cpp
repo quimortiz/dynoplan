@@ -2675,19 +2675,6 @@ void trajectory_optimization(const dynobench::Problem &problem,
   Stopwatch watch;
   Options_trajopt options_trajopt_local = options_trajopt;
 
-  // std::shared_ptr<dynobench::Model_robot> model_robot =
-  // dynobench::joint_robot_factory(); std::vector<int> vector_state;
-  // std::vector<int> vector_action;
-  // std::vector<std::shared_ptr<dynobench::Model_robot>> vector_robot;
-  // for (size_t i = 0; i < problem.robotTypes.size(); i++){
-  //   std::shared_ptr<dynobench::Model_robot> robot =
-  //       dynobench::robot_factory(
-  //           (problem.models_base_path + problem.robotTypes[i] +
-  //           ".yaml").c_str());
-  //   vector_state.push_back(robot->nx);
-  //   vector_action.push_back(robot->nu);
-  //   vector_robot.push_back(robot);
-  // }
   std::shared_ptr<dynobench::Model_robot> model_robot =
       dynobench::joint_robot_factory(problem.robotTypes, problem.p_lb, problem.p_ub);
 
@@ -2710,12 +2697,6 @@ void trajectory_optimization(const dynobench::Problem &problem,
   size_t _nu = model_robot->nu;
 
   Trajectory tmp_init_guess(init_guess), tmp_solution;
-
-  // if (options_trajopt_local.welf_format) {
-  //   std::shared_ptr<dynobench::Model_quad3d> robot_derived =
-  //       std::dynamic_pointer_cast<dynobench::Model_quad3d>(model_robot);
-  //   tmp_init_guess = from_welf_to_quim(init_guess, robot_derived->u_nominal);
-  // }
 
   if (startsWith(problem.robotType, "quad3d")) {
     for (auto &s : tmp_init_guess.states) {
