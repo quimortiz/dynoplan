@@ -1,8 +1,13 @@
 # Dynoplan 🦖
 
-
+<!---
 <p align="center">
-<img src="https://github.com/quimortiz/dynoplan/assets/32126190/87259a14-cbe4-4f9f-9cbb-47053cde594f")
+<img src="https://github.com/quimortiz/dynoplan/assets/32126190/87259a14-cbe4-4f9f-9cbb-47053cde594f">
+</p >
+-->
+<p>
+  <p align="center">
+    <img src="https://github.com/quimortiz/dynoplan/assets/32126190/b14905b7-8a8b-435e-be6e-11dfc49f909a">
 </p >
 
 Dynoplan is a small library for solving kinodynamic motion planning problems, as defined in [Dynobench](https://github.com/quimortiz/dynobench) :t-rex:. It implements 3 different algorithms: Trajectory Optimization with geometric initial guess (RRT*-TO), Sample based Motion Planning (SST*), and Iterative Search and Optimization (iDb-A*).
