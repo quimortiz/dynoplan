@@ -1,0 +1,55 @@
+files:
+  - ../results_new/summary/summary_2023-07-31--00-26-05.csv
+  # - ./results_new/summary/
+  #   ../
+  #   ./resu
+# benchmark_problems:  [] # empy list means all
+benchmark_problems:
+  # three that I plot
+  # - quad2dpole/up_obs
+  # - quad2dpole/window
+  # - unicycle_first_order_0/bugtrap_0
+  # - acrobot/swing_down
+  # - acrobot/swing_down_easy
+  - acrobot_v0/swing_up_empty
+  # - acrobot/swing_up_obs
+  - acrobot_v0/swing_up_obs_hard
+  # - car_first_order_with_1_trailers_0/bugtrap_0
+  - car1_v0/kink_0
+  - car1_v0/parallelpark_0
+  # - quad2d/empty_0
+  # - quad2d/empty_1
+  - quad2d_v0/fall_through
+  # - quad2d/quad2d_recovery_obs
+  # - quad2d/quad2d_recovery_wo_obs
+  - quad2d_v0/quad_bugtrap
+  # - quad2d/quad_obs_column
+  # - quad2dpole/down
+  # - quad2dpole/move_with_down
+  # - quad2dpole/move_with_up
+  # - quad2dpole/up
+  - quad2dpole_v0/up_obs
+  # - quad2dpole/window
+  # - quad2dpole/window_easy
+  - quad2dpole_v0/window_hard
+  # - quadrotor_0/empty_0_easy
+  # - quadrotor_0/empty_1_easy
+  # - quadrotor_0/quad_one_obs
+  - quadrotor_v0/recovery
+  - quadrotor_v0/recovery_with_obs
+  # - quadrotor_0/window
+  # - quadrotor_ompl/empty_0_easy
+  # - quadrotor_ompl/empty_1_easy
+  - quadrotor_v1/quad_one_obs
+  # - quadrotor_ompl/recovery
+  # - quadrotor_ompl/recovery_with_obs
+  - quadrotor_v1/window
+  - unicycle1_v0/bugtrap_0
+  # - unicycle_first_order_0/kink_0
+  # - unicycle_first_order_0/parallelpark_0
+  # - unicycle_first_order_1/kink_0
+  - unicycle1_v2/wall_0
+  - unicycle2_v0/bugtrap_0
+  # - unicycle_second_order_0/kink_0
+  - unicycle2_v0/parallelpark_0
+benchmark_algs: ["idbastar_v0", "sst_v0", "geo_v0"]

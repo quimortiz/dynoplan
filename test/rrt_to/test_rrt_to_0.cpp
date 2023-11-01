@@ -1,5 +1,5 @@
 
-#include "idbastar/dbastar/dbastar.hpp"
+#include "dynoplan/dbastar/dbastar.hpp"
 
 // #define BOOST_TEST_MODULE test module name
 // #define BOOST_TEST_DYN_LINK
@@ -21,7 +21,7 @@
 #include <regex>
 
 #include "dynobench/motions.hpp"
-#include "idbastar/ompl/rrt_to.hpp"
+#include "dynoplan/ompl/rrt_to.hpp"
 #include <Eigen/Dense>
 #include <iostream>
 

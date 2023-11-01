@@ -1,13 +1,11 @@
 
-#include "idbastar/ompl/rrt_to.hpp"
-#include "idbastar/nigh_custom_spaces.hpp"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/ompl/rrt_to.hpp"
+#include "dynoplan/nigh_custom_spaces.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 
 namespace og = ompl::geometric;
 
 namespace dynoplan {
-
-using dynobench::FMT;
 
 struct RRTstar_public_interface : public og::RRTstar {
 
@@ -156,7 +154,7 @@ void solve_ompl_geometric(const dynobench::Problem &problem,
         std::cout << "traj geo" << std::endl;
         traj_geo.to_yaml_format(std::cout);
 
-        std::string filename = "/tmp/dbastar/traj_geo_rrt_" +
+        std::string filename = "/tmp/dynoplan/traj_geo_rrt_" +
                                std::to_string(num_founds_geo_trajs) + "_" + id +
                                ".yaml";
         traj_geo.to_yaml_format(filename.c_str());
@@ -196,7 +194,7 @@ void solve_ompl_geometric(const dynobench::Problem &problem,
           traj.to_yaml_format(std::cout);
 
           // save the trajectory
-          std::string filename = "/tmp/dbastar/traj_geo_opt_" +
+          std::string filename = "/tmp/dynoplan/traj_geo_opt_" +
                                  std::to_string(num_founds_geo_trajs) + "_" +
                                  id + ".yaml";
           traj.to_yaml_format(filename.c_str());

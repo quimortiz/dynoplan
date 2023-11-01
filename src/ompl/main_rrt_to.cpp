@@ -1,5 +1,5 @@
-#include "idbastar/ompl/rrt_to.hpp"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/ompl/rrt_to.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 
 using namespace dynoplan;
 

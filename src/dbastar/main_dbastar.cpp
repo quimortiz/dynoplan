@@ -24,11 +24,11 @@
 #include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
 #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
 
-#include "idbastar/ompl/robots.h"
+#include "dynoplan/ompl/robots.h"
 #include "ompl/base/ScopedState.h"
 
 #include "dynobench/general_utils.hpp"
-#include "idbastar/dbastar/dbastar.hpp"
+#include "dynoplan/dbastar/dbastar.hpp"
 
 using namespace dynoplan;
 int main(int argc, char *argv[]) {
@@ -69,6 +69,19 @@ int main(int argc, char *argv[]) {
   std::cout << "*** options_dbastar ***" << std::endl;
   options_dbastar.print(std::cout);
   std::cout << "***" << std::endl;
+
+  // load motions primitives
+
+  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+      (problem.models_base_path + problem.robotType + ".yaml").c_str(),
+      problem.p_lb, problem.p_ub);
+
+  std::vector<Motion> motions;
+  load_motion_primitives_new(
+      options_dbastar.motionsFile, *robot, motions, options_dbastar.max_motions,
+      options_dbastar.cut_actions, false, options_dbastar.check_cols);
+
+  options_dbastar.motions_ptr = &motions;
 
   dbastar(problem, options_dbastar, traj, out_db);
 

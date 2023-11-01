@@ -32,6 +32,9 @@ BOOST_AUTO_TEST_CASE(t_cli) {
     cmd += c + " ";
   }
 
+  int out0 = std::system("make ../main_dbrrt");
+  BOOST_TEST(out0 == 0);
+
   std::cout << "Command is: " << cmd << std::endl;
   int out = std::system(cmd.c_str());
   BOOST_TEST(out == 0);

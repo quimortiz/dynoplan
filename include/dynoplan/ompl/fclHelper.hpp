@@ -35,6 +35,8 @@ protected:
       fcl::CollisionObject<S> *obj =
           static_cast<fcl::CollisionObject<S> *>(node->data);
       if (!obj->isFree()) {
+        // std::cout << "tt of " << (obj->getTranslation() + offset).transpose()
+        //           << std::endl;
         obj->setTranslation(obj->getTranslation() + offset);
         obj->computeAABB();
         // assert(node->bv.equal(obj->getAABB()));

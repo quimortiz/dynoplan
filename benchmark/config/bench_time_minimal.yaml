@@ -1,0 +1,27 @@
+trials: 1
+n_cores: 1 # -1=auto
+
+# solve a distribution of problems
+problems:
+  - env: unicycle1_v0/bugtrap_0
+    guess: unicycle1_v0/bugtrap_0/delta_03_v0
+
+  - env: unicycle2_v0/bugtrap_0
+    guess: unicycle2_v0/bugtrap_0/delta_03_v0
+
+  - env: quad2d_v0/quad_bugtrap
+    guess: quad2d/bugtrap/delta_05_v0
+
+  - env: quadrotor_v0/window
+    guess: quadrotor_v0/window/delta_05_v0
+
+  - env: quadrotor_v0/recovery
+    guess: quadrotor_v0/recovery/delta_05_v0
+
+algs:
+
+  - idbastar_v0_fixedtime
+  - idbastar_v0_freetime
+  - idbastar_v0_mpc
+  - idbastar_v0_mpcc
+  - idbastar_v0_search

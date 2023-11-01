@@ -1,13 +1,14 @@
-#include "idbastar/ompl/robots.h"
+#include "dynoplan/ompl/robots.h"
 #include <memory>
 
-#include "dynobench/croco_macros.hpp"
+#include "dynobench/dyno_macros.hpp"
 #include <ompl/base/spaces/SE2StateSpace.h>
 #include <ompl/base/spaces/SE3StateSpace.h>
 #include <ompl/base/spaces/SO3StateSpace.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>
 #include <ompl/tools/config/MagicConstants.h>
 
+#include "dynobench/robot_models_base.hpp"
 #include "nigh/kdtree_batch.hpp"
 #include "nigh/kdtree_median.hpp"
 #include "nigh/lp_space.hpp"
@@ -20,7 +21,7 @@
 #include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
 #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
 
-#include "idbastar/ompl/fclHelper.hpp"
+#include "dynoplan/ompl/fclHelper.hpp"
 
 #include "dynobench/acrobot.hpp"
 #include "dynobench/car.hpp"
@@ -436,7 +437,7 @@ public:
   virtual void toEigen(const ompl::base::State *x_ompl,
                        Eigen::Ref<Eigen::VectorXd> x_eigen) override {
 
-    CHECK_EQ(x_eigen.size(), 3, AT);
+    DYNO_CHECK_EQ(x_eigen.size(), 3, AT);
     auto startTyped = x_ompl->as<StateSpace::StateType>();
     x_eigen(0) = startTyped->getX();
     x_eigen(1) = startTyped->getY();
@@ -1432,7 +1433,7 @@ protected:
     };
 
     StateSpace(const Eigen::VectorXd &distance_weights) {
-      CHECK_EQ(distance_weights.size(), 6, AT);
+      DYNO_CHECK_EQ(distance_weights.size(), 6, AT);
       setName("Quad2d" + getName());
       type_ = ob::STATE_SPACE_TYPE_COUNT + 0;
       addSubspace(std::make_shared<ob::RealVectorStateSpace>(2),
@@ -2974,6 +2975,14 @@ robot_factory_ompl(const dynobench::Problem &problem) {
   std::shared_ptr<RobotOmpl> out;
 
   std::cout << "Robot Factory: loading file: " << robot_model_file << std::endl;
+
+  std::cout << "Robot Factory: loading file: " << robot_model_file << std::endl;
+
+  if (!std::filesystem::exists(robot_model_file)) {
+    ERROR_WITH_INFO(
+        (std::string("file: ") + robot_model_file + " not found: ").c_str());
+  }
+
   YAML::Node node = YAML::LoadFile(robot_model_file);
 
   assert(node["dynamics"]);
@@ -3050,21 +3059,48 @@ robot_factory_ompl(const dynobench::Problem &problem) {
 }
 
 void load_motion_primitives_new(const std::string &motionsFile,
-                                RobotOmpl &robot, std::vector<Motion> &motions,
-                                int max_motions, bool cut_actions, bool shuffle,
-                                bool compute_col, bool allocate_ompl) {
-
-  if (!allocate_ompl) {
-    // TODO: needs small refactoring
-    NOT_IMPLEMENTED;
-  }
+                                dynobench::Model_robot &robot,
+                                std::vector<Motion> &motions, int max_motions,
+                                bool cut_actions, bool shuffle,
+                                bool compute_col,
+                                MotionPrimitiveFormat format) {
 
   dynobench::Trajectories trajs;
 
-  trajs.load_file_boost(motionsFile.c_str());
+  if (format == MotionPrimitiveFormat::AUTO) {
+    std::filesystem::path filePath = motionsFile;
+    if (filePath.extension() == ".yaml") {
+      format = MotionPrimitiveFormat::YAML;
+    } else if (filePath.extension() == ".json")
+      format = MotionPrimitiveFormat::JSON;
+    else if (filePath.extension() == ".msgpack")
+      format = MotionPrimitiveFormat::MSGPACK;
+    else if (filePath.extension() == ".bin")
+      format = MotionPrimitiveFormat::BOOST;
+  }
 
-  // CSTR_(max_motions);
-  // CSTR_(trajs.data.size());
+  switch (format) {
+  case MotionPrimitiveFormat::YAML: {
+    trajs.load_file_yaml(motionsFile.c_str());
+  } break;
+
+  case MotionPrimitiveFormat::BOOST: {
+    trajs.load_file_boost(motionsFile.c_str());
+  } break;
+
+  case MotionPrimitiveFormat::JSON: {
+    trajs.load_file_json(motionsFile.c_str());
+  } break;
+
+  case MotionPrimitiveFormat::MSGPACK: {
+    trajs.load_file_msgpack(motionsFile.c_str());
+  } break;
+  case MotionPrimitiveFormat::AUTO: {
+    ERROR_WITH_INFO(
+        "Incompatible format for motion primitives: should not be here!");
+  }
+  }
+
   if (max_motions < trajs.data.size())
     trajs.data.resize(max_motions);
 
@@ -3089,9 +3125,9 @@ void load_motion_primitives_new(const std::string &motionsFile,
           noise * Eigen::VectorXd::Random(t.states.back().size());
     }
   }
-  // ensure
 
-  if (startsWith(robot.diff_model->name, "quad3d")) {
+  // TODO: robot should have "add noise function"
+  if (startsWith(robot.name, "quad3d")) {
     // ensure quaternion
     for (auto &t : trajs.data) {
       for (auto &s : t.states) {
@@ -3118,7 +3154,7 @@ void load_motion_primitives_new(const std::string &motionsFile,
     std::cout << "WARNING: motions have infinite cost." << std::endl;
     std::cout << "-- using default cost: TIME" << std::endl;
     for (auto &m : motions) {
-      m.cost = robot.diff_model->ref_dt * m.actions.size();
+      m.cost = robot.ref_dt * m.actions.size();
     }
   }
 
@@ -3134,62 +3170,66 @@ void load_motion_primitives_new(const std::string &motionsFile,
   for (size_t idx = 0; idx < motions.size(); ++idx) {
     motions[idx].idx = idx;
   }
-
-  std::cout << "Second time: first state is " << std::endl;
-  CSTR_V(trajs.data.front().states.front());
 }
 
-void traj_to_motion(const dynobench::Trajectory &traj, RobotOmpl &robot,
-                    Motion &motion_out, bool compute_col) {
-
-  auto si = robot.getSpaceInformation();
+void traj_to_motion(const dynobench::Trajectory &traj,
+                    dynobench::Model_robot &robot, Motion &motion_out,
+                    bool compute_col) {
 
   motion_out.states.resize(traj.states.size());
   motion_out.traj = traj;
 
-  std::transform(traj.states.begin(), traj.states.end(),
-                 motion_out.states.begin(), [&](auto &x) {
-                   ob::State *state = si->allocState();
-                   robot.fromEigen(state, x);
-                   robot.enforceBounds(state);
-                   return state;
-                 });
-
   motion_out.actions.resize(traj.actions.size());
-
-  std::transform(traj.actions.begin(), traj.actions.end(),
-                 motion_out.actions.begin(), [&](auto &a) {
-                   oc::Control *action = si->allocControl();
-                   control_from_eigen(a, si, action);
-                   return action;
-                 });
 
   if (compute_col)
     compute_col_shape(motion_out, robot);
   motion_out.cost = traj.cost;
 }
 
-void compute_col_shape(Motion &m, RobotOmpl &robot) {
-  Eigen::VectorXd x(robot.diff_model->nx);
-  for (auto &state : m.states) {
-    robot.toEigen(state, x);
-    auto &ts_data = robot.diff_model->ts_data;
-    auto &col_geo = robot.diff_model->collision_geometries;
-    robot.diff_model->transformation_collision_geometries(x, ts_data);
+void compute_col_shape(Motion &m, dynobench::Model_robot &robot) {
+  for (auto &x : m.traj.states) {
+
+    auto &ts_data = robot.ts_data;
+    auto &col_geo = robot.collision_geometries;
+    robot.transformation_collision_geometries(x, ts_data);
 
     for (size_t i = 0; i < ts_data.size(); i++) {
       auto &transform = ts_data.at(i);
-      auto co = new fcl::CollisionObjectd(col_geo.at(i));
+      auto co = std::make_unique<fcl::CollisionObjectd>(col_geo.at(i));
       co->setTranslation(transform.translation());
       co->setRotation(transform.rotation());
       co->computeAABB();
-      m.collision_objects.push_back(co);
+      m.collision_objects.push_back(std::move(co));
     }
   }
 
+  std::vector<fcl::CollisionObjectd *> cols_ptrs(m.collision_objects.size());
+  std::transform(m.collision_objects.begin(), m.collision_objects.end(),
+                 cols_ptrs.begin(), [](auto &ptr) { return ptr.get(); });
+
   m.collision_manager.reset(
       new ShiftableDynamicAABBTreeCollisionManager<double>());
-  m.collision_manager->registerObjects(m.collision_objects);
+  // TODO: double check that fcl doesn't take ownership of the objects
+  m.collision_manager->registerObjects(cols_ptrs);
 };
+
+void Motion::print(std::ostream &out,
+                   std::shared_ptr<ompl::control::SpaceInformation> &si) {
+
+  out << "states " << std::endl;
+  for (auto &state : states) {
+    printState(out, si, state);
+    out << std::endl;
+  }
+  out << "actions: " << std::endl;
+  for (auto &action : actions) {
+    printAction(std::cout, si, action);
+    out << std::endl;
+  }
+
+  STRY(cost, out, "", ": ");
+  STRY(idx, out, "", ": ");
+  STRY(disabled, out, "", ": ");
+}
 
 } // namespace dynoplan

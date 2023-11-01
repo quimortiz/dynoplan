@@ -1,84 +1,72 @@
-trials: 10
-timelimit: 180
+trials:  10
+timelimit: 120
 n_cores: -1 # -1=auto
 
-# TODO? Should I randomize the primitives that I take? Specially if I am not using
-# the sorting algorithm.
-
-# TODO
-# - [x] sst* should use nigh
-# - [ ] fix terminal state of quaternion. Now i just change the goal.
-# - [ ] think about randomizing the primitives
-# - [ ] Issue with out of bounds for position after optimization (program crash)
-# - [x] Quadcopters 3d model: I should try solver=1
-# TODO: NOT able to solve all of them with 100% succes...(e.g 90% or 80%)
-### ISSUE: with memory when several threads at the same time
-#
-#
-
 problems:
-
-  # # # #
-  - unicycle_first_order_0/parallelpark_0
-  - unicycle_first_order_0/bugtrap_0
-  - unicycle_first_order_0/kink_0
-  # # # #
-  - unicycle_first_order_1/kink_0
-  - unicycle_first_order_2/wall_0
-  # # # #
-  - unicycle_second_order_0/kink_0
-  - unicycle_second_order_0/parallelpark_0
-  - unicycle_second_order_0/bugtrap_0
-  # # # # #
-  - car_first_order_with_1_trailers_0/kink_0
-  - car_first_order_with_1_trailers_0/bugtrap_0
-  - car_first_order_with_1_trailers_0/parallelpark_0
-  # #
-  - quad2d/empty_0
-  - quad2d/empty_1
-  - quad2d/quad_obs_column
-  - quad2d/quad_bugtrap
-  - quad2d/quad2d_recovery_wo_obs
-  - quad2d/quad2d_recovery_obs
-  - quad2d/fall_through
-
-  - quad2dpole/move_with_down
-  - quad2dpole/move_with_up
-  - quad2dpole/up
-  - quad2dpole/down
-  - quad2dpole/up_obs
-  - quad2dpole/window_easy
-  - quad2dpole/window
-  - quad2dpole/window_hard
-  # #
-  - acrobot/swing_up_empty
-  - acrobot/swing_up_obs
-  - acrobot/swing_up_obs_hard
-  - acrobot/swing_down_easy
-  - acrobot/swing_down
-  # # # # # #  QUADROTOR_0
-  - quadrotor_0/empty_0_easy
-  - quadrotor_0/empty_1_easy
-  - quadrotor_0/window
-  - quadrotor_0/recovery
-  - quadrotor_0/recovery_with_obs
-  - quadrotor_0/quad_one_obs
-  # # # # # # quadrotor_ompl
-  - quadrotor_ompl/empty_0_easy
-  - quadrotor_ompl/empty_1_easy
-  - quadrotor_ompl/window
-  - quadrotor_ompl/recovery
-  - quadrotor_ompl/quad_one_obs
-  - quadrotor_ompl/recovery_with_obs
+  # # # # # #
+  - unicycle1_v0/parallelpark_0
+  - unicycle1_v0/bugtrap_0
+  - unicycle1_v0/kink_0
+  # # # # # #
+  - unicycle1_v1/kink_0
+  - unicycle1_v2/wall_0
+  # # # # # #
+  - unicycle2_v0/kink_0
+  - unicycle2_v0/parallelpark_0
+  - unicycle2_v0/bugtrap_0
+  # # # # # # #
+  - car1_v0/kink_0
+  - car1_v0/bugtrap_0
+  - car1_v0/parallelpark_0
+  # # # # # # #
+  - quad2d_v0/empty_0
+  - quad2d_v0/empty_1
+  - quad2d_v0/quad_obs_column
+  - quad2d_v0/quad_bugtrap
+  - quad2d_v0/quad2d_recovery_wo_obs
+  - quad2d_v0/quad2d_recovery_obs
+  - quad2d_v0/fall_through
+  # # # # # # #
+  - quad2dpole_v0/move_with_down
+  - quad2dpole_v0/move_with_up
+  - quad2dpole_v0/up
+  - quad2dpole_v0/down
+  - quad2dpole_v0/up_obs
+  - quad2dpole_v0/window_easy
+  - quad2dpole_v0/window
+  - quad2dpole_v0/window_hard
+  # # # # # # #
+  - acrobot_v0/swing_up_empty
+  - acrobot_v0/swing_up_obs
+  - acrobot_v0/swing_up_obs_hard
+  - acrobot_v0/swing_down_easy
+  - acrobot_v0/swing_down
+  # # # # # # #
+  - quadrotor_v0/empty_0_easy
+  - quadrotor_v0/empty_1_easy
+  - quadrotor_v0/window
+  - quadrotor_v0/recovery
+  - quadrotor_v0/recovery_with_obs
+  - quadrotor_v0/quad_one_obs
+  # # # # # # #
+  - quadrotor_v1/empty_0_easy
+  - quadrotor_v1/empty_1_easy
+  - quadrotor_v1/window
+  - quadrotor_v1/recovery
+  - quadrotor_v1/quad_one_obs
+  - quadrotor_v1/recovery_with_obs
 
 algs:
 
   # Idbastar
   - idbastar_v0
+  - geo_v0
+  - sst_v0
+
+
   # - idbastar_tmp
 
   # SST*
-  - sst_v0
   # - sst_tmp
   # - sst_v1
   # - sst_v2
@@ -92,7 +80,6 @@ algs:
   #
   # # GEO
   # - geo_v1
-  - geo_v0
   # # #
   # #
   # #

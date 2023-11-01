@@ -1,7 +1,7 @@
 #pragma once
 
 // OMPL headers
-#include "dynobench/croco_macros.hpp"
+#include "dynobench/dyno_macros.hpp"
 #include "dynobench/motions.hpp"
 #include "dynobench/robot_models.hpp"
 
@@ -214,7 +214,7 @@ public:
 
   std::shared_ptr<ShiftableDynamicAABBTreeCollisionManager<double>>
       collision_manager;
-  std::vector<fcl::CollisionObjectd *> collision_objects;
+  std::vector<std::unique_ptr<fcl::CollisionObjectd>> collision_objects;
 
   double cost;
   size_t idx;
@@ -233,19 +233,22 @@ public:
   const Eigen::VectorXd &getStateEig() const { return traj.states.front(); }
 };
 
-void load_motion_primitives_new(const std::string &motionsFile,
-                                RobotOmpl &robot, std::vector<Motion> &motions,
-                                int max_motions, bool cut_actions, bool shuffle,
-                                bool compute_col = true,
-                                bool allocate_ompl = true);
+enum class MotionPrimitiveFormat { BOOST, YAML, JSON, MSGPACK, AUTO };
+
+void load_motion_primitives_new(
+    const std::string &motionsFile, dynobench::Model_robot &robot,
+    std::vector<Motion> &motions, int max_motions, bool cut_actions,
+    bool shuffle, bool compute_col = true,
+    MotionPrimitiveFormat format = MotionPrimitiveFormat::AUTO);
 
 void load_motion_primitives(const std::string &motionsFile, RobotOmpl &robot,
                             std::vector<Motion> &motions, int max_motions,
                             bool cut_actions, bool shuffle);
 
-void traj_to_motion(const dynobench::Trajectory &traj, RobotOmpl &robot,
-                    Motion &motion_out, bool compute_col);
+void traj_to_motion(const dynobench::Trajectory &traj,
+                    dynobench::Model_robot &robot, Motion &motion_out,
+                    bool compute_col);
 
-void compute_col_shape(Motion &m, RobotOmpl &robot);
+void compute_col_shape(Motion &m, dynobench::Model_robot &robot);
 
 } // namespace dynoplan

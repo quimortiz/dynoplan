@@ -1,8 +1,8 @@
 #pragma once
 #include "crocoddyl/core/utils/timer.hpp"
-#include "dynobench/croco_macros.hpp"
+#include "dynobench/dyno_macros.hpp"
 #include "dynobench/motions.hpp"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 
 namespace dynoplan {
 

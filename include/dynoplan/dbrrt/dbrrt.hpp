@@ -1,6 +1,6 @@
 #include "dynobench/for_each_macro.hpp"
-#include "idbastar/dbastar/dbastar.hpp"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/dbastar/dbastar.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 #include <string>
 #include <vector>
 
@@ -29,7 +29,7 @@ struct Options_dbrrt {
   int max_expands = 10000;
   double search_timelimit = 10000;
   bool use_nigh_nn = true;
-  int max_motions = 1000;
+  size_t max_motions = 1000;
   std::vector<Motion> *motions_ptr = nullptr; // pointer to loaded motions
   std::string motionsFile = "";
   bool cut_actions = false;
@@ -106,13 +106,6 @@ void dbrrt(const dynobench::Problem &problem,
            const Options_dbrrt &options_dbrrt,
            const Options_trajopt &options_trajopt,
            dynobench::Trajectory &traj_out, dynobench::Info_out &out_info_db);
-
-void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
-                                    const std::vector<Motion> &motions,
-                                    AStarNode *solution,
-                                    const dynobench::Problem &problem,
-                                    dynobench::Trajectory &traj_out,
-                                    std::ofstream *out = nullptr);
 
 void dbrrtConnect(const dynobench::Problem &problem,
                   const Options_dbrrt &options_dbrrt,

@@ -8,7 +8,8 @@ project(
   LANGUAGES CXX)
 
 # find_package(pinocchio REQUIRED)
-find_package(Boost REQUIRED COMPONENTS program_options serialization)
+find_package(Boost REQUIRED COMPONENTS program_options serialization
+                                       stacktrace_basic)
 find_package(ompl 1.6 REQUIRED)
 
 include(FindThreads)
@@ -44,11 +45,12 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 
 set(DISABLE_DYNOBENCH_TESTS ON)
-add_subdirectory(dynobench) # use EXCLUDE_FROM_ALL to avoid
-# building the tests
+add_subdirectory(dynobench)
 
 add_executable(main_rrt_to ./src/ompl/main_rrt_to.cpp)
 add_executable(main_primitives ./src/motion_primitives/main_primitives.cpp)
+add_executable(from_boost_to_msgpack
+               ./src/motion_primitives/from_boost_to_msgpack.cpp)
 
 add_executable(main_sst ./src/ompl/main_sst.cpp)
 add_executable(main_optimization ./src/optimization/main_optimization.cpp)
@@ -61,14 +63,18 @@ add_executable(main_dbrrt ./src/dbrrt/main_dbrrt.cpp)
 
 add_library(motion_primitives ./src/motion_primitives/motion_primitives.cpp)
 
-add_library(optimization ./src/optimization/ocp.cpp
-                         ./src/optimization/croco_models.cpp)
+add_library(
+  optimization
+  ./src/optimization/ocp.cpp ./src/optimization/options.cpp
+  ./src/optimization/croco_models.cpp ./src/optimization/generate_ocp.cpp)
 
-add_library(sst ./src/ompl/sst.cpp ./src/robots.cpp)
-add_library(rrt_to ./src/ompl/rrt_to.cpp ./src/robots.cpp)
+add_library(sst ./src/ompl/sst.cpp ./src/ompl/robots.cpp)
+add_library(rrt_to ./src/ompl/rrt_to.cpp ./src/ompl/robots.cpp)
 
-add_library(dbastar ./src/dbastar/dbastar.cpp ./src/robots.cpp)
-add_library(dbrrt ./src/dbrrt/dbrrt.cpp ./src/robots.cpp)
+add_library(dbastar ./src/dbastar/dbastar.cpp ./src/dbastar/options.cpp
+                    ./src/ompl/robots.cpp ./src/dbastar/heuristics.cpp)
+
+add_library(dbrrt ./src/dbrrt/dbrrt.cpp ./src/ompl/robots.cpp)
 
 add_library(idbastar ./src/idbastar/idbastar.cpp)
 
@@ -159,7 +165,7 @@ target_link_libraries(
 
 target_link_libraries(
   dbrrt
-  PUBLIC optimization Eigen3::Eigen dynobench::dynobench
+  PUBLIC optimization Eigen3::Eigen dynobench::dynobench dbastar
   PRIVATE fcl ${OMPL_LIBRARIES})
 
 target_link_libraries(
@@ -206,6 +212,10 @@ target_link_libraries(
 target_link_libraries(
   main_primitives PRIVATE motion_primitives optimization dynobench::dynobench
                           Boost::program_options Boost::serialization)
+target_link_libraries(
+  from_boost_to_msgpack
+  PRIVATE motion_primitives optimization dynobench::dynobench
+          Boost::program_options Boost::serialization)
 
 target_link_libraries(
   optimization

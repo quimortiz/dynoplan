@@ -1,7 +1,7 @@
-#include "idbastar/motion_primitives/motion_primitives.hpp"
+#include "dynoplan/motion_primitives/motion_primitives.hpp"
 #include "crocoddyl/core/utils/timer.hpp"
-#include "dynobench/croco_macros.hpp"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynobench/dyno_macros.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 #include <thread>
 
 namespace dynoplan {
@@ -19,13 +19,13 @@ void sort_motion_primitives_rand_config(
       CHECK(t.states.size(), AT);
       t.start = t.states.front();
     } else {
-      CHECK_LEQ((t.start - t.states.front()).norm(), 1e-7, AT);
+      DYNO_CHECK_LEQ((t.start - t.states.front()).norm(), 1e-7, AT);
     }
     if (!t.goal.size()) {
       CHECK(t.states.size(), AT);
       t.goal = t.states.back();
     } else {
-      CHECK_LEQ((t.goal - t.states.back()).norm(), 1e-7, AT);
+      DYNO_CHECK_LEQ((t.goal - t.states.back()).norm(), 1e-7, AT);
     }
   }
 
@@ -34,8 +34,8 @@ void sort_motion_primitives_rand_config(
   }
 
   for (const auto &traj : trajs.data) {
-    CHECK_LEQ((traj.states.front() - traj.start).norm(), 1e-8, AT);
-    CHECK_LEQ((traj.states.back() - traj.goal).norm(), 1e-8, AT);
+    DYNO_CHECK_LEQ((traj.states.front() - traj.start).norm(), 1e-8, AT);
+    DYNO_CHECK_LEQ((traj.states.back() - traj.goal).norm(), 1e-8, AT);
   }
 
   std::vector<int> used_motions;
@@ -126,8 +126,8 @@ void sort_motion_primitives_rand_config(
     default:
       NOT_IMPLEMENTED;
     }
-    CHECK_GEQ(best_index, 0, AT);
-    CHECK_LEQ(best_index, trajs.data.size() - 1, AT);
+    DYNO_DYNO_CHECK_GEQ(best_index, 0, AT);
+    DYNO_CHECK_LEQ(best_index, trajs.data.size() - 1, AT);
     // assert(best_index < traj.data.size());
 
     used_motions.push_back(best_index);
@@ -153,13 +153,13 @@ void sort_motion_primitives(
       CHECK(t.states.size(), AT);
       t.start = t.states.front();
     } else {
-      CHECK_LEQ((t.start - t.states.front()).norm(), 1e-7, AT);
+      DYNO_CHECK_LEQ((t.start - t.states.front()).norm(), 1e-7, AT);
     }
     if (!t.goal.size()) {
       CHECK(t.states.size(), AT);
       t.goal = t.states.back();
     } else {
-      CHECK_LEQ((t.goal - t.states.back()).norm(), 1e-7, AT);
+      DYNO_CHECK_LEQ((t.goal - t.states.back()).norm(), 1e-7, AT);
     }
   }
 
@@ -168,8 +168,8 @@ void sort_motion_primitives(
   }
 
   for (const auto &traj : trajs.data) {
-    CHECK_LEQ((traj.states.front() - traj.start).norm(), 1e-8, AT);
-    CHECK_LEQ((traj.states.back() - traj.goal).norm(), 1e-8, AT);
+    DYNO_CHECK_LEQ((traj.states.front() - traj.start).norm(), 1e-8, AT);
+    DYNO_CHECK_LEQ((traj.states.back() - traj.goal).norm(), 1e-8, AT);
   }
 
   auto goal_dist = [&](const dynobench::Trajectory &a,
@@ -414,9 +414,9 @@ void improve_motion_primitives(const Options_trajopt &options_trajopt,
       trajectory_optimization(problem, traj, options_trajopt, traj_out,
                               opti_out);
 
-      CHECK_EQ(opti_out.feasible, traj_out.feasible, AT);
+      DYNO_CHECK_EQ(opti_out.feasible, traj_out.feasible, AT);
       if (traj_out.feasible) {
-        CHECK_LEQ(
+        DYNO_CHECK_LEQ(
             std::abs(traj_out.cost -
                      robot_model->traj_cost(traj_out.states, traj_out.actions)),
             1e-10, AT);

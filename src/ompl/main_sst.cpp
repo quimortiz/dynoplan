@@ -17,8 +17,8 @@
 #include <ompl/control/spaces/RealVectorControlSpace.h>
 
 #include "dynobench/general_utils.hpp"
-#include "idbastar/ompl/robots.h"
-#include "idbastar/ompl/sst.hpp"
+#include "dynoplan/ompl/robots.h"
+#include "dynoplan/ompl/sst.hpp"
 
 using namespace dynoplan;
 

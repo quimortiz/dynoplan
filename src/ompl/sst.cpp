@@ -1,6 +1,6 @@
-#include "idbastar/ompl/sst.hpp"
-#include "idbastar/nigh_custom_spaces.hpp"
-#include "idbastar/optimization/ocp.hpp"
+#include "dynoplan/ompl/sst.hpp"
+#include "dynoplan/nigh_custom_spaces.hpp"
+#include "dynoplan/optimization/ocp.hpp"
 
 namespace oc = ompl::control;
 
@@ -203,8 +203,8 @@ void solve_sst(const dynobench::Problem &problem,
           CSTR_(cc.value());
           auto __states = states;
           std::reverse(__states.begin(), __states.end());
-          CHECK_EQ(states.size(), controls.size() + 1, AT);
-          CHECK_EQ(steps.size(), controls.size(), AT);
+          DYNO_CHECK_EQ(states.size(), controls.size() + 1, AT);
+          DYNO_CHECK_EQ(steps.size(), controls.size(), AT);
 
           for (auto &s : __states) {
             Eigen::VectorXd x;
@@ -280,7 +280,7 @@ void solve_sst(const dynobench::Problem &problem,
             std::cout << "Warning: we are not doing OPT -- only reaching the "
                          "goal approximately "
                       << std::endl;
-            CHECK_LEQ(traj_sst.cost, info_out_omplsst.cost, AT);
+            DYNO_CHECK_LEQ(traj_sst.cost, info_out_omplsst.cost, AT);
             info_out_omplsst.cost = traj_sst.cost;
             traj_out = traj_sst;
           }
@@ -365,7 +365,7 @@ void solve_sst(const dynobench::Problem &problem,
       traj_sst.check(robot->diff_model);
 
       {
-        std::ofstream out("/tmp/dbastar/" + std::string("sst_approx_") +
+        std::ofstream out("/tmp/dynoplan/" + std::string("sst_approx_") +
                           random_id + ".yaml");
         traj_sst.to_yaml_format(out);
       }
@@ -415,9 +415,9 @@ void solve_sst(const dynobench::Problem &problem,
 
   {
 
-    std::ofstream out("/tmp/dbastar/" + std::string("sst_states_") + random_id +
-                      ".yaml");
-    CHECK_EQ(states.size(), edges.size(), AT);
+    std::ofstream out("/tmp/dynoplan/" + std::string("sst_states_") +
+                      random_id + ".yaml");
+    DYNO_CHECK_EQ(states.size(), edges.size(), AT);
     for (size_t i = 0; i < states.size(); i++) {
       auto &state = states.at(i);
       auto &edge = edges.at(i);
