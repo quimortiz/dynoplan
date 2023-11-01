@@ -64,27 +64,6 @@ public:
   }
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
-
-
-
-
-
 void write_states_controls(const std::vector<Eigen::VectorXd> &xs,
                            const std::vector<Eigen::VectorXd> &us,
                            std::shared_ptr<dynobench::Model_robot> model_robot,
@@ -1320,35 +1299,34 @@ void __trajectory_optimization(
     traj_resample.update_feasibility(dynobench::Feasibility_thresholds(),
                                        true);
     if (problem.goal_times.size()) {
+      auto ptr_derived =
+          std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
 
-        auto ptr_derived =
-            std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
+      std::cout << "warning: fix the terminal times for the subgoals "
+                << std::endl;
 
-        std::cout << "warning: fix the terminal times for the subgoals "
-                  << std::endl;
-
-        CSTR_(ts.size());
-        for (auto &g : ptr_derived->goal_times) {
-          std::cout << g << std::endl;
-          std::cout << ts[g - 1] << std::endl;
-          g = int((ts[g - 1] / ptr_derived->ref_dt) + 2);
-        }
-
-        for (const auto &g : ptr_derived->goal_times) {
-          std::cout << "goal time " << g << std::endl;
-        }
-
-        int max_goal_time = 0;
-
-        for (auto &t : ptr_derived->goal_times) {
-          if (t > max_goal_time) {
-            max_goal_time = t;
-          }
-        }
-        DYNO_CHECK_EQ(max_goal_time, xs_out.size(), AT);
+      CSTR_(traj.times.size());
+      for (auto &g : ptr_derived->goal_times) {
+        std::cout << g << std::endl;
+        std::cout << traj.times[g - 1] << std::endl;
+        g = int((traj.times[g - 1] / ptr_derived->ref_dt) + 2);
       }
-      xs_out = traj_resample.states;
-      us_out = traj_resample.actions;
+
+      for (const auto &g : ptr_derived->goal_times) {
+        std::cout << "goal time " << g << std::endl;
+      }
+
+      int max_goal_time = 0;
+
+      for (auto &t : ptr_derived->goal_times) {
+        if (t > max_goal_time) {
+          max_goal_time = t;
+        }
+      }
+        DYNO_CHECK_EQ(max_goal_time, xs_out.size(), AT);
+    }
+    xs_out = traj_resample.states;
+    us_out = traj_resample.actions;
     } else {
       xs_out = _xs_out;
       us_out = _us_out;
@@ -1462,11 +1440,11 @@ void trajectory_optimization(const dynobench::Problem &problem,
   double time_ddp_total = 0;
   Stopwatch watch;
   Options_trajopt options_trajopt_local = options_trajopt;
-
+  std::string _base_path = "../../models/";
   std::shared_ptr<dynobench::Model_robot> model_robot =
     //  TODO // dynobench::robot_factory(
       //     (problem.models_base_path + problem.robotType + ".yaml").c_str());
-  dynobench::joint_robot_factory(problem.robotTypes, problem.p_lb, problem.p_ub);
+  dynobench::joint_robot_factory(problem.robotTypes, _base_path, problem.p_lb, problem.p_ub);
 
   auto ptr_derived =
       std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
