@@ -10,7 +10,7 @@ project(
 # find_package(pinocchio REQUIRED)
 find_package(Boost REQUIRED COMPONENTS program_options serialization
                                        stacktrace_basic)
-find_package(ompl 1.6 REQUIRED)
+find_package(ompl  REQUIRED)
 
 include(FindThreads)
 
