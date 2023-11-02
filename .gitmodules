@@ -1,6 +1,5 @@
 [submodule "dynobench"]
 	path = dynobench
-  	# url = git@github.com:IMRCLab/dynobench
 	url = git@github.com:quimortiz/dynobench
 [submodule "deps/nigh"]
 	path = deps/nigh

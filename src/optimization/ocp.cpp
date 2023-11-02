@@ -13,9 +13,9 @@
 #include "crocoddyl/core/utils/timer.hpp"
 
 #include "dynobench/general_utils.hpp"
+#include "dynobench/joint_robot.hpp"
 #include "dynobench/robot_models.hpp"
 #include "dynoplan/optimization/croco_models.hpp"
-#include "dynobench/joint_robot.hpp"
 
 using vstr = std::vector<std::string>;
 using V2d = Eigen::Vector2d;
@@ -1291,42 +1291,41 @@ void __trajectory_optimization(
 
     if (__free_time_mode) {
 
+      Trajectory traj_resample = traj.resample(model_robot);
 
-    Trajectory traj_resample = traj.resample(model_robot);
-
-    std::cout << "check traj after resample " << std::endl;
-    traj_resample.check(model_robot, true);
-    traj_resample.update_feasibility(dynobench::Feasibility_thresholds(),
+      std::cout << "check traj after resample " << std::endl;
+      traj_resample.check(model_robot, true);
+      traj_resample.update_feasibility(dynobench::Feasibility_thresholds(),
                                        true);
-    if (problem.goal_times.size()) {
-      auto ptr_derived =
-          std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
+      if (problem.goal_times.size()) {
+        auto ptr_derived =
+            std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
 
-      std::cout << "warning: fix the terminal times for the subgoals "
-                << std::endl;
+        std::cout << "warning: fix the terminal times for the subgoals "
+                  << std::endl;
 
-      CSTR_(traj.times.size());
-      for (auto &g : ptr_derived->goal_times) {
-        std::cout << g << std::endl;
-        std::cout << traj.times[g - 1] << std::endl;
-        g = int((traj.times[g - 1] / ptr_derived->ref_dt) + 2);
-      }
-
-      for (const auto &g : ptr_derived->goal_times) {
-        std::cout << "goal time " << g << std::endl;
-      }
-
-      int max_goal_time = 0;
-
-      for (auto &t : ptr_derived->goal_times) {
-        if (t > max_goal_time) {
-          max_goal_time = t;
+        CSTR_(traj.times.size());
+        for (auto &g : ptr_derived->goal_times) {
+          std::cout << g << std::endl;
+          std::cout << traj.times[g - 1] << std::endl;
+          g = int((traj.times[g - 1] / ptr_derived->ref_dt) + 2);
         }
-      }
+
+        for (const auto &g : ptr_derived->goal_times) {
+          std::cout << "goal time " << g << std::endl;
+        }
+
+        int max_goal_time = 0;
+
+        for (auto &t : ptr_derived->goal_times) {
+          if (t > max_goal_time) {
+            max_goal_time = t;
+          }
+        }
         DYNO_CHECK_EQ(max_goal_time, xs_out.size(), AT);
-    }
-    xs_out = traj_resample.states;
-    us_out = traj_resample.actions;
+      }
+      xs_out = traj_resample.states;
+      us_out = traj_resample.actions;
     } else {
       xs_out = _xs_out;
       us_out = _us_out;
@@ -1440,17 +1439,23 @@ void trajectory_optimization(const dynobench::Problem &problem,
   double time_ddp_total = 0;
   Stopwatch watch;
   Options_trajopt options_trajopt_local = options_trajopt;
-  std::string _base_path = "../../models/";
-  std::shared_ptr<dynobench::Model_robot> model_robot =
-    //  TODO // dynobench::robot_factory(
-      //     (problem.models_base_path + problem.robotType + ".yaml").c_str());
-  dynobench::joint_robot_factory(problem.robotTypes, _base_path, problem.p_lb, problem.p_ub);
+  // std::string _base_path = "../../models/";
 
-  auto ptr_derived =
-      std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
+  std::shared_ptr<dynobench::Model_robot> model_robot;
+  if (problem.robotTypes.size() == 1) {
 
-  CHECK(ptr_derived, "only joint robot is supported");
+    model_robot = dynobench::robot_factory(
+        (problem.models_base_path + problem.robotType + ".yaml").c_str());
+  } else {
+    model_robot = dynobench::joint_robot_factory(problem.robotTypes,
+                                                 problem.models_base_path,
+                                                 problem.p_lb, problem.p_ub);
+  }
+
   if (problem.goal_times.size()) {
+    auto ptr_derived =
+        std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
+    CHECK(ptr_derived, "multiple goal times only work for joint robot");
     ptr_derived->goal_times = problem.goal_times;
     traj.multi_robot_index_goal = ptr_derived->goal_times;
   }
@@ -1957,16 +1962,26 @@ void trajectory_optimization(const dynobench::Problem &problem,
       }
 #endif
 
-      std::cout << "new goal times are " << std::endl;
-      for (auto &g : ptr_derived->goal_times) {
-        std::cout << g << " ";
+      if (problem.goal_times.size()) {
+        std::cout << "new goal times are " << std::endl;
+
+        auto ptr_derived =
+            std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
+        CHECK(ptr_derived, "multiple goal times only work for joint robot");
+
+        for (auto &g : ptr_derived->goal_times) {
+          std::cout << g << " ";
+        }
+        std::cout << std::endl;
       }
-      std::cout << std::endl;
 
       __trajectory_optimization(problem, model_robot, tmp_solution,
                                 options_trajopt_local, traj, opti_out);
 
       if (problem.goal_times.size()) {
+        auto ptr_derived =
+            std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
+        CHECK(ptr_derived, "multiple goal times only work for joint robot");
         traj.multi_robot_index_goal = ptr_derived->goal_times;
 
         int max_index = 0;
@@ -2056,7 +2071,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
 void Result_opti::write_yaml(std::ostream &out) {
   out << "feasible: " << feasible << std::endl;
   out << "success: " << success << std::endl;
-  out << "cost: " << 2 * cost << std::endl;
+  out << "cost: " << cost << std::endl; // TODO: why 2*cost is joint_robot?
   if (data.size()) {
     out << "info:" << std::endl;
     for (const auto &[k, v] : data) {
