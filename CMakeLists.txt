@@ -230,7 +230,7 @@ target_link_libraries(
   optimization
   PUBLIC Eigen3::Eigen dynobench::dynobench
   PRIVATE ${CROCODDYL_LIBRARIES} fcl yaml-cpp Boost::program_options
-          Boost::serialization)
+          Boost::serialization libipopt.so)
 
 target_link_libraries(
   main_optimization
