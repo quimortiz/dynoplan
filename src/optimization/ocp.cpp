@@ -1297,6 +1297,10 @@ void __trajectory_optimization(
       traj_resample.check(model_robot, true);
       traj_resample.update_feasibility(dynobench::Feasibility_thresholds(),
                                        true);
+
+      xs_out = traj_resample.states;
+      us_out = traj_resample.actions;
+
       if (problem.goal_times.size()) {
         auto ptr_derived =
             std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
@@ -1324,8 +1328,6 @@ void __trajectory_optimization(
         }
         DYNO_CHECK_EQ(max_goal_time, xs_out.size(), AT);
       }
-      xs_out = traj_resample.states;
-      us_out = traj_resample.actions;
     } else {
       xs_out = _xs_out;
       us_out = _us_out;

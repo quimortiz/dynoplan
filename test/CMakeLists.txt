@@ -9,7 +9,8 @@ add_executable(
   ./optimization/test_optimization_base.cpp 
   ./optimization/test_optimization_0.cpp 
   ./optimization/test_optimization_1.cpp
-  ./optimization/test_optimization_cli.cpp)
+  ./optimization/test_optimization_cli.cpp
+  ./optimization/test_optimization_multirobot.cpp)
 
 add_executable(
   test_dbastar dbastar/test_dbastar_base.cpp dbastar/test_dbastar_0.cpp

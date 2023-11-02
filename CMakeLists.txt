@@ -54,6 +54,7 @@ add_executable(from_boost_to_msgpack
 
 add_executable(main_sst ./src/ompl/main_sst.cpp)
 add_executable(main_optimization ./src/optimization/main_optimization.cpp)
+add_executable(main_multirobot_optimization ./src/optimization/main_multirobot_optimization.cpp)
 
 add_executable(main_dbastar ./src/dbastar/main_dbastar.cpp)
 add_executable(main_idbastar ./src/idbastar/main_idbastar.cpp)
@@ -99,6 +100,14 @@ target_include_directories(
   PUBLIC $<INSTALL_INTERFACE:include>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_include_directories(
+  main_multirobot_optimization
+  PUBLIC $<INSTALL_INTERFACE:include>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+
 
 target_include_directories(
   sst
@@ -233,6 +242,19 @@ target_link_libraries(
           yaml-cpp
           Boost::program_options
           Boost::serialization)
+
+target_link_libraries(
+  main_multirobot_optimization
+  PRIVATE ${CROCODDYL_LIBRARIES}
+          optimization
+          Eigen3::Eigen
+          dynobench::dynobench
+          fcl
+          yaml-cpp
+          Boost::program_options
+          Boost::serialization)
+
+
 
 enable_testing()
 add_subdirectory(test)
