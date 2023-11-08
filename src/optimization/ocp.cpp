@@ -1444,8 +1444,9 @@ void trajectory_optimization(const dynobench::Problem &problem,
   // std::string _base_path = "../../models/";
 
   std::shared_ptr<dynobench::Model_robot> model_robot;
-  if (problem.robotTypes.size() == 1) {
-
+  // if (problem.robotTypes.size() == 1) {
+  if (problem.robotTypes.size() == 1 && problem.goal_times.size() == 0) {
+    // robotType.empty()) {
     model_robot = dynobench::robot_factory(
         (problem.models_base_path + problem.robotType + ".yaml").c_str());
   } else {
