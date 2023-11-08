@@ -1,6 +1,7 @@
 
 
 #include "dynoplan/optimization/generate_ocp.hpp"
+#include "dynobench/joint_robot.hpp"
 
 namespace dynoplan {
 
@@ -99,6 +100,40 @@ generate_problem(const Generate_params &gen_args,
   for (size_t t = 0; t < gen_args.N; t++) {
 
     std::vector<ptr<Cost>> feats_run;
+
+     if (gen_args.model_robot->name == "joint_robot") {
+
+      auto ptr_derived = std::dynamic_pointer_cast<dynobench::Joint_robot>(
+          gen_args.model_robot);
+
+      std::vector<int> goal_times = ptr_derived->goal_times;
+
+      print_vec(goal_times.data(), goal_times.size());
+      CSTR_(gen_args.N);
+
+
+      if (goal_times.size()) {
+        Eigen::VectorXd weights = Eigen::VectorXd::Zero(nx);
+        for (size_t j = 0; j < goal_times.size(); j++) {
+          if (goal_times.at(j) <= t + 1) {
+            size_t start_index = std::accumulate(
+                ptr_derived->nxs.begin(), ptr_derived->nxs.begin() + j, 0);
+            size_t nx = ptr_derived->nxs.at(j);
+            weights.segment(start_index, nx).setOnes();
+          }
+        }
+
+        if (weights.sum() > 1e-12) {
+          std::cout << "warning, adding special goal cost" << std::endl;
+          ptr<Cost> state_feature = mk<State_cost_model>(
+              gen_args.model_robot, nx, nu,
+              gen_args.penalty * options_trajopt.weight_goal * weights,
+              gen_args.goal);
+
+          feats_run.emplace_back(state_feature);
+        }
+      }
+    }
 
     if (control_mode == Control_Mode::free_time_linear) {
       if (t > 0)

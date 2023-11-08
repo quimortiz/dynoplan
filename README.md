@@ -1,13 +1,20 @@
 # Dynoplan 🦖
 
+<!---
+<p align="center">
+<img src="https://github.com/quimortiz/dynoplan/assets/32126190/87259a14-cbe4-4f9f-9cbb-47053cde594f">
+</p >
+-->
+<p>
+  <p align="center">
+    <img src="https://github.com/quimortiz/dynoplan/assets/32126190/b14905b7-8a8b-435e-be6e-11dfc49f909a">
+</p >
+
 Dynoplan is a small library for solving kinodynamic motion planning problems, as defined in [Dynobench](https://github.com/quimortiz/dynobench) :t-rex:. It implements 3 different algorithms: Trajectory Optimization with geometric initial guess (RRT*-TO), Sample based Motion Planning (SST*), and Iterative Search and Optimization (iDb-A*).
 
 <p align="center">
 <img src="assets/example1.png" width=60% height=auto>
 </p >
-
-
-
 
 
 The first version [kinodynamic-motion-planning-benchmark](https://github.com/imrCLab/kinodynamic-motion-planning-benchmark) is now deprecated.
@@ -98,48 +105,37 @@ https://drive.google.com/file/d/1OLuw5XICTueoZuleXOuD6vNh3PCWfHif/view?usp=drive
 
 ## How to generate motion primitives for new systems
 
+We will show how to generate motion primitives for the `integrator1_2d_v0`
 
-Step one: Implement the Dynamics in Dynobench, Following the tutorial for the `Integrator2_2d` in the `README`
+* Step one: Implement the Dynamics in Dynobench, following the tutorial for the `Integrator2_2d` in the `README` (in this case `integrator1_2d_v0` is already implemented)
 
+* Step two: Solve Optimization Problems with Random Start and Goals
 ```
-
-
-
-
-```
-
-Step two: Solve Optimization Problems with Random Start and Goals
-
-```
-
 ./main_primitives --mode_gen_id 0  --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/   --max_num_primitives 200 --out_file /tmp/my_motions.bin
 ```
-Primitives will be store in `/tmp/my_motions.bin` and `/tmp/my_motions.bin.yaml`
+Primitives will be store in `/tmp/my_motions.bin` and `/tmp/my_motions.bin.yaml`.  You can pass options to the solver for trajectory optimization.
 
-
-Step Three: Improve the quality of the primitives
+* Step Three: Improve the cost of the primitives
 
 ```
 ./main_primitives --mode_gen_id 1  --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/   --max_num_primitives 200  --in_file /tmp/my_motions.bin --solver_id 1
-
 ```
 
-By default, primitives are stored in `/tmp/my_motions.bin.im.bin` and `/tmp/my_motions.bin.im.bin.yaml`
+By default, primitives are stored in `/tmp/my_motions.bin.im.bin` and `/tmp/my_motions.bin.im.bin.yaml`. You can pass options to the solver for trajectory optimization.
 
 
-Step Fours: Randomnly cut primitives
+* Step Fours: Randomnly cut primitives
 
 ```
-m4 main_primitives &&    ./main_primitives --mode_gen_id 2 --in_file     /tmp/my_motions.bin.im.bin    --max_num_primitives -1   --max_splits 1  --max_length_cut 50  --min_length_cut 5 --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/
+./main_primitives --mode_gen_id 2 --in_file     /tmp/my_motions.bin.im.bin    --max_num_primitives -1   --max_splits 1  --max_length_cut 50  --min_length_cut 5 --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/
 ```
 
 By default, primitives will be stored in `/tmp/my_motions.bin.im.bin.sp.bin` and `/tmp/my_motions.bin.im.bin.sp.bin.yaml`
 
 
-
 Done!
 
-`main_primitives` provide more utils, such as conversion between formats, computing statistics, generating primitives with random rollouts, sorting primitives and resampling of primitives
+Additionally, `main_primitives` provide more useful functionality, such as conversion between formats, computing statistics, generating primitives with random rollouts, sorting primitives and resampling of primitives.
 
 
 ## Benchmark

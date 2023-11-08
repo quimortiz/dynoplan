@@ -10,7 +10,7 @@ project(
 # find_package(pinocchio REQUIRED)
 find_package(Boost REQUIRED COMPONENTS program_options serialization
                                        stacktrace_basic)
-find_package(ompl 1.6 REQUIRED)
+find_package(ompl REQUIRED)
 
 include(FindThreads)
 
@@ -57,6 +57,8 @@ add_executable(from_boost_to_msgpack
 
 add_executable(main_sst ./src/ompl/main_sst.cpp)
 add_executable(main_optimization ./src/optimization/main_optimization.cpp)
+add_executable(main_multirobot_optimization
+               ./src/optimization/main_multirobot_optimization.cpp)
 
 add_executable(main_dbastar ./src/dbastar/main_dbastar.cpp)
 add_executable(main_idbastar ./src/idbastar/main_idbastar.cpp)
@@ -99,6 +101,12 @@ target_include_directories(
 
 target_include_directories(
   main_optimization
+  PUBLIC $<INSTALL_INTERFACE:include>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+target_include_directories(
+  main_multirobot_optimization
   PUBLIC $<INSTALL_INTERFACE:include>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -224,10 +232,21 @@ target_link_libraries(
   optimization
   PUBLIC Eigen3::Eigen dynobench::dynobench
   PRIVATE ${CROCODDYL_LIBRARIES} fcl yaml-cpp Boost::program_options
-          Boost::serialization)
+          Boost::serialization libipopt.so)
 
 target_link_libraries(
   main_optimization
+  PRIVATE ${CROCODDYL_LIBRARIES}
+          optimization
+          Eigen3::Eigen
+          dynobench::dynobench
+          fcl
+          yaml-cpp
+          Boost::program_options
+          Boost::serialization)
+
+target_link_libraries(
+  main_multirobot_optimization
   PRIVATE ${CROCODDYL_LIBRARIES}
           optimization
           Eigen3::Eigen
