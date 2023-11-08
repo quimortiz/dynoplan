@@ -170,31 +170,35 @@ struct LazyTraj {
     assert(offset);
     assert(robot);
     assert(motion);
-
     assert(offset->size());
     if (forward) {
-      // robot->transform_primitive(*offset, motion->traj.states,
-      //                            motion->traj.actions, tmp, check_state,
-      //                            num_valid_states);
-      static_cast<dynobench::Model_quad3d *>(robot)->transform_primitiveDirect(
-          *offset, motion->traj.states, motion->traj.actions, tmp, check_state,
-          num_valid_states);
+      robot->transform_primitive(*offset, motion->traj.states,
+                                 motion->traj.actions, tmp, check_state,
+                                 num_valid_states);
+      // static_cast<dynobench::Model_quad3d
+      // *>(robot)->transform_primitiveDirect(
+      //     *offset, motion->traj.states, motion->traj.actions, tmp,
+      //     check_state, num_valid_states);
 
     } else {
-      // TODO: change this outside translation invariance
+      throw std::runtime_error(
+          "bacward still needs a little bit testing -- don't use");
 
       if (startsWith(robot->name, "quad2d")) {
         // std::cout << "transforming primitive" << std::endl;
-        static_cast<dynobench::Model_quad2d *>(robot)
-            ->transform_primitiveDirectReverse(*offset, motion->traj.states,
-                                               motion->traj.actions, tmp,
-                                               check_state, num_valid_states);
+
+        auto ptr = dynamic_cast<dynobench::Model_quad2d *>(robot);
+        assert(ptr);
+        ptr->transform_primitiveDirectReverse(*offset, motion->traj.states,
+                                              motion->traj.actions, tmp,
+                                              check_state, num_valid_states);
 
       } else if (startsWith(robot->name, "quad3d")) {
-        static_cast<dynobench::Model_quad3d *>(robot)
-            ->transform_primitiveDirectReverse(*offset, motion->traj.states,
-                                               motion->traj.actions, tmp,
-                                               check_state, num_valid_states);
+        auto ptr = dynamic_cast<dynobench::Model_quad3d *>(robot);
+        assert(ptr);
+        ptr->transform_primitiveDirectReverse(*offset, motion->traj.states,
+                                              motion->traj.actions, tmp,
+                                              check_state, num_valid_states);
       }
 
       else if (startsWith(robot->name, "unicycle")) {

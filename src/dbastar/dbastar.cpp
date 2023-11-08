@@ -703,10 +703,8 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   std::vector<AStarNode *> neighbors_n;
   std::vector<Trajectory> expanded_trajs; // for debugging
 
-  const bool debug = false;
+  const bool debug = false; // Set to true to write save to disk a lot of stuff
 
-  // TODO: option to inflat the heuristic
-  //
   const bool check_intermediate_goal = true;
   const size_t num_check_goal =
       4; // Eg, for n = 4 I check: 1/5 , 2/5 , 3/5 , 4/5
@@ -934,6 +932,14 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
       out2 << "  - " << std::endl;
       traj.to_yaml_format(out2, "    ");
     }
+
+    {
+      dynobench::Trajectories trajs;
+      trajs.data = expanded_trajs;
+      trajs.save_file_msgpack("/tmp/dynoplan/expanded_trajs.msgpack");
+    }
+
+    // write in msgpack format
   }
 
   std::cout << "Terminate status: " << static_cast<int>(status) << " "

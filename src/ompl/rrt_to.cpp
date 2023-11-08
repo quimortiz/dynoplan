@@ -107,6 +107,7 @@ void solve_ompl_geometric(const dynobench::Problem &problem,
           Eigen::VectorXd x;
           state_to_eigen(x, si, s);
           robot->diff_model->set_0_velocity(x);
+          robot->diff_model->ensure(x);
           traj_geo.states.push_back(x);
         }
         traj_geo.states.push_back(traj_geo.goal);

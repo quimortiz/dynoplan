@@ -205,18 +205,13 @@ void check_problem_with_finite_diff(
 
 void add_noise(double noise_level, std::vector<Eigen::VectorXd> &xs,
                std::vector<Eigen::VectorXd> &us,
-               const std::string &robot_type) {
+               std::shared_ptr<dynobench::Model_robot> model_robot) {
   size_t nx = xs.at(0).size();
   size_t nu = us.at(0).size();
   for (size_t i = 0; i < xs.size(); i++) {
     DYNO_CHECK_EQ(static_cast<size_t>(xs.at(i).size()), nx, AT);
     xs.at(i) += noise_level * Vxd::Random(nx);
-
-    if (startsWith(robot_type, "quad3d")) {
-      for (auto &s : xs) {
-        s.segment<4>(3).normalize();
-      }
-    }
+    model_robot->ensure(xs.at(i));
   }
 
   for (size_t i = 0; i < us.size(); i++) {
@@ -481,7 +476,7 @@ void solve_for_fixed_penalty(
 
   // add noise
   if (options_trajopt_local.noise_level > 0.) {
-    add_noise(options_trajopt_local.noise_level, xs, us, problem.robotType);
+    add_noise(options_trajopt_local.noise_level, xs, us, model_robot);
   }
 
   // store init guess
@@ -524,17 +519,26 @@ void solve_for_fixed_penalty(
 
   // report after
   std::string filename = folder_tmptraj + "opt_" + random_id + ".yaml";
-  write_states_controls(ddp.get_xs(), ddp.get_us(), model_robot, problem,
-                        filename.c_str());
+
+  for (auto &x : xs_out) {
+    model_robot->ensure(x);
+  }
+
+  write_states_controls(xs_out, us_out, model_robot, problem, filename.c_str());
   report_problem(problem_croco, xs_out, us_out, "/tmp/dynoplan/report-1.yaml");
 };
 
 void __trajectory_optimization(
-    const dynobench::Problem &problem,
+    const dynobench::Problem &t_problem,
     std::shared_ptr<dynobench::Model_robot> &model_robot,
     const dynobench::Trajectory &init_guess,
     const Options_trajopt &options_trajopt, dynobench::Trajectory &traj,
     Result_opti &opti_out) {
+
+  dynobench::Problem problem = t_problem;
+
+  model_robot->ensure(problem.start); // precission issues with quaternions
+  model_robot->ensure(problem.goal);
 
   Options_trajopt options_trajopt_local = options_trajopt;
 
@@ -612,7 +616,8 @@ void __trajectory_optimization(
 
   std::vector<Eigen::VectorXd> xs_init__ = xs_init;
 
-  if (startsWith(problem.robotType, "quad3d")) {
+  if (startsWith(problem.robotType, "quad3d") ||
+      model_robot->name == "quad3d") {
     fix_problem_quaternion(start, goal, xs_init, us_init);
   }
 
@@ -626,10 +631,8 @@ void __trajectory_optimization(
     }
   }
 
-  if (startsWith(problem.robotType, "quad3d")) {
-    for (auto &s : xs_init) {
-      s.segment<4>(3).normalize();
-    }
+  for (auto &x : xs_init) {
+    model_robot->ensure(x);
   }
 
   write_states_controls(xs_init, us_init, model_robot, problem,
@@ -946,7 +949,7 @@ void __trajectory_optimization(
       }
 
       if (options_trajopt_local.noise_level > 1e-8) {
-        add_noise(options_trajopt_local.noise_level, xs, us, problem.robotType);
+        add_noise(options_trajopt_local.noise_level, xs, us, model_robot);
       }
 
       report_problem(problem_croco, xs, us, "/tmp/dynoplan/report-0.yaml");
@@ -1439,11 +1442,8 @@ void trajectory_optimization(const dynobench::Problem &problem,
     tmp_init_guess = from_welf_to_quim(init_guess, robot_derived->u_nominal);
   }
 
-  if (startsWith(problem.robotType, "quad3d")) {
-    for (auto &s : tmp_init_guess.states) {
-      s.segment<4>(3).normalize();
-    }
-  }
+  for (auto &s : tmp_init_guess.states)
+    model_robot->ensure(s);
 
   CSTR_(model_robot->ref_dt);
 
@@ -1499,12 +1499,8 @@ void trajectory_optimization(const dynobench::Problem &problem,
                         init_guess.actions, init_guess.times,
                         model_robot->ref_dt, model_robot->state);
 
-    if (startsWith(problem.robotType, "quad3d")) {
-
-      for (auto &s : tmp_init_guess.states) {
-        s.segment<4>(3).normalize();
-      }
-    }
+    for (auto &s : tmp_init_guess.states)
+      model_robot->ensure(s);
   }
   CHECK(tmp_init_guess.actions.size(), AT);
   CHECK(tmp_init_guess.states.size(), AT);
@@ -1733,11 +1729,8 @@ void trajectory_optimization(const dynobench::Problem &problem,
 
       options_trajopt_local.solver_id = static_cast<int>(SOLVER::traj_opt);
 
-      if (startsWith(problem.robotType, "quad3d")) {
-        for (auto &s : traj_rate_i.states) {
-          s.segment<4>(3).normalize();
-        }
-      }
+      for (auto &s : traj_rate_i.states)
+        model_robot->ensure(s);
 
       __trajectory_optimization(problem, model_robot, traj_rate_i,
                                 options_trajopt_local, traj_out,
