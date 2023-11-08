@@ -67,7 +67,7 @@ add_library(motion_primitives ./src/motion_primitives/motion_primitives.cpp)
 add_library(
   optimization
   ./src/optimization/ocp.cpp ./src/optimization/options.cpp
-  ./src/optimization/croco_models.cpp ./src/optimization/generate_ocp.cpp)
+  ./src/optimization/croco_models.cpp ./src/optimization/generate_ocp.cpp ./src/optimization/multirobot_optimization.cpp)
 
 add_library(sst ./src/ompl/sst.cpp ./src/ompl/robots.cpp)
 add_library(rrt_to ./src/ompl/rrt_to.cpp ./src/ompl/robots.cpp)
