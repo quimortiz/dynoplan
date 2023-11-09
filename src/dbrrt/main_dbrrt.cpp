@@ -63,6 +63,7 @@ int main(int argc, char *argv[]) {
 
   if (cfg_file != "") {
     options_dbrrt.read_from_yaml(cfg_file.c_str());
+    options_trajopt.read_from_yaml(cfg_file.c_str());
   }
 
   Problem problem(env_file.c_str());
@@ -71,6 +72,8 @@ int main(int argc, char *argv[]) {
   Info_out out_db;
 
   std::cout << "*** options_dbrrt ***" << std::endl;
+  std::cout << "warning: 1000x to time limit" << std::endl;
+  options_dbrrt.timelimit *= 1000;
   options_dbrrt.print(std::cout);
   std::cout << "***" << std::endl;
 
@@ -80,13 +83,16 @@ int main(int argc, char *argv[]) {
       (problem.models_base_path + problem.robotType + ".yaml").c_str(),
       problem.p_lb, problem.p_ub);
 
+  load_env(*robot, problem);
+
   load_motion_primitives_new(
       options_dbrrt.motionsFile, *robot, motions, options_dbrrt.max_motions,
       options_dbrrt.cut_actions, false, options_dbrrt.check_cols);
 
   options_dbrrt.motions_ptr = &motions;
 
-  dbrrt(problem, options_dbrrt, options_trajopt, traj, out_db);
+  // dbrrt(problem, options_dbrrt, options_trajopt, traj, out_db);
+  idbrrt(problem, robot, options_dbrrt, options_trajopt, traj, out_db);
 
   std::cout << "*** inout_db *** " << std::endl;
   out_db.to_yaml(std::cout);
@@ -94,13 +100,16 @@ int main(int argc, char *argv[]) {
 
   CSTR_(results_file);
   std::ofstream results(results_file);
-  results << "alg: dbastar" << std::endl;
+  results << "alg: dbrrt" << std::endl;
   results << "time_stamp: " << get_time_stamp() << std::endl;
   results << "env_file: " << env_file << std::endl;
   results << "cfg_file: " << cfg_file << std::endl;
   results << "results_file: " << results_file << std::endl;
-  results << "options dbastar:" << std::endl;
+  results << "options dbrrt:" << std::endl;
   options_dbrrt.print(results, "  ");
+  results << "options trajopt:" << std::endl;
+  options_dbrrt.print(results, "  ");
+
   out_db.to_yaml(results);
 
   if (out_db.solved) {

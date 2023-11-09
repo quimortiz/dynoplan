@@ -365,9 +365,14 @@ void improve_motion_primitives(const Options_trajopt &options_trajopt,
                                dynobench::Trajectories &trajs_out,
                                const Options_primitives &options_primitives) {
 
-  auto robot_model =
+  // auto robot_model =
+  //     dynobench::robot_factory((options_primitives.models_base_path +
+  //                               dynobench::robot_type_to_path(dynamics))
+  //                                  .c_str());
+
+  std::shared_ptr<dynobench::Model_robot> robot_model =
       dynobench::robot_factory((options_primitives.models_base_path +
-                                dynobench::robot_type_to_path(dynamics))
+                                options_primitives.dynamics + ".yaml")
                                    .c_str());
 
   dynobench::Trajectories trajs_in = __trajs_in;
@@ -379,9 +384,9 @@ void improve_motion_primitives(const Options_trajopt &options_trajopt,
 
   std::vector<std::thread> threads;
 
-  auto improve = [](auto &trajs_in, auto &i, auto &robot_model, auto &dynamics,
-                    auto &options_trajopt, auto &trajs_out,
-                    auto &num_improves) {
+  auto improve = [&](auto &trajs_in, auto &i, auto &robot_model, auto &dynamics,
+                     auto &options_trajopt, auto &trajs_out,
+                     auto &num_improves) {
     auto &traj = trajs_in.data.at(i);
 
     auto __model = std::shared_ptr<dynobench::Model_robot>(
@@ -407,6 +412,7 @@ void improve_motion_primitives(const Options_trajopt &options_trajopt,
     problem.goal = traj.states.back();
     problem.start = traj.states.front();
     problem.robotType = dynamics;
+    problem.models_base_path = options_primitives.models_base_path;
 
     Result_opti opti_out;
 
@@ -437,6 +443,8 @@ void improve_motion_primitives(const Options_trajopt &options_trajopt,
       }
 
     } catch (const std::exception &e) {
+      std::cout << __FILE__ << ":" << __LINE__ << std::endl;
+      std::cout << "exception: " << e.what() << std::endl;
       trajs_out.data.at(i) = traj;
     }
   };

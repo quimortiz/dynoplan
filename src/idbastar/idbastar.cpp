@@ -40,6 +40,44 @@ void idbA(const dynobench::Problem &problem,
   options_dbastar_local.motions_ptr = &motions;
   std::cout << "Loading motion primitives -- DONE " << std::endl;
 
+  if (false) {
+    // TODO: QUIM think of good way to quickly check that primitives are
+    // OK -- should be robust against bounds on invariances
+    std::cout << "checking motion primitives" << std::endl;
+
+    auto good_motion = [&](auto &motion) {
+      for (size_t j = 0; j < motion.traj.states.size(); j++) {
+        if (!robot->check_state(motion.traj.states.at(j))) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    if (robot->name == "car_with_trailers") {
+      // TODO: double check that this works for all systems!
+      Eigen::VectorXd x_lb = robot->x_lb;
+      Eigen::VectorXd x_ub = robot->x_ub;
+
+      robot->x_lb.head(robot->get_translation_invariance()).array() =
+          -std::numeric_limits<double>::max();
+      robot->x_ub.head(robot->get_translation_invariance()).array() =
+          std::numeric_limits<double>::max();
+
+      std::cout << "motions before check" << motions.size() << std::endl;
+      motions.erase(std::remove_if(motions.begin(), motions.end(), good_motion),
+                    motions.end());
+      std::cout << "motions after check" << motions.size() << std::endl;
+
+      for (size_t i = 0; i < motions.size(); i++) {
+        motions[i].idx = i;
+      }
+
+      robot->x_lb = x_lb;
+      robot->x_ub = x_ub;
+    }
+  }
+
   std::vector<Heuristic_node> heu_map;
   if (options_dbastar.heuristic == 1) {
 

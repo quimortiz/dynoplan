@@ -33,6 +33,8 @@
 #include "ompl/base/ScopedState.h"
 #include <fcl/fcl.h>
 
+#include "dynobench/planar_rotor.hpp"
+#include "dynobench/quadrotor.hpp"
 #include "dynoplan/dbastar/heuristics.hpp"
 #include "dynoplan/dbastar/options.hpp"
 
@@ -60,6 +62,7 @@ struct AStarNode {
   float fScore;
   float gScore;
   float hScore;
+  std::vector<int> motions{}; // list of applicable motions
 
   double get_cost() const { return gScore; }
 
@@ -167,17 +170,47 @@ struct LazyTraj {
     assert(offset);
     assert(robot);
     assert(motion);
-
     assert(offset->size());
     if (forward) {
       robot->transform_primitive(*offset, motion->traj.states,
                                  motion->traj.actions, tmp, check_state,
                                  num_valid_states);
+      // static_cast<dynobench::Model_quad3d
+      // *>(robot)->transform_primitiveDirect(
+      //     *offset, motion->traj.states, motion->traj.actions, tmp,
+      //     check_state, num_valid_states);
+
     } else {
-      // TODO: change this outside translation invariance
-      robot->transform_primitive(*offset, motion->traj.states,
-                                 motion->traj.actions, tmp, check_state,
-                                 num_valid_states);
+      throw std::runtime_error(
+          "bacward still needs a little bit testing -- don't use");
+
+      if (startsWith(robot->name, "quad2d")) {
+        // std::cout << "transforming primitive" << std::endl;
+
+        auto ptr = dynamic_cast<dynobench::Model_quad2d *>(robot);
+        assert(ptr);
+        ptr->transform_primitiveDirectReverse(*offset, motion->traj.states,
+                                              motion->traj.actions, tmp,
+                                              check_state, num_valid_states);
+
+      } else if (startsWith(robot->name, "quad3d")) {
+        auto ptr = dynamic_cast<dynobench::Model_quad3d *>(robot);
+        assert(ptr);
+        ptr->transform_primitiveDirectReverse(*offset, motion->traj.states,
+                                              motion->traj.actions, tmp,
+                                              check_state, num_valid_states);
+      }
+
+      else if (startsWith(robot->name, "unicycle")) {
+        robot->transform_primitive(*offset, motion->traj.states,
+                                   motion->traj.actions, tmp, check_state,
+                                   num_valid_states);
+      }
+
+      else {
+        std::string msg = "backward not implemented for " + robot->name;
+        ERROR_WITH_INFO(msg);
+      }
     }
   }
 
@@ -279,6 +312,9 @@ struct Expander {
   }
 };
 
+//
+// @param:nodes
+//
 void plot_search_tree(std::vector<AStarNode *> nodes,
                       std::vector<Motion> &motions,
                       dynobench::Model_robot &robot, const char *filename);
@@ -290,11 +326,16 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     dynobench::Trajectory &traj_out,
                                     std::ofstream *out = nullptr);
 
+void check_goal(dynobench::Model_robot &robot, Eigen::Ref<Eigen::VectorXd> x,
+                const Eigen::Ref<const Eigen::VectorXd> &goal,
+                dynobench::TrajWrapper &traj_wrapper, double distance_bound,
+                size_t num_check_goal, int &chosen_index);
+
 bool check_lazy_trajectory(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
     Time_benchmark &time_bench, dynobench::TrajWrapper &tmp_traj,
     Eigen::Ref<Eigen::VectorXd> aux_last_state,
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
-    int *num_valid_states = nullptr);
+    int *num_valid_states = nullptr, bool forward = true);
 
 } // namespace dynoplan
