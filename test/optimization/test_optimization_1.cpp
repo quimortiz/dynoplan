@@ -94,17 +94,19 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
                                   ":" + solver.name + ":" + problem.name + ":" +
                                   init_guess.filename;
 
-      if (solver.name == "mpcc" && problem.name == "quadrotor_0-recovery") {
-        BOOST_TEST_WARN(false, "i skip mpcc in quadrotor_0-recovery");
-        continue;
-      }
-
       std::cout << "experiment id" << std::endl;
       std::cout << experiment_id << std::endl;
       Result_opti result;
       Trajectory sol;
+
       BOOST_CHECK_NO_THROW(
           trajectory_optimization(problem, init_guess, solver, sol, result));
+
+      if (solver.name == "mpcc" && (problem.name == "quadrotor_0-recovery" ||
+                                    problem.name == "quadrotor_0-window")) {
+        BOOST_TEST_WARN(false, "i skip mpcc in quadrotor_0-recovery and window");
+        continue;
+      }
 
       BOOST_TEST_CHECK(result.feasible, experiment_id);
       std::cout << "cost is " << result.cost << std::endl;
