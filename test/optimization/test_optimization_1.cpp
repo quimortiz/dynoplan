@@ -214,6 +214,28 @@ BOOST_AUTO_TEST_CASE(t_opti_integrator2) {
   traj_out.to_yaml_format(out);
 }
 
+BOOST_AUTO_TEST_CASE(t_opti_integrator1) {
+
+  Options_trajopt options;
+  Problem problem(dynobench_base "envs/integrator1_2d_v0/empty.yaml");
+  problem.models_base_path = dynobench_base "models/";
+
+  Trajectory init_guess, traj_out;
+  init_guess.num_time_steps = 50;
+  // init_guess.num_time_steps = 5; use this to see how it saturates control
+  // limits
+  Result_opti opti_out;
+  trajectory_optimization(problem, init_guess, options, traj_out, opti_out);
+  BOOST_TEST(opti_out.feasible);
+
+  // write down the generated trajectory
+
+  std::string filename = "/tmp/dynoplan/traj_t_opti_integrator1_2d.yaml";
+  create_dir_if_necessary(filename.c_str());
+  std::ofstream out(filename);
+  traj_out.to_yaml_format(out);
+}
+
 static Eigen::VectorXd default_vector;
 
 // TODO: move to bench

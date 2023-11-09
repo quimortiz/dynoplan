@@ -113,7 +113,7 @@ We will show how to generate motion primitives for the `integrator1_2d_v0`
 ```
 ./main_primitives --mode_gen_id 0  --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/   --max_num_primitives 200 --out_file /tmp/my_motions.bin
 ```
-Primitives will be store in `/tmp/my_motions.bin` and `/tmp/my_motions.bin.yaml`.  You can pass options to the solver for trajectory optimization. 
+Primitives will be store in `/tmp/my_motions.bin` and `/tmp/my_motions.bin.yaml`.  You can pass options to the solver for trajectory optimization.
 
 * Step Three: Improve the cost of the primitives
 
@@ -121,7 +121,7 @@ Primitives will be store in `/tmp/my_motions.bin` and `/tmp/my_motions.bin.yaml`
 ./main_primitives --mode_gen_id 1  --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/   --max_num_primitives 200  --in_file /tmp/my_motions.bin --solver_id 1
 ```
 
-By default, primitives are stored in `/tmp/my_motions.bin.im.bin` and `/tmp/my_motions.bin.im.bin.yaml`. You can pass options to the solver for trajectory optimization. 
+By default, primitives are stored in `/tmp/my_motions.bin.im.bin` and `/tmp/my_motions.bin.im.bin.yaml`. You can pass options to the solver for trajectory optimization.
 
 
 * Step Fours: Randomnly cut primitives
@@ -156,16 +156,76 @@ Benchmark between planners
 python3 ../benchmark/benchmark.py -m bench -bc    ../benchmark/config/compare.yaml
 ```
 
-Study of heuristic functions
+Generate fancy table
+```
+python3  ../benchmark/benchmark.py --mode fancy --bench_cfg ../benchmark/config/plot_results_v3.yaml
+```
 
+(last version)
+```
+python3  ../benchmark/benchmark.py --mode fancy --bench_cfg ../benchmark/config/plot_results_v4.yaml
+```
+
+Generate table for website
+```
+python3  ../benchmark/benchmark.py --mode fancy --bench_cfg ../benchmark/config/plot_results_v_all.yaml
+```
+
+(last version)
+```
+python3  ../benchmark/benchmark.py --mode fancy --bench_cfg ../benchmark/config/plot_results_v_all_v4.yaml
+```
+
+
+
+Generate plots only for three for the paper.
+```
+PAPER=1 python3  ../benchmark/benchmark.py --mode bench --bench_cfg  ../benchmark/config/plot_results_v3_threePlots.yaml
+```
+
+
+
+### Search heuristic
+
+Study of heuristic functions
 ```
 python3 ../benchmark/benchmark.py -m bench_search -bc    ../benchmark/config/bench_search.yaml
 ```
+
+Only analyze the results
+```
+python3 ../benchmark/benchmark.py -m bench_search -bc    ../benchmark/config/bench_search_make_table_tro.yaml
+```
+
+Results for website
+```
+python3 ../benchmark/benchmark.py -m bench_search -bc    ../benchmark/config/bench_search_make_table_tro_all.yaml
+```
+
+
+
+### Optimization with Free terminal time
 
 Study of strategy for trajectoy optimization with free terminal time
 ```
 python3 ../benchmark/benchmark.py -m bench_time -bc    ../benchmark/config/bench_time.yaml
 ```
+
+Latex Table with subset of results shown in the paper:
+```
+time python3 ../benchmark/benchmark.py -m bench_time -bc ../benchmark/config/make_table_time_tro.yaml
+```
+
+For website table:
+```
+time python3 ../benchmark/benchmark.py -m bench_time -bc ../benchmark/config/make_table_time_tro_all.yaml
+```
+
+
+
+
+
+
 
 Study of time spent in each component
 
@@ -173,10 +233,39 @@ Study of time spent in each component
 python3   ../benchmark/benchmark.py -m study  -bc ../benchmark/config/bench_abblation_study.yaml
 ```
 
+(Results in TRO)
+
+```
+python3   ../benchmark/benchmark.py -m study  -bc ../benchmark/config/bench_abblation_results_tro.yaml
+```
+
+
+
+
 You can modify each config file to change the number of runs, the evaluated problems and the maximum time.
 The configurations files we used for `TRO` have prefix `TRO`.
 
 The paramteres for each algorithm are in `.yaml` files inside the `benchmark/config/algs` directory, for example `idbastar_v0.yaml`.
+
+
+
+## Visualization
+
+
+Plot environments (modify python file to select which envs to print)
+```
+cd build
+python3 ../plot_all_envs.py
+```
+
+Visualize trajectores
+
+```
+DO something
+```
+
+
+
 
 
 

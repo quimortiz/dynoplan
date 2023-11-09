@@ -557,9 +557,22 @@ def solve_problem_with_alg(
         ]
 
     elif alg.startswith("idbastar"):
-        # motions_file = get_motions_file(problem)
         cmd = [
             "./main_idbastar",
+            "--env_file",
+            problem,
+            "--results_file",
+            out,
+            "--timelimit",
+            str(timelimit),
+            "--cfg",
+            cfg_out,
+            "--models_base_path",
+            "../dynobench/models/",
+        ]
+    elif alg.startswith("dbrrt") or alg.startswith("dbaorrt"):
+        cmd = [
+            "./main_dbrrt",
             "--env_file",
             problem,
             "--results_file",
@@ -1959,7 +1972,11 @@ def compare(files: List[str], interactive: bool = False):
 
                 # ax[0].plot(times, cost_mean, color=color, label=alg)
                 ax[0].step(
-                    times, cost_mean, color=color, label=Dalg2label[alg], where="post"
+                    times,
+                    cost_mean,
+                    color=color,
+                    label=Dalg2label.get(alg, alg),
+                    where="post",
                 )
 
                 # I want to change
@@ -1971,7 +1988,8 @@ def compare(files: List[str], interactive: bool = False):
                 for i in range(len(cost_mean)):
                     if cost_mean[i] != np.nan and cost_mean[i] < np.inf:
                         if cost_ub[i] == np.nan or cost_ub[i] == np.inf:
-                            cost_ub[i] = 100
+                            # cost_ub[i] = 100 TODO For nice Plotting
+                            pass
 
                             # cost_lb != np.nan && cost_ub != np.nan):
 
@@ -1990,7 +2008,11 @@ def compare(files: List[str], interactive: bool = False):
                 )
                 # ax[1].plot(times, success, color=color, label=alg)
                 ax[1].step(
-                    times, success, color=color, label=Dalg2label[alg], where="post"
+                    times,
+                    success,
+                    color=color,
+                    label=Dalg2label.get(alg, alg),
+                    where="post",
                 )
 
                 ax[0].set_xscale("log")
@@ -2003,13 +2025,13 @@ def compare(files: List[str], interactive: bool = False):
             }
 
             ax[0].set_title(Dproblem2title.get(problem, problem))
-            if counter == 3:
-                ax[1].legend(loc="lower right")
+            # if counter == 3:
+            ax[1].legend(loc="lower right")
 
             ax[1].set_xlabel("time [s]")
-            if counter == 1:
-                ax[0].set_ylabel("cost[s]")
-                ax[1].set_ylabel("success %")
+            # if counter == 1:
+            ax[0].set_ylabel("cost[s]")
+            ax[1].set_ylabel("success %")
 
             if problem in Dproblem2limit:
                 ax[0].set_ylim(Dproblem2limit[problem][0], Dproblem2limit[problem][1])
@@ -2121,7 +2143,7 @@ def get_av_cost_new(all_costs_np) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
             # meda.append(cc.mean())
             # std.append(cc.std())
         else:
-            print("success rate is very slow")
+            print("success rate is very low")
             median.append(np.nan)
             median_ub.append(np.nan)
             median_lb.append(np.nan)
@@ -3418,3 +3440,4 @@ if __name__ == "__main__":
     # stats of primitives
     # Get the stats...
     # visualize_primitives(file,robot, "primitives.pdf")
+    sys.exit(0)
