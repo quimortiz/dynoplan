@@ -48,13 +48,12 @@ bool execute_optimizationMultiRobot(const std::string &env_file,
         << std::endl;
   }
 
-  std::string dbench_base  = "../dynoplan/dynobench/"; // maybe better way ?
   options_trajopt.solver_id = 1; // static_cast<int>(SOLVER::traj_opt);
   options_trajopt.control_bounds = 1;
   options_trajopt.use_warmstart = 1;
   options_trajopt.weight_goal = 100;
   options_trajopt.max_iter = 50;
-  problem.models_base_path = dbench_base + std::string("models/");
+  problem.models_base_path = dynobench_base + std::string("models/");
 
   Result_opti result;
   Trajectory sol;

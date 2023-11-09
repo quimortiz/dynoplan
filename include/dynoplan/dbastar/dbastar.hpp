@@ -181,8 +181,8 @@ struct LazyTraj {
       //     check_state, num_valid_states);
 
     } else {
-      throw std::runtime_error(
-          "bacward still needs a little bit testing -- don't use");
+      // throw std::runtime_error(
+      //     "bacward still needs a little bit testing -- don't use");
 
       if (startsWith(robot->name, "quad2d")) {
         // std::cout << "transforming primitive" << std::endl;
