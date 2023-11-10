@@ -509,22 +509,37 @@ void check_goal(dynobench::Model_robot &robot, Eigen::Ref<Eigen::VectorXd> x,
   }
 };
 
+/** @brief Discontiuity Bounded A* search.
+ * See the TRO paper for more details:
+ * https://arxiv.org/abs/2311.03553
+ *
+ * @param problem: The motion planning problem
+ * @param options_dbastar: The options for the search
+ * @param traj_out: The output trajectory (as out argument)
+ * @param out_info_db: The output info (as out argument)
+ */
 void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
              Trajectory &traj_out, Out_info_db &out_info_db) {
+
+  // Print the input option to the screen
   std::cout << "*** options_dbastar ***" << std::endl;
   options_dbastar.print(std::cout);
   std::cout << "***" << std::endl;
 
+  // Create the robot model and load the environment
   std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
       (problem.models_base_path + problem.robotType + ".yaml").c_str(),
       problem.p_lb, problem.p_ub);
   load_env(*robot, problem);
   const int nx = robot->nx;
 
+  // Get the motions primitive from the input options! Motion primitives should
+  // be loaded before -- see tests.
   CHECK(options_dbastar.motions_ptr,
         "motions should be loaded before calling dbastar");
   std::vector<Motion> &motions = *options_dbastar.motions_ptr;
 
+  // Sanity Check:  motion id should be equal to the index in the vector
   auto check_motions = [&] {
     for (size_t idx = 0; idx < motions.size(); ++idx) {
       if (motions[idx].idx != idx) {
@@ -536,12 +551,14 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
   assert(check_motions());
 
+  // Struct to store timing information
   Time_benchmark time_bench;
 
   // build kd-tree for motion primitives
   ompl::NearestNeighbors<Motion *> *T_m = nullptr;
   ompl::NearestNeighbors<AStarNode *> *T_n = nullptr;
 
+  // Nearest Neighbors for motion primitives
   if (options_dbastar.use_nigh_nn) {
     T_m = nigh_factory2<Motion *>(problem.robotType, robot);
   } else {
@@ -555,12 +572,14 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     }
   });
 
+  // Nearest Neighbors for new states (will grow dinamically)
   if (options_dbastar.use_nigh_nn) {
     T_n = nigh_factory2<AStarNode *>(problem.robotType, robot);
   } else {
     NOT_IMPLEMENTED;
   }
 
+  // Helper Class used to expand a state with the motions primitives
   Expander expander(robot.get(), T_m,
                     options_dbastar.alpha * options_dbastar.delta);
 
@@ -569,10 +588,10 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   }
 
   if (options_dbastar.delta < 0) {
-    NOT_IMPLEMENTED; // HERE i could compute delta based on desired branching
-                     // factor!
+    NOT_IMPLEMENTED;
   }
 
+  // Set up the heuristic function used to guide the search
   std::shared_ptr<Heu_fun> h_fun = nullptr;
   std::vector<Heuristic_node> heu_map;
 
@@ -612,8 +631,12 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   }
   }
 
-  // all_nodes manages the memory.
+  //
+  // Conventions: the vector all_nodes will own the memory.
   // c-pointer don't have onwership.
+  //
+
+  // Here we put all nodes that have been created during the search
   std::vector<std::unique_ptr<AStarNode>> all_nodes;
   all_nodes.push_back(std::make_unique<AStarNode>());
 
@@ -631,6 +654,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   auto goal_node = std::make_unique<AStarNode>();
   goal_node->state_eig = problem.goal;
 
+  // Open list for the A* search  -- we use a heap
   open_t open;
   start_node->handle = open.push(start_node);
 
@@ -644,11 +668,9 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   double best_distance_to_goal =
       robot->distance(start_node->state_eig, problem.goal);
 
+  double cost_bound = options_dbastar.maxCost;
+
   std::mt19937 g = std::mt19937{std::random_device()()};
-
-  double cost_bound =
-      options_dbastar.maxCost; //  std::numeric_limits<double>::infinity();
-
   if (options_dbastar.fix_seed) {
     expander.seed(0);
     g = std::mt19937{0};
@@ -657,12 +679,14 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     srand(time(0));
   }
 
+  // Add the start node to the nearest neighbor data structure
   time_bench.time_nearestNode_add +=
       timed_fun_void([&] { T_n->add(start_node); });
 
-  const size_t print_every = 1000;
-
   double last_f_score = start_node->fScore;
+
+  // Printer for the search status
+  const size_t print_every = 1000;
   auto print_search_status = [&] {
     std::cout << "expands: " << time_bench.expands << " open: " << open.size()
               << " best distance: " << best_distance_to_goal
@@ -672,6 +696,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   Stopwatch watch;
   Terminate_status status = Terminate_status::UNKNOWN;
 
+  // Function to check if we should stop the search
   auto stop_search = [&] {
     if (static_cast<size_t>(time_bench.expands) >=
         options_dbastar.max_expands) {
@@ -705,18 +730,24 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
   const bool debug = false; // Set to true to write save to disk a lot of stuff
 
+  // If True, when we expand a primitive, we check if the last state is close to
+  // the goal
   const bool check_intermediate_goal = true;
   const size_t num_check_goal =
       4; // Eg, for n = 4 I check: 1/5 , 2/5 , 3/5 , 4/5
 
-  std::function<bool(Eigen::Ref<Eigen::VectorXd>)> ff =
+  // Check that the states is not out-of-bounds
+  std::function<bool(Eigen::Ref<Eigen::VectorXd>)> is_state_valid =
       [&](Eigen::Ref<Eigen::VectorXd> state) {
         return robot->is_state_valid(state);
       };
 
-  // we allocate a trajectory for the largest motion primitive
-
+  // Traj_wrapper is a wrapper around a trajectory. It is used to compute the
+  // expansion without allocating memory
   dynobench::TrajWrapper traj_wrapper;
+
+  // For runtime efficiency, we allocate memory for longest possible
+  // Motion primitives
   {
     std::vector<Motion *> motions;
     T_m->list(motions);
@@ -731,6 +762,8 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   }
 
   Eigen::VectorXd aux_last_state(robot->nx);
+
+  // Main loop of the search
   while (!stop_search()) {
 
     // POP best node in queue
@@ -748,14 +781,15 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
     time_bench.expands++;
 
-    // CHECK if best node is close ENOUGH to goal
     double distance_to_goal =
         robot->distance(best_node->state_eig, problem.goal);
 
+    // Update best distance to goal
     if (distance_to_goal < best_distance_to_goal) {
       best_distance_to_goal = distance_to_goal;
     }
 
+    // Check if we have found a solution
     if (distance_to_goal <
         options_dbastar.delta_factor_goal * options_dbastar.delta) {
       std::cout << "FOUND SOLUTION" << std::endl;
@@ -767,45 +801,35 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
       break;
     }
 
-    // EXPAND the best node
+    // EXPAND The node using motion primitives
     size_t num_expansion_best_node = 0;
     std::vector<LazyTraj> lazy_trajs;
     time_bench.time_lazy_expand += timed_fun_void(
         [&] { expander.expand_lazy(best_node->state_eig, lazy_trajs); });
 
-    // CSTR_(lazy_trajs.size());
-    // dynobench::Trajectory tmp_traj;
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
 
       int num_valid_states = -1;
       traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
 
-      bool motion_valid =
-          check_lazy_trajectory(lazy_traj, *robot, time_bench, traj_wrapper,
-                                aux_last_state, &ff, &num_valid_states);
-
-      // bool motion_valid = check_lazy_trajectory(lazy_traj, *robot,
-      // time_bench,
-      //                                           traj_wrapper, nullptr,
-      //                                           nullptr);
+      // check collisions and bounds
+      bool motion_valid = check_lazy_trajectory(
+          lazy_traj, *robot, time_bench, traj_wrapper, aux_last_state,
+          &is_state_valid, &num_valid_states);
 
       if (!motion_valid) {
         continue;
       }
 
-      // Additional CHECK: if a intermediate state is close to goal. It really
-      // helps!
-
       int chosen_index = -1;
+      if (check_intermediate_goal) {
+        check_goal(*robot, tmp_node.state_eig, problem.goal, traj_wrapper,
+                   options_dbastar.delta_factor_goal * options_dbastar.delta,
+                   num_check_goal, chosen_index);
+      }
 
-      check_goal(*robot, tmp_node.state_eig, problem.goal, traj_wrapper,
-                 options_dbastar.delta_factor_goal * options_dbastar.delta,
-                 num_check_goal, chosen_index);
-
-      // d <= options_dbastar.delta_factor_goal * options_dbastar.delta) {
-
-      // Tentative hScore, gScore
+      // Tentative hScore.
       double hScore;
       time_bench.time_hfun +=
           timed_fun_void([&] { hScore = h_fun->h(tmp_node.state_eig); });
@@ -817,12 +841,13 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
       assert(cost_motion >= 0);
 
+      // Tentative hScore.
       double gScore = best_node->gScore + cost_motion +
                       options_dbastar.cost_delta_factor *
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
 
-      // CHECK if new State is NOVEL
+      // Check if new state is NOVEL (e.g. not close to any other state)
       time_bench.time_nearestNode_search += timed_fun_void([&] {
         T_n->nearestR(&tmp_node,
                       (1. - options_dbastar.alpha) * options_dbastar.delta,
@@ -830,7 +855,8 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
       });
 
       if (!neighbors_n.size() || chosen_index != -1) {
-        // STATE is NOVEL, we add the node
+        // This state is novel or we have found a solution with intermediate
+        // state!
         num_expansion_best_node++;
         all_nodes.push_back(std::make_unique<AStarNode>());
         AStarNode *__node = all_nodes.back().get();
@@ -844,38 +870,37 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
           __node->intermediate_state = chosen_index;
         __node->is_in_open = true;
 
+        // Adding the sate to the tree and to the open list
         time_bench.time_queue +=
             timed_fun_void([&] { __node->handle = open.push(__node); });
         time_bench.time_nearestNode_add +=
             timed_fun_void([&] { T_n->add(__node); });
 
         if (debug) {
-
           expanded_trajs.push_back(
               dynobench::trajWrapper_2_Trajectory(traj_wrapper));
         }
 
       } else {
+        // The state is not novel. Check if we should update parent and cost of
+        // previous states.
         for (auto &n : neighbors_n) {
-          // STATE is not novel, we udpate
-          // the similar nodes
           if (double tentative_g =
                   gScore +
                   robot->lower_bound_time(tmp_node.state_eig, n->state_eig);
               tentative_g < n->gScore) {
+
             n->gScore = tentative_g;
             n->fScore = tentative_g + n->hScore;
             n->came_from = best_node;
             n->used_motion = lazy_traj.motion->idx;
-            // TODO: think if add a flag
-            // so that nodes thouching the
-            // goal can not be modified
-            n->intermediate_state = -1; // reset intermediate
-                                        // state.
-            // The motion is taken fully,
+            n->intermediate_state = -1;
+            // NOTE: the motion is taken fully,
             // because otherwise it would
             // be novel and enter inside
             // the other if.
+
+            // Update the open list or reinsert
             if (n->is_in_open) {
               time_bench.time_queue +=
                   timed_fun_void([&] { open.increase(n->handle); });
@@ -887,19 +912,21 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
         }
       }
 
+      // We can also limit the number of expansion per node,
+      // to encourage the search to go deeper.
       if (num_expansion_best_node >= options_dbastar.limit_branching_factor) {
         break;
       }
     }
-    // CSTR_(num_expansion_best_node);
   }
 
-  time_bench.time_search = watch.elapsed_ms();
+  // We have finished the search!
 
+  // Setup the informatin about the timings
+  time_bench.time_search = watch.elapsed_ms();
   time_bench.time_nearestMotion += expander.time_in_nn;
   time_bench.time_nearestNode =
       time_bench.time_nearestNode_add + time_bench.time_nearestNode_search;
-
   time_bench.extra_time =
       time_bench.time_search - time_bench.time_collisions -
       time_bench.time_nearestNode_add - time_bench.time_nearestNode_search -
@@ -938,10 +965,9 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
       trajs.data = expanded_trajs;
       trajs.save_file_msgpack("/tmp/dynoplan/expanded_trajs.msgpack");
     }
-
-    // write in msgpack format
   }
 
+  // Priting the search status
   std::cout << "Terminate status: " << static_cast<int>(status) << " "
             << terminate_status_str[static_cast<int>(status)] << std::endl;
 
@@ -954,6 +980,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     solution = best_node;
     out_info_db.solved = true;
   } else {
+    // If not solved, report the closest node to the goal
     auto nearest = T_n->nearest(goal_node.get());
     std::cout << "Close distance T_n to goal: "
               << robot->distance(goal_node->getStateEig(),
@@ -963,6 +990,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     out_info_db.solved = false;
   }
 
+  // write out information in yaml format
   auto filename = "/tmp/dynoplan/dbastar_out.yaml";
   create_dir_if_necessary(filename);
   std::ofstream out(filename);
@@ -982,6 +1010,8 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   time_bench.write(out);
 
   out << "result:" << std::endl;
+  // This function will write down the solution as a sequence
+  // of states and controls
   from_solution_to_yaml_and_traj(*robot, motions, solution, problem, traj_out,
                                  &out);
   traj_out.start = problem.start;
@@ -990,17 +1020,18 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   traj_out.cost = traj_out.actions.size() * robot->ref_dt;
 
   if (status == Terminate_status::SOLVED) {
+    // Sanity check -- the trajectory should be a correct solution.
     dynobench::Feasibility_thresholds thresholds;
-    thresholds.col_tol =
-        5 * 1e-2; // NOTE: for the systems with 0.01 s integration step,
-    // I check collisions only at 0.05s . Thus, an intermediate state
-    // could be slightly in collision.
+    thresholds.col_tol = 5 * 1e-2;
+    // Increase a little bit the collision tolerance for this assert, because I
+    // use a slightly sparse temporal collision check for systems with dt=0.01.
     thresholds.goal_tol = options_dbastar.delta;
     thresholds.traj_tol = options_dbastar.delta;
     traj_out.update_feasibility(thresholds, true);
     CHECK(traj_out.feasible, "");
   }
 
+  // Update the feasibility informatino of the trajectory
   traj_out.update_feasibility(dynobench::Feasibility_thresholds(), true);
 
   {
@@ -1012,6 +1043,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     traj_out.to_yaml_format(out);
   }
 
+  // Write out the information in the database format
   out_info_db.solved = status == Terminate_status::SOLVED;
   out_info_db.cost = traj_out.cost;
   out_info_db.time_search = time_bench.time_search;
