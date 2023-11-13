@@ -45,15 +45,17 @@ struct Info_out_idbastar : dynobench::Info_out {
 };
 
 struct Options_idbAStar {
-  double delta_0 = .3; // initial delta
-  size_t num_primitives_0 = 1000; // initial number of primitives
-  double delta_rate = .9; // rate to decrease delta
+  double delta_0 = .3;              // initial delta
+  size_t num_primitives_0 = 1000;   // initial number of primitives
+  double delta_rate = .9;           // rate to decrease delta
   double num_primitives_rate = 1.5; // rate to increase number of primitives
-  double timelimit = 10; // Time limit in seconds
-  size_t max_it = 10; // Maximum number of iterations
+  double timelimit = 10;            // Time limit in seconds
+  size_t max_it = 10;               // Maximum number of iterations
   size_t max_num_sol = 5; //  Stop when you reach this number of solutions
-  size_t max_motions_primitives = 1e4; // Maximum number of primitives to load frol file
-  bool new_schedule = true; // Schedule for delta and number of primitives of the TRO paper.
+  size_t max_motions_primitives =
+      1e4; // Maximum number of primitives to load frol file
+  bool new_schedule =
+      true; // Schedule for delta and number of primitives of the TRO paper.
   bool add_primitives_opt = true; // Add primitives after optimization
 
   void add_options(po::options_description &desc) {
