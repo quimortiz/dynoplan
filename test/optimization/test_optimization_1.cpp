@@ -104,7 +104,8 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
 
       if (solver.name == "mpcc" && (problem.name == "quadrotor_0-recovery" ||
                                     problem.name == "quadrotor_0-window")) {
-        BOOST_TEST_WARN(false, "i skip mpcc in quadrotor_0-recovery and window");
+        BOOST_TEST_WARN(false,
+                        "i skip mpcc in quadrotor_0-recovery and window");
         continue;
       }
 
