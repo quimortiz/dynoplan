@@ -61,6 +61,7 @@ add_executable(main_multirobot_optimization
                ./src/optimization/main_multirobot_optimization.cpp)
 
 add_executable(main_dbastar ./src/dbastar/main_dbastar.cpp)
+add_executable(main_tdbastar ./src/tdbastar/main_tdbastar.cpp)
 add_executable(main_idbastar ./src/idbastar/main_idbastar.cpp)
 add_executable(main_dbrrt ./src/dbrrt/main_dbrrt.cpp)
 
@@ -79,6 +80,9 @@ add_library(rrt_to ./src/ompl/rrt_to.cpp ./src/ompl/robots.cpp)
 add_library(dbastar ./src/dbastar/dbastar.cpp ./src/dbastar/options.cpp
                     ./src/ompl/robots.cpp ./src/dbastar/heuristics.cpp)
 
+add_library(tdbastar ./src/tdbastar/tdbastar.cpp ./src/ompl/robots.cpp
+./src/tdbastar/options.cpp  ./src/dbastar/heuristics.cpp)
+
 add_library(dbrrt ./src/dbrrt/dbrrt.cpp ./src/ompl/robots.cpp)
 
 add_library(idbastar ./src/idbastar/idbastar.cpp)
@@ -87,6 +91,7 @@ add_library(idbastar::motion_primitives ALIAS motion_primitives) # for use in
                                                                  # test folder
 add_library(idbastar::optimization ALIAS optimization) # for use in test folder
 add_library(idbastar::dbastar ALIAS dbastar) # for use in test folder
+
 add_library(idbastar::dbrrt ALIAS dbrrt) # for use in test folder
 add_library(idbastar::rrt_to ALIAS rrt_to) # for use in test folder
 add_library(idbastar::idbastar ALIAS idbastar) # for use in test folder
@@ -255,6 +260,27 @@ target_link_libraries(
           yaml-cpp
           Boost::program_options
           Boost::serialization)
+# for tdb-A*
+add_library(idbastar::tdbastar ALIAS tdbastar) # for use in test folder
+
+target_include_directories(
+  tdbastar
+  PUBLIC $<INSTALL_INTERFACE:include>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+         ${OMPL_INCLUDE_DIRS}
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
+          ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src)
+
+target_link_libraries(
+          tdbastar
+          PUBLIC Eigen3::Eigen dynobench::dynobench
+          PRIVATE fcl ${OMPL_LIBRARIES} ${LZ4_LIBRARIES})
+
+target_link_libraries(
+  main_tdbastar
+  PUBLIC Eigen3::Eigen tdbastar 
+  PRIVATE fcl dynobench::dynobench ${OMPL_LIBRARIES} Boost::program_options
+          Boost::serialization ${LZ4_LIBRARIES})
 
 enable_testing()
 add_subdirectory(test)

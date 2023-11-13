@@ -1,4 +1,5 @@
-#include "dynoplan/dbastar/dbastar.hpp"
+// #include "dynoplan/dbastar/dbastar.hpp"
+#include "dynoplan/tdbastar/tdbastar.hpp"
 
 #include <boost/graph/graphviz.hpp>
 
@@ -140,8 +141,6 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
   const AStarNode *n = solution;
   while (n != nullptr) {
     result.push_back(n);
-    // std::cout << n->used_motion << std::endl;
-    // si->printState(n->state);
     n = n->came_from;
   }
 
@@ -189,10 +188,7 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
       *out << space6 + "# motion last state "
            << motion.traj.states.back().format(FMT) << std::endl;
     }
-    //
-    //
-    //
-    //
+ 
     // transform the motion to match the state
 
     // get the motion
@@ -421,19 +417,8 @@ bool check_lazy_trajectory(
 
   lazy_traj.compute(tmp_traj, forward, check_state, num_valid_states);
 
-  // tmp traj has the motion primitve already applied to the current state.!!!
-
   time_bench.time_transform_primitive += wacht_tp.elapsed_ms();
 
-  // std::cout << "printing motion" << std::endl;
-  //
-  // std::vector<Eigen::VectorXd> xs = tmp_traj.get_states();
-  // std::vector<Eigen::VectorXd> us = tmp_traj.get_actions();
-  // for (size_t i = 0; i < xs.size(); ++i) {
-  //   std::cout << "x: " << xs[i].transpose() << std::endl;
-  //   if (i < us.size())
-  //     std::cout << "u: " << us[i].transpose() << std::endl;
-  // }
 
   Stopwatch watch_check_motion;
 
@@ -511,10 +496,10 @@ void check_goal(dynobench::Model_robot &robot, Eigen::Ref<Eigen::VectorXd> x,
   }
 };
 
-void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
-             Trajectory &traj_out, Out_info_db &out_info_db) {
-  std::cout << "*** options_dbastar ***" << std::endl;
-  options_dbastar.print(std::cout);
+void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbastar,
+             Trajectory &traj_out, Out_info_tdb &out_info_tdb) {
+  std::cout << "*** options_tdbastar ***" << std::endl;
+  options_tdbastar.print(std::cout);
   std::cout << "***" << std::endl;
 
   std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
@@ -523,9 +508,9 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   load_env(*robot, problem);
   const int nx = robot->nx;
 
-  CHECK(options_dbastar.motions_ptr,
+  CHECK(options_tdbastar.motions_ptr,
         "motions should be loaded before calling dbastar");
-  std::vector<Motion> &motions = *options_dbastar.motions_ptr;
+  std::vector<Motion> &motions = *options_tdbastar.motions_ptr;
 
   auto check_motions = [&] {
     for (size_t idx = 0; idx < motions.size(); ++idx) {
@@ -544,7 +529,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   ompl::NearestNeighbors<Motion *> *T_m = nullptr;
   ompl::NearestNeighbors<AStarNode *> *T_n = nullptr;
 
-  if (options_dbastar.use_nigh_nn) {
+  if (options_tdbastar.use_nigh_nn) {
     T_m = nigh_factory2<Motion *>(problem.robotType, robot);
   } else {
     NOT_IMPLEMENTED;
@@ -552,25 +537,25 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
   time_bench.time_nearestMotion += timed_fun_void([&] {
     for (size_t i = 0;
-         i < std::min(motions.size(), options_dbastar.max_motions); ++i) {
+         i < std::min(motions.size(), options_tdbastar.max_motions); ++i) {
       T_m->add(&motions.at(i));
     }
   });
 
-  if (options_dbastar.use_nigh_nn) {
+  if (options_tdbastar.use_nigh_nn) {
     T_n = nigh_factory2<AStarNode *>(problem.robotType, robot);
   } else {
     NOT_IMPLEMENTED;
   }
 
   Expander expander(robot.get(), T_m,
-                    options_dbastar.alpha * options_dbastar.delta);
+                    options_tdbastar.alpha * options_tdbastar.delta);
 
-  if (options_dbastar.alpha <= 0 || options_dbastar.alpha >= 1) {
+  if (options_tdbastar.alpha <= 0 || options_tdbastar.alpha >= 1) {
     ERROR_WITH_INFO("Alpha needs to be between 0 and 1!");
   }
 
-  if (options_dbastar.delta < 0) {
+  if (options_tdbastar.delta < 0) {
     NOT_IMPLEMENTED; // HERE i could compute delta based on desired branching
                      // factor!
   }
@@ -578,42 +563,8 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   std::shared_ptr<Heu_fun> h_fun = nullptr;
   std::vector<Heuristic_node> heu_map;
 
-  switch (options_dbastar.heuristic) {
-  case 0: {
-    h_fun = std::make_shared<Heu_euclidean>(robot, problem.goal);
-  } break;
-  case 1: {
-    if (options_dbastar.heu_map_ptr) {
-      std::cout << "Heuristic map is already loaded" << std::endl;
-    } else {
-      if (options_dbastar.heu_map_file.size()) {
-        std::cout << "loading map from file " << std::endl;
-        load_heu_map(options_dbastar.heu_map_file.c_str(), heu_map);
-      } else {
-        std::cout << "not heu map provided. Computing one .... " << std::endl;
-        time_bench.build_heuristic += timed_fun_void([&] {
-          generate_heuristic_map(problem, robot, options_dbastar, heu_map);
-        });
-        auto filename = "/tmp/dynoplan/tmp_heu_map.yaml";
-        create_dir_if_necessary(filename);
-        write_heu_map(heu_map, filename);
-      }
-      options_dbastar.heu_map_ptr = &heu_map;
-    }
-
-    auto hh = std::make_shared<Heu_roadmap>(robot, *options_dbastar.heu_map_ptr,
-                                            problem.goal, problem.robotType);
-    hh->connect_radius_h = options_dbastar.connect_radius_h;
-    h_fun = hh;
-  } break;
-  case -1: {
-    h_fun = std::make_shared<Heu_blind>();
-  } break;
-  default: {
-    ERROR_WITH_INFO("not implemented");
-  }
-  }
-
+  h_fun = std::make_shared<Heu_euclidean>(robot, problem.goal);
+  
   // all_nodes manages the memory.
   // c-pointer don't have onwership.
   std::vector<std::unique_ptr<AStarNode>> all_nodes;
@@ -649,9 +600,9 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   std::mt19937 g = std::mt19937{std::random_device()()};
 
   double cost_bound =
-      options_dbastar.maxCost; //  std::numeric_limits<double>::infinity();
+      options_tdbastar.maxCost; //  std::numeric_limits<double>::infinity();
 
-  if (options_dbastar.fix_seed) {
+  if (options_tdbastar.fix_seed) {
     expander.seed(0);
     g = std::mt19937{0};
     srand(0);
@@ -659,18 +610,9 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     srand(time(0));
   }
 
-// from Quim
-//   auto my_func = [&](int c){std::cout << "hell"; return 1+c+cost_bound;}; // lambda
-
-// int bb =
-//    my_func(0);
-
-
-  // Add the start node to the nearest neighbor data structure
   time_bench.time_nearestNode_add +=
-      timed_fun_void([&]() { T_n->add(start_node); });
+      timed_fun_void([&] { T_n->add(start_node); });
 
-  // Printer for the search status
   const size_t print_every = 1000;
 
   double last_f_score = start_node->fScore;
@@ -685,14 +627,14 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
   auto stop_search = [&] {
     if (static_cast<size_t>(time_bench.expands) >=
-        options_dbastar.max_expands) {
+        options_tdbastar.max_expands) {
       status = Terminate_status::MAX_EXPANDS;
       std::cout << "BREAK search:"
                 << "MAX_EXPANDS" << std::endl;
       return true;
     }
 
-    if (watch.elapsed_ms() > options_dbastar.search_timelimit) {
+    if (watch.elapsed_ms() > options_tdbastar.search_timelimit) {
       status = Terminate_status::MAX_TIME;
       std::cout << "BREAK search:"
                 << "MAX_TIME" << std::endl;
@@ -768,7 +710,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     }
 
     if (distance_to_goal <
-        options_dbastar.delta_factor_goal * options_dbastar.delta) {
+        options_tdbastar.delta_factor_goal * options_tdbastar.delta) {
       std::cout << "FOUND SOLUTION" << std::endl;
       std::cout << "COST: " << best_node->gScore + best_node->hScore
                 << std::endl;
@@ -811,10 +753,10 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
       int chosen_index = -1;
 
       check_goal(*robot, tmp_node.state_eig, problem.goal, traj_wrapper,
-                 options_dbastar.delta_factor_goal * options_dbastar.delta,
+                 options_tdbastar.delta_factor_goal * options_tdbastar.delta,
                  num_check_goal, chosen_index);
 
-      // d <= options_dbastar.delta_factor_goal * options_dbastar.delta) {
+      // d <= options_tdbastar.delta_factor_goal * options_tdbastar.delta) {
 
       // Tentative hScore, gScore
       double hScore;
@@ -829,14 +771,14 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
       assert(cost_motion >= 0);
 
       double gScore = best_node->gScore + cost_motion +
-                      options_dbastar.cost_delta_factor *
+                      options_tdbastar.cost_delta_factor *
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
 
       // CHECK if new State is NOVEL
       time_bench.time_nearestNode_search += timed_fun_void([&] {
         T_n->nearestR(&tmp_node,
-                      (1. - options_dbastar.alpha) * options_dbastar.delta,
+                      (1. - options_tdbastar.alpha) * options_tdbastar.delta,
                       neighbors_n);
       });
 
@@ -898,7 +840,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
         }
       }
 
-      if (num_expansion_best_node >= options_dbastar.limit_branching_factor) {
+      if (num_expansion_best_node >= options_tdbastar.limit_branching_factor) {
         break;
       }
     }
@@ -963,7 +905,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
 
   if (status == Terminate_status::SOLVED) {
     solution = best_node;
-    out_info_db.solved = true;
+    out_info_tdb.solved = true;
   } else {
     auto nearest = T_n->nearest(goal_node.get());
     std::cout << "Close distance T_n to goal: "
@@ -971,7 +913,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
                                  nearest->getStateEig())
               << std::endl;
     solution = nearest;
-    out_info_db.solved = false;
+    out_info_tdb.solved = false;
   }
 
   auto filename = "/tmp/dynoplan/dbastar_out.yaml";
@@ -1006,8 +948,8 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
         5 * 1e-2; // NOTE: for the systems with 0.01 s integration step,
     // I check collisions only at 0.05s . Thus, an intermediate state
     // could be slightly in collision.
-    thresholds.goal_tol = options_dbastar.delta;
-    thresholds.traj_tol = options_dbastar.delta;
+    thresholds.goal_tol = options_tdbastar.delta;
+    thresholds.traj_tol = options_tdbastar.delta;
     traj_out.update_feasibility(thresholds, true);
     CHECK(traj_out.feasible, "");
   }
@@ -1023,17 +965,17 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     traj_out.to_yaml_format(out);
   }
 
-  out_info_db.solved = status == Terminate_status::SOLVED;
-  out_info_db.cost = traj_out.cost;
-  out_info_db.time_search = time_bench.time_search;
-  out_info_db.data = time_bench.to_data();
-  out_info_db.data.insert(std::make_pair(
+  out_info_tdb.solved = status == Terminate_status::SOLVED;
+  out_info_tdb.cost = traj_out.cost;
+  out_info_tdb.time_search = time_bench.time_search;
+  out_info_tdb.data = time_bench.to_data();
+  out_info_tdb.data.insert(std::make_pair(
       "terminate_status", terminate_status_str[static_cast<int>(status)]));
-  out_info_db.data.insert(
-      std::make_pair("solved", std::to_string(bool(out_info_db.solved))));
-  out_info_db.data.insert(
-      std::make_pair("delta", std::to_string(options_dbastar.delta)));
-  out_info_db.data.insert(
+  out_info_tdb.data.insert(
+      std::make_pair("solved", std::to_string(bool(out_info_tdb.solved))));
+  out_info_tdb.data.insert(
+      std::make_pair("delta", std::to_string(options_tdbastar.delta)));
+  out_info_tdb.data.insert(
       std::make_pair("num_primitives", std::to_string(motions.size())));
 }
 
