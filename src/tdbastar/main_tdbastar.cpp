@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   // print options
-
+  std::cout << results_file << std::endl;
   if (cfg_file != "") {
     options_tdbastar.read_from_yaml(cfg_file.c_str());
   }
@@ -82,8 +82,8 @@ int main(int argc, char *argv[]) {
       options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
 
   options_tdbastar.motions_ptr = &motions;
-
-  tdbastar(problem, options_tdbastar, traj, out_tdb);
+  int fake_id = 0;
+  tdbastar(problem, options_tdbastar, traj, out_tdb, fake_id);
 
   std::cout << "*** inout_tdb *** " << std::endl;
   out_tdb.write_yaml(std::cout);

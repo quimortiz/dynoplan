@@ -154,7 +154,7 @@ void filte_duplicates(std::vector<Motion> &motions, double delta, double alpha,
                       RobotOmpl &robot, ompl::NearestNeighbors<Motion *> &T_m);
 
 void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_dbastar,
-             dynobench::Trajectory &traj_out, Out_info_tdb &out_info_tdb);
+             dynobench::Trajectory &traj_out, Out_info_tdb &out_info_tdb, int &robot_id);
 
 struct LazyTraj {
 
