@@ -1,5 +1,8 @@
 # Dynoplan 🦖
 
+Note: We have just submitted a publication to T-RO. Preprint is available [here](https://arxiv.org/abs/2311.03553). 
+We will clean the code, update the readme and write a small tutorial in the following weeks.  
+
 <!---
 <p align="center">
 <img src="https://github.com/quimortiz/dynoplan/assets/32126190/87259a14-cbe4-4f9f-9cbb-47053cde594f">
