@@ -484,7 +484,7 @@ void check_goal(dynobench::Model_robot &robot, Eigen::Ref<Eigen::VectorXd> x,
 };
 
 void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbastar,
-             Trajectory &traj_out, Out_info_tdb &out_info_tdb, int &robot_id) {
+             Trajectory &traj_out, Out_info_tdb &out_info_tdb, int &robot_id, std::ofstream &out) {
   std::cout << "*** options_tdbastar ***" << std::endl;
   options_tdbastar.print(std::cout);
   std::cout << "***" << std::endl;
@@ -894,25 +894,25 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
     out_info_tdb.solved = false;
   }
 
-  auto filename = "/tmp/dynoplan/dbastar_out.yaml";
-  create_dir_if_necessary(filename);
-  std::ofstream out(filename);
+  // auto filename = "/tmp/dynoplan/dbastar_out.yaml";
+  // create_dir_if_necessary(filename);
+  // std::ofstream out(filename);
 
-  out << "solved: " << (status == Terminate_status::SOLVED) << std::endl;
-  out << "problem: " << problem.name << std::endl;
-  out << "robot: " << problem.robotTypes[robot_id] << std::endl;
-  out << "status: " << static_cast<int>(status) << std::endl;
-  out << "status_str: " << terminate_status_str[static_cast<int>(status)]
-      << std::endl;
-  out << "all_nodes: " << all_nodes.size() << std::endl;
-  out << "closed_list: " << closed_list.size() << std::endl;
-  out << "gscore_sol: " << solution->gScore << std::endl;
-  out << "distance_to_goal: "
-      << robot->distance(solution->getStateEig(), goal_node->getStateEig())
-      << std::endl;
-  time_bench.write(out);
+  // out << "solved: " << (status == Terminate_status::SOLVED) << std::endl;
+  // out << "problem: " << problem.name << std::endl;
+  // out << "robot: " << problem.robotTypes[robot_id] << std::endl;
+  // out << "status: " << static_cast<int>(status) << std::endl;
+  // out << "status_str: " << terminate_status_str[static_cast<int>(status)]
+  //     << std::endl;
+  // out << "all_nodes: " << all_nodes.size() << std::endl;
+  // out << "closed_list: " << closed_list.size() << std::endl;
+  // out << "gscore_sol: " << solution->gScore << std::endl;
+  // out << "distance_to_goal: "
+  //     << robot->distance(solution->getStateEig(), goal_node->getStateEig())
+  //     << std::endl;
+  // time_bench.write(out);
 
-  out << "result:" << std::endl;
+  // out << "result:" << std::endl;
   from_solution_to_yaml_and_traj(*robot, motions, solution, problem, traj_out,
                                  &out);
   traj_out.start = problem.starts[robot_id];

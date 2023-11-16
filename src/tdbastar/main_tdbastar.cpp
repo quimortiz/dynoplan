@@ -83,7 +83,10 @@ int main(int argc, char *argv[]) {
 
   options_tdbastar.motions_ptr = &motions;
   int fake_id = 0;
-  tdbastar(problem, options_tdbastar, traj, out_tdb, fake_id);
+  auto filename = "/tmp/dynoplan/main_tdgbastar_out.yaml";
+  create_dir_if_necessary(filename);
+  std::ofstream out(filename);
+  tdbastar(problem, options_tdbastar, traj, out_tdb, fake_id, out);
 
   std::cout << "*** inout_tdb *** " << std::endl;
   out_tdb.write_yaml(std::cout);
