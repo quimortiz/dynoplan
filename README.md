@@ -1,7 +1,7 @@
 # Dynoplan 🦖
 
-Note: We have just submitted a publication to T-RO. Preprint is available [here](https://arxiv.org/abs/2311.03553). 
-We will clean the code, update the readme and write a small tutorial in the following weeks.  
+Note: We have just submitted a publication to T-RO. Preprint is available [here](https://arxiv.org/abs/2311.03553).
+We will clean the code, update the readme and write a small tutorial in the following weeks.
 
 <!---
 <p align="center">
