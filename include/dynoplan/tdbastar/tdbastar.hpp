@@ -15,17 +15,9 @@
 // // #include <boost/functional/hash.hpp>
 #include <boost/heap/d_ary_heap.hpp>
 #include <boost/program_options.hpp>
-//
-// // OMPL headers
-
-// #include <ompl/base/spaces/RealVectorStateSpace.h>
-// #include <ompl/control/SpaceInformation.h>
+// OMPL
 #include <ompl/control/spaces/RealVectorControlSpace.h>
 #include <ompl/datastructures/NearestNeighbors.h>
-// #include <ompl/datastructures/NearestNeighborsFLANN.h>
-// #include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
-// #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
-//
 // #include "fclHelper.hpp"
 #include "dynobench/dyno_macros.hpp"
 #include "dynobench/motions.hpp"
@@ -150,8 +142,14 @@ double automatic_delta(double delta_in, double alpha, RobotOmpl &robot,
 void filte_duplicates(std::vector<Motion> &motions, double delta, double alpha,
                       RobotOmpl &robot, ompl::NearestNeighbors<Motion *> &T_m);
 
+struct Constraint {
+  double time;
+  Eigen::VectorXd constrained_state;
+};
+
 void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_dbastar,
-             dynobench::Trajectory &traj_out, Out_info_tdb &out_info_tdb, int &robot_id, std::ofstream &out);
+             dynobench::Trajectory &traj_out, const std::vector<Constraint>& constraints,
+             Out_info_tdb &out_info_tdb, size_t &robot_id);
 
 struct LazyTraj {
 
@@ -315,8 +313,15 @@ void check_goal(dynobench::Model_robot &robot, Eigen::Ref<Eigen::VectorXd> x,
 bool check_lazy_trajectory(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
     Time_benchmark &time_bench, dynobench::TrajWrapper &tmp_traj,
+    const std::vector<Constraint>& constraints,
+    const float best_node_gscore,
+    float delta,
+    bool reachesGoal,
     Eigen::Ref<Eigen::VectorXd> aux_last_state,
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
     int *num_valid_states = nullptr, bool forward = true);
+
+
+
 
 } // namespace dynoplan
