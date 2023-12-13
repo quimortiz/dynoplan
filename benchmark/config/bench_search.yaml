@@ -1,6 +1,6 @@
 trials: 1
 timelimit: 60
-n_cores: 1 # -1=auto
+n_cores: -1 # -1=auto
 
 problems:
   - unicycle1_v0/bugtrap_0
@@ -8,7 +8,8 @@ problems:
   - quad2d_v0/quad_bugtrap
   - car1_v0/bugtrap_0
   - quadrotor_v0/quad_one_obs
-  - quadrotor_v0/window
+  - quadrotor_v1/window
+  - quadrotor_v0/recovery_with_obs
   - quad2dpole_v0/window
 
 

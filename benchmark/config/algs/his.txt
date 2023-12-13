@@ -1,0 +1,101 @@
+history --max 100
+history --max 2100
+history
+m4 && time python3 ../benchmark/benchmark.py -m bench -bc    ../benchmark/config/compare.yaml
+m4
+cd build_release/
+ls dynomotions_full/
+bash -x download_primitives.bash
+source ~/croco/bin/activate.fish
+ping google.com
+ping github.com
+python3 ../benchmark/test.py
+zathura ../results_new_search/summary/summary_search_2023-07-31--12-37-34.tex.pdf
+zathura /tmp/tmp_compare_search.pdf
+m4 && time python3 ../benchmark/benchmark.py -m bench_search -bc    ../benchmark/config/bench_search.yaml
+zathura ../results_new_search/summary/summary_search_2023-07-31--12-31-54.tex.pdf
+zathura /tmp/components.pdf
+act
+m4 main_idbastar && python3   ../benchmark/benchmark.py -m study  -bc ../benchmark/config/bench_abblation_study.yaml | tee quim.zz
+cat ../results_new/quad2d_v0/quad_bugtrap/idbastar_v0_analysis_d1/2023-07-31--11-58-09/run_0_out.yaml
+cat results_new/quad2d_v0/quad_bugtrap/idbastar_v0_analysis_d1/2023-07-31--11-58-09/run_0_out.yaml
+sudo apt install latexmk
+latexmk
+cd ..
+zathura /tmp/dynoplan/table_tex.pdf
+
+bash -x run_server.bash
+m4 && time python3 ../benchmark/benchmark.py -m bench_time -bc    ../benchmark/config/bench_time.yaml
+zathura /tmp/dynoplan/table_tex.pdf
+ls
+cd stg/wolfgang/dynoplan/
+cd
+zathura ../results_new/tex/merged_2023-07-31--11-26-25.tex.nice.tex.pdf
+zathura /tmp/tmp_compare.pdf
+zathura ../results_new/tex/merged_2023-07-31--11-02-43.tex.nice.tex.pdf
+m4 && time python3 ../benchmark/benchmark.py --mode fancy --bench_cfg ../benchmark/config/plot_results_v2.yaml
+zathura /tmp/dynoplan/tex/merged_2023-07-31--10-56-16.tex.nice.tex.pdf
+m4 && time python3 ../benchmark/benchmark.py --m fancy --bc ../benchmark/config/plot_results_v2.yaml
+cd ../build_release/
+ll -rt ../results_new/summary/
+nvim
+cd stg/journal-tmp/
+git log
+git status
+cd stg/math-notes-tmp/db_journal/
+cat ../results_new/plots/plot_2023-07-31--00-26-05.pdf.log
+m4 && time python3 ../benchmark/benchmark.py -m fancy -bc   ../results_new/plots/plot_2023-07-31--00-26-05.pdf.log
+m4 && time python3 ../benchmark/benchmark.py =m fancy -bc
+zathura plot_2023-07-31--00-26-05.pdf
+ll -rt
+cd results_new/plots
+htop
+./test_dbastar > quim.zz
+m4 && ./test_dbastar --run_test=test_heu_map
+./test_dbastar --run_test=test_heu_map
+./test_dbastar  > quim.zz
+m4 && ./test_dbastar --run_test=extra_time
+./test_dbastar --run_test=extra_time
+cd test
+cd build_debug/
+unzip logs_50.zip
+rm -rf build
+cd logs_ci
+mv logs_50.zip  logs_ci
+cd Downloads/
+ssh quimortiz@hal-9000.lis.tu-berlin.de
+cd proxsuite/
+git clone https://github.com/Simple-Robotics/proxsuite
+cd sandbox/
+m4 && ./check_trajectory --env_file adfaf
+./check_trajectory --env_file adfaf
+./check_trajectory
+make clean
+cmake ..
+m4 && gdb --args  ./check_trajectory --models_base_path adfaf
+cd build
+m4 && ./check_trajectory --models_base_path adfaf
+m4 && ./check_trajectory
+git  submodule add https://github.com/gabime/spdlog.git deps/spdlog
+git  submodule add https://github.com/gabime/spdlog.git deps/
+cd wolfgang/dynobench/
+cd stg/
+zathura plot_2023-07-30--21-33-46.pdf
+zathura 21-26
+ls  ../..//results_new/unicycle1_v0/parallelpark_0/idbastar_v0/2023-07-30--21-26-31/
+ls  ../..//results_new/unicycle1_v0/parallelpark_0/idbastar_v0/2023-07-30--21-26-
+ls ../results_new/unicycle1_v0/parallelpark_0/idbastar_v0/2023-07-30--21-26-31/
+cat plot_2023-07-30--21-33-46.pdf.log
+cd plots/
+cd results_new
+cd dynoplan/
+pwd
+[wd
+m4 test_dbastar && ./test_dbastar   --run_test=extra_time
+m4 ./test_dbastar --run_test=t_cli
+unzip logs_49.zip
+rm logs_43.zip
+cd logs_ci/
+mv logs_49.zip  logs_ci/
+cd Dodw
+zathura plot_2023-07-30--21-15-47.pdf

@@ -1,0 +1,163 @@
+# files:
+# date: 2023-10-01--15-16-12
+# hostname: hal-9000
+input:
+- ../results_new/unicycle1_v0/parallelpark_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v0/parallelpark_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v0/parallelpark_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v0/bugtrap_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v0/bugtrap_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v0/bugtrap_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v0/kink_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v0/kink_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v0/kink_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v1/kink_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v1/kink_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v1/kink_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v2/wall_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v2/wall_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle1_v2/wall_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle2_v0/kink_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle2_v0/kink_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle2_v0/kink_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle2_v0/parallelpark_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle2_v0/parallelpark_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle2_v0/parallelpark_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle2_v0/bugtrap_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle2_v0/bugtrap_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/unicycle2_v0/bugtrap_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/car1_v0/kink_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/car1_v0/kink_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/car1_v0/kink_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/car1_v0/bugtrap_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/car1_v0/bugtrap_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/car1_v0/bugtrap_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/car1_v0/parallelpark_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/car1_v0/parallelpark_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/car1_v0/parallelpark_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/empty_0/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/empty_0/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/empty_0/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/empty_1/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/empty_1/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/empty_1/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad_obs_column/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad_obs_column/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad_obs_column/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad_bugtrap/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad_bugtrap/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad_bugtrap/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad2d_recovery_wo_obs/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad2d_recovery_wo_obs/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad2d_recovery_wo_obs/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad2d_recovery_obs/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad2d_recovery_obs/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/quad2d_recovery_obs/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/fall_through/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/fall_through/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2d_v0/fall_through/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/move_with_down/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/move_with_down/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/move_with_down/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/move_with_up/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/move_with_up/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/move_with_up/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/up/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/up/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/up/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/down/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/down/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/down/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/up_obs/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/up_obs/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/up_obs/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/window_easy/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/window_easy/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/window_easy/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/window/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/window/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/window/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/window_hard/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/window_hard/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quad2dpole_v0/window_hard/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_up_empty/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_up_empty/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_up_empty/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_up_obs/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_up_obs/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_up_obs/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_up_obs_hard/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_up_obs_hard/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_up_obs_hard/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_down_easy/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_down_easy/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_down_easy/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_down/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_down/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/acrobot_v0/swing_down/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/empty_0_easy/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/empty_0_easy/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/empty_0_easy/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/empty_1_easy/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/empty_1_easy/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/empty_1_easy/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/window/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/window/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/window/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/recovery/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/recovery/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/recovery/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/recovery_with_obs/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/recovery_with_obs/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/recovery_with_obs/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/quad_one_obs/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/quad_one_obs/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v0/quad_one_obs/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/empty_0_easy/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/empty_0_easy/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/empty_0_easy/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/empty_1_easy/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/empty_1_easy/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/empty_1_easy/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/window/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/window/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/window/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/recovery/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/recovery/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/recovery/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/quad_one_obs/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/quad_one_obs/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/quad_one_obs/sst_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/recovery_with_obs/idbastar_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/recovery_with_obs/geo_v0/2023-10-01--12-50-37/report.yaml
+- ../results_new/quadrotor_v1/recovery_with_obs/sst_v0/2023-10-01--12-50-37/report.yaml
+output: ../results_new/summary/summary_2023-10-01--15-16-12.csv
+
+  # - ../results_new/summary/summary_2023-10-01--12-04-05.csv
+  # - ../results_new/summary/summary_2023-10-01--15-16-12.csv
+  # - ./results_new/summary
+  #   summary/summary_2023-07-31--00-26-05.csv
+  # - ../results_new/summary/summary_2023-07-31--00-26-05.csv
+  # - ../results_new/summary/summary_2023-07-31--00-26-05.csv
+  # - ./results_new/summary/
+  #   ../
+  #   ./resu
+# benchmark_problems:  [] # empy list means all
+selected_problems:
+  # - acrobot_v0/swing_up_empty
+  # - acrobot_v0/swing_up_obs_hard
+  # - car1_v0/kink_0
+  # - car1_v0/parallelpark_0
+  # - quad2d_v0/fall_through
+  # - quad2d_v0/quad_bugtrap
+  - quad2dpole_v0/up_obs
+  # - quad2dpole_v0/window_hard
+  # - quadrotor_v0/recovery
+  # - quadrotor_v0/recovery_with_obs
+  # - quadrotor_v1/quad_one_obs
+  - quadrotor_v1/window
+  - unicycle1_v0/bugtrap_0
+  # - unicycle1_v2/wall_0
+  # - unicycle2_v0/bugtrap_0
+  # - unicycle2_v0/parallelpark_0
+benchmark_algs: ["idbastar_v0", "sst_v0", "geo_v0"]

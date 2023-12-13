@@ -1,0 +1,141 @@
+# general parameters, all systems and problems
+default:
+  solver_id: 0
+  do_optimization: true
+  search_timelimit: 15000 # in ms
+  cost_delta_factor: 1
+  smooth_traj: true
+
+# you can set parameters per dynamial system
+unicycle1_v0:
+  default:
+    goal_region: 0.3
+    delta: 0.3
+    motionsFile: ../dynomotions_full/unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin.msgpack
+    max_motions: 200
+#
+unicycle1_v1:
+  default:
+    goal_region: 0.2
+    delta: 0.2
+    motionsFile: ../dynomotions_full/tmp_motions_unicycle1_v1.bin.sp.bin.msgpack
+    max_motions: 200
+#
+unicycle1_v2:
+  default:
+    goal_region: .2
+    delta: .15
+    motionsFile: ../dynomotions_full/tmp_motions_unicycle1_v2.bin.sp.bin.msgpack
+    max_motions: 200
+    # soft_control_bounds: true
+#
+unicycle2_v0:
+  default:
+    delta: .4
+    motionsFile: ../dynomotions_full/unicycle2_v0__ispso__2023_04_03__15_36_01.bin.im.bin.im.bin.msgpack
+    num_primitives_0: 400
+#
+car1_v0:
+  default:
+    max_expands: 30000
+    motionsFile: ../dynomotions_full/car1_v0_all.bin.sp.bin.msgpack
+    num_primitives_0: 800
+    delta: .3
+    goal_region: .3
+
+#
+quad2d_v0:
+  default:
+    max_expands: 40000
+    motionsFile: ../dynomotions_full/quad2d_v0_all_im.bin.sp.bin.ca.bin.msgpack
+    delta: .45
+    goal_region: .45
+    weight_goal: 80
+    max_iter: 150
+    soft_control_bounds: true
+
+quad2dpole_v0:
+  default:
+    max_expands: 200000
+    motionsFile: ../dynomotions_full/quad2dpole_all.bin.im.bin.sp1.bin.ca.bin.msgpack
+    delta: .75
+    goal_region: .75
+    max_motions: 8000
+    # soft_control_bounds: true
+    # for optimization
+    weight_goal: 200
+    max_iter: 150
+    solver_id: 1
+
+
+  # window_easy:
+  #   num_primitives_0: 3000 # TODO: double check if this is necessary?
+#
+acrobot_v0:
+#   # TODO: use the improved goal detection!! and the new invariance stuff
+  default:
+    max_expands: 200000
+    max_motions: 50000
+    max_iter: 200
+    weight_goal: 500
+    motionsFile: ../dynomotions_full/acrobot_v0_all2.bin.sp.bin.msgpack # THIS IS FINE
+    delta: .35
+    goal_region: .3
+
+quad3d_v0:
+  default:
+    max_expands: 200000
+    motionsFile: ../dynomotions_full/quad3d_v0_all3.bin.im.bin.sp1.bin.ca.bin.msgpack
+    soft_control_bounds: true
+    delta: .7
+    goal_region: .6
+    max_motions: 5000
+    max_iter: 100
+    weight_goal: 100
+  # recovery_with_obs:
+  #   # solver_id: 0 # TODO: check with solver=1
+  #   weight_goal: 80
+  # delta_0: .7
+  # quad_one_obs:
+  #   num_primitives_0: 3000
+#
+quad3d_omplapp:
+  # TODO: try to come up with parameters that work for all!!
+  # TODO: I think that for the scheduling of delta and the number of  primitives
+  # I need something more intelligent? (e.g. no reduce delta if I exit with empty queue!!!)
+  default:
+    max_expands: 200000
+    motionsFile: ../dynomotions_full/quad3dompl_all.bin.im.bin.sp1.bin.ca.bin.msgpack
+    soft_control_bounds: true
+    delta: .8
+    goal_region: .7
+    max_motions: 6000
+    max_iter: 100
+    weight_goal: 100
+
+#
+#
+#
+#     search_timelimit: 60000
+#     max_iter: 100
+#     weight_goal: 300
+#     # solver_id: 0 # working
+#     # motionsFile: ../cloud/motionsV2/good/quad3d_omplapp/quad3dompl_all.bin.sp.bin.ca.bin
+#     motionsFile: ../dynomotions_full/quad3dompl_all.bin.im.bin.sp1.bin.ca.bin.msgpack
+#     delta_0: .8
+#     # num_primitives_0: 5000
+#     num_primitives_0: 2000
+#     max_motions_primitives: 50000
+#     new_invariance: true
+#     use_collision_shape: false
+#     limit_branching_factor: 30
+#     soft_control_bounds: true
+# #   # window:
+# #   #   num_primitives_0: 2000
+# #   #   limit_branching_factor: 15
+# #   # recovery_with_obs:
+# #   #   # num_primitives_0: 8000
+# #   #   weight_goal: 100
+# #   # delta_0: .7
+# #   # quad_one_obs:
+# #   #   num_primitives_0: 3000

@@ -1,6 +1,6 @@
-import subprocess
 import yaml
-from typing import List, Any
+import subprocess
+from typing import List
 import numpy as np
 import pathlib
 from typing import Tuple
@@ -27,30 +27,60 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
+import random
+
+import math
+
+
+import matplotlib.pyplot as plt
+import sys
+
+
+def print(*objects, sep=" ", end="\n", file=sys.stdout, flush=True):
+    __builtins__.print(*objects, sep=sep, end=end, file=file, flush=flush)
+
+
+plt.rcParams["font.family"] = "serif"
+plt.rcParams["mathtext.fontset"] = "dejavuserif"
+
+plt.style.use("ggplot")
+# plt.style.use('tableau-colorblind10')
+
+# parse the results from SBPL
+
 
 D_key_to_nice_name = [
-    ("swing_down_easy", "half swing down"),
-    ("move_with_up", "move v0"),
-    ("move_with_down", "move v1"),
-    ("swing_down", "swing down"),
+    ("swing_down_easy", "Falf swing down"),
+    ("move_with_up", "Move v0"),
+    ("move_with_down", "Move v1"),
+    ("swing_down", "Swing down"),
     # ("down", "swing down"),
     # ("swing_up_obs",  "swing up obstacles v0"),
     # ("swing_up_obs_hard",  "swing up obstacles v1"),
-    ("quad2d_recovery_wo_obs", "recovery"),
-    ("quad2d_recovery_obs", "recovery obstacles"),
-    ("quad_bugtrap", "bugtrap"),
-    ("quad_obs_column", "column"),
-    ("up obs", "swing up obstacles"),
-    ("fall_through", "hole"),
-    ("window_easy", "column"),
-    ("window_hard", "small window"),
-    ("acrobot", "Acrobot"),
+    ("quad2d_recovery_wo_obs", "Recovery"),
+    ("quad2d_recovery_obs", "Recovery obstacles"),
+    ("quad_bugtrap", "Bugtrap"),
+    ("quad_obs_column", "Column"),
+    ("up obs", "Swing up obstacles"),
+    ("fall_through", "Hole"),
+    ("window_easy", "Column"),
+    ("window_hard", "Small window"),
+    ("window", "Window"),
+    ("Small Window", "Small window"),
+    ("acrobot_v0", "Acrobot"),
+    ("unicycle2_v0", "Unicycle 2"),
+    ("quadrotor_v0", "Quadrotor v0"),
+    ("quadrotor_v1", "Quadrotor v1"),
+    ("unicycle1_v0", "Unicycle 1 v0"),
+    ("unicycle1_v1", "Unicycle 1 v1"),
+    ("unicycle1_v2", "Unicycle 1 v2"),
+    ("car1_v0", "Car with trailer"),
     ("car_first_order_with_1_trailers_0", "Trailer"),
-    ("quad2dpole", "Rotor Pole"),
-    ("quad2d", "Planar Rotor"),
-    ("recovery_with_obs", "recovery obstacles"),
-    ("wall_0", "wall"),
-    ("quad_one_obs", "obstacle"),
+    ("quad2dpole_v0", "Rotor pole"),
+    ("quad2d_v0", "Planar rotor"),
+    ("recovery_with_obs", "Recovery obstacles"),
+    ("wall_0", "Wall"),
+    ("quad_one_obs", "Obstacle"),
     ("_easy", ""),
     ("quadrotor_0", "Quadcopter Force"),
     ("quadrotor_ompl", "Quadcopter Thrust"),
@@ -58,16 +88,19 @@ D_key_to_nice_name = [
     ("uni1_1", "Unicycle 1 v1"),
     ("uni1_2", "Unicycle 1 v2"),
     ("uni2_0", "Unicycle 2"),
-    ("swing_up_empty", "swing up"),
-    ("bugtrap_0", "bugtrap"),
-    ("kink_0", "kink"),
-    ("empty_0", "empty v0"),
-    ("empty_1", "empty v1"),
-    ("recovery_wo_obs", "recovery"),
+    ("swing_up_empty", "Swing up"),
+    ("bugtrap_0", "Bugtrap"),
+    ("kink_0", "Kink"),
+    ("empty_0", "Empty v0"),
+    ("empty_1", "Empty v1"),
+    ("recovery_wo_obs", "Recovery"),
     # ("up_obs", "swing up obstacles"),
-    ("swing_up_obs_hard", "swing up obstacles v1"),
-    ("swing_up_obs", "swing up obstacles v0"),
-    ("up_obs", "swing up obstacles"),
+    ("swing_up_obs_hard", "Swing up obstacles v1"),
+    ("swing_up_obs", "Swing up obstacles v0"),
+    ("up_obs", "Swing up obstacles"),
+    ("Rotor Pole_v0", "Rotor Pole"),
+    ("Planar Rotor_v0", "Planar Rotor"),
+    ("recovery", "Recovery"),
 ]
 
 
@@ -91,31 +124,37 @@ def generate_texpdf(filename_tex: str) -> None:
     f_stdout = open("/tmp/dynoplan/latexmk_out.log", "w")
     f_stderr = open("/tmp/dynoplan/latexmk_err.log", "w")
 
-    out_dir = "/tmp/dynoplan/tex/"
-    Path(out_dir).mkdir(parents=True, exist_ok=True)
-    cmd = f"latexmk -f -pdf -output-directory={out_dir} -interaction=nonstopmode {filename_tex}.tex".split()
+    try:
+        out_dir = "/tmp/dynoplan/tex/"
+        Path(out_dir).mkdir(parents=True, exist_ok=True)
+        program = "pdflatex"
+        cmd = f"{program} -f -pdf -output-directory={out_dir} -interaction=nonstopmode {filename_tex}.tex".split()
 
-    print("running cmd: ", " ".join(cmd))
-    subprocess.run(cmd, stdout=f_stdout, stderr=f_stderr)
+        print("running cmd: ", " ".join(cmd))
+        subprocess.run(cmd, stdout=f_stdout, stderr=f_stderr)
 
-    f_stdout.close()
-    f_stderr.close()
+        f_stdout.close()
+        f_stderr.close()
 
-    print("latexmk stdout:")
-    os.system("cat /tmp/dynoplan/latexmk_out.log")
-    print("latexmk stderr:")
-    os.system("cat /tmp/dynoplan/latexmk_err.log")
+        # print("latexmk stdout:")
+        # os.system("cat /tmp/dynoplan/latexmk_out.log")
+        # print("latexmk stderr:")
+        # os.system("cat /tmp/dynoplan/latexmk_err.log")
 
-    p = Path(filename_tex)
-    pdf_name = "/tmp/dynoplan/tex/" + str(p.stem) + ".tex.pdf"
+        p = Path(filename_tex)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        pdf_name = "/tmp/dynoplan/tex/" + str(p.stem) + ".tex.pdf"
 
-    print(f"copy  {pdf_name} to {filename_tex + '.pdf'}")
-    shutil.copy(pdf_name, filename_tex + ".pdf")
+        print(f"copy  {pdf_name} to {filename_tex + '.pdf'}")
+        shutil.copy(pdf_name, filename_tex + ".pdf")
 
-    tmp_location = "/tmp/dynoplan/table_tex.pdf"
+        tmp_location = "/tmp/dynoplan/table_tex.pdf"
 
-    print(f"copy  {pdf_name} to {tmp_location}")
-    shutil.copy(pdf_name, tmp_location)
+        print(f"copy  {pdf_name} to {tmp_location}")
+        shutil.copy(pdf_name, tmp_location)
+
+    except BaseException:
+        print("An exception occurred")
 
 
 print_lock = multiprocessing.Lock()
@@ -622,10 +661,13 @@ class Experiment:
 redirect_output = True
 
 
-def run_cmd(cmd: str):
-    print_lock.acquire()
-    print("**\n**\nRUNNING cpp\n**\n", *cmd, "\n", sep=" ")
-    print_lock.release()
+def run_cmd(index_and_cmd: Tuple[int, str]):
+    index = index_and_cmd[0]
+    cmd = index_and_cmd[1]
+    # print_lock.acquire()
+    # print("**\n**\nRUNNING cpp\n**\n", *cmd, "\n", sep=" ")
+    # print(f"total cmds {len(cmds)}")
+    # print_lock.release()
 
     if redirect_output:
         id = str(uuid.uuid4())[:7]
@@ -640,24 +682,46 @@ def run_cmd(cmd: str):
         print_lock.acquire()
         print(
             "***\n",
-            *cmd,
+            f"index: {index}\n",
+            " ".join(cmd),
             "\n",
             f"stderr_name: {stderr_name}\nstdout_name: {stdout_name}\n****",
         )
         print_lock.release()
         f_stdout = open(stdout_name, "w")
         f_stderr = open(stderr_name, "w")
-        subprocess.run(cmd, stdout=f_stdout, stderr=f_stderr)
+        out = subprocess.run(cmd, stdout=f_stdout, stderr=f_stderr)
         f_stdout.close()
         f_stderr.close()
+        if not (out.returncode == 0 or out.returncode == 1):
+            print(
+                "CRITICAL ERROR\n"
+                + f"index: {index} return code is {out.returncode}\n CMD\n {' '.join(cmd)}"
+                + "skip error for the sake of the experiment -- this run will not be considered at all\n"
+                + f"/tmp/dynoplan/stdout/stdout-{id}.log\n"
+                + f"/tmp/dynoplan/stderr/stderr-{id}.log\n"
+            )
+            # assert False
+        if out.returncode == 1:
+            print("WARNING: return code is 1")
     else:
-        subprocess.run(cmd)
+        out = subprocess.run(cmd)
+        if not (out.returncode == 0 or out.returncode == 1):
+            print(
+                "CRITICAL ERROR\n"
+                + f"index: {index} return code is {out.returncode}\n CMD\n {' '.join(cmd)}"
+                + "skip error for the sake of the experiment -- this run will not be considered at all\n"
+            )
+        if out.returncode == 1:
+            print("WARNING: return code is 1")
     print_lock.acquire()
     print("**\n**\nDONE RUNNING cpp\n**\n")
     print_lock.release()
 
 
-def compare_search(files: List[str], interactive: bool = False):
+def compare_search(
+    files: List[str], selected_problems: List[str] = [], interactive: bool = False
+):
     print("calling compare_search:")
     print(f"files: {files}")
 
@@ -752,6 +816,10 @@ def compare_search(files: List[str], interactive: bool = False):
     problems = df["problem"].unique().tolist()
     problems = sorted(list(problems))
 
+    if len(selected_problems) > 0:
+        print("selected_problems", selected_problems)
+        problems = selected_problems
+
     algs = ["dbastar_v0_heu0", "dbastar_v0_heu1", "dbastar_v0_heuNO"]
 
     if set(algs) != set(df["alg"].unique().tolist()):
@@ -787,6 +855,281 @@ def compare_search(files: List[str], interactive: bool = False):
 
     scale_data = True
     scale_factor = 1e-3
+
+    create_new_plot = False
+    if len(selected_problems) == 6:
+        create_new_plot = True
+
+    print("WARNING: I only create plots if the number of input problems is 6")
+
+    if create_new_plot:
+        matplotlib.rcParams.update({"font.size": 10})
+
+        fig = plt.figure(figsize=(5, 4))
+
+        Dalg2label = {
+            "dbastar_v0_heu0": "Euclidean",
+            "dbastar_v0_heu1": "Roadmap",
+            "dbastar_v0_heuNO": "Blind",
+        }
+        print("algs", algs)
+        # exit(0)
+        BIG_NUM = 1e8
+        Ddata = {}
+        for alg in algs:
+            Dalg = {}
+            for key in keys:
+                data = []
+                for problem in problems:
+                    if (
+                        float(
+                            df.loc[(df["problem"] == problem) & (df["alg"] == alg)][
+                                "success_rate"
+                            ].iloc[0]
+                        )
+                        < 1
+                    ):
+                        print("warning not solved", algs, key, problem)
+                        out = BIG_NUM
+                        out = np.inf
+                        # tt = r"-"
+                    else:
+                        val = float(
+                            df.loc[(df["problem"] == problem) & (df["alg"] == alg)][
+                                key
+                            ].iloc[0]
+                        )
+                        out = val / 1000.0
+                    data.append(out)
+                    print(data, alg)
+                Dalg[key] = data
+            Ddata[alg] = Dalg
+
+        D = {
+            "unicycle2_v0/bugtrap_0": "Uni2-Bug",
+            "quad2d_v0/quad_bugtrap": "R2-Bug",
+            "car1_v0/bugtrap_0": "Car-Bug",
+            "quadrotor_v0/quad_one_obs": "Quad-Obs",
+            "quadrotor_v0/recovery_with_obs": "Quad-RecObs",
+            "quad2dpole_v0/window": "QuadPole-Win",
+        }
+
+        # OPTION 1
+        for alg in algs:
+            data = Ddata[alg]["time_search_mean"]
+            y = np.arange(len(data))
+            plt.plot(data, y, label=Dalg2label[alg], marker="o", linestyle="None")
+        # plt.yscale('log')
+        # plt.ylim([1,20])
+        plt.xlim([1, 20])
+        plt.xlabel("Time [s]")
+        ax = plt.gca()
+        print("problems", problems)
+        ax.set_yticks(np.arange(len(problems)))
+        print(problems)
+
+        ax.set_ylim([-1, len(problems)])
+        ax.set_yticklabels([D.get(i, i) for i in problems])
+        # plt.legend(loc='lower right')
+        # plt.legend(bbox_to_anchor =(0.5,0.5), loc='lower center')
+        # box = ax.get_position()
+        # ax.set_position([box.x0, box.y0 + box.height * 0.1,
+        #                  box.width, box.height * 0.9])
+
+        # Put a legend below current axis
+        # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
+        #            ncol=3)
+
+        plt.legend(bbox_to_anchor=(0, 1, 1, 0), loc="lower left", mode="expand", ncol=2)
+
+        # ax.legend(bbox_to_anchor =(0.5, 1.25))
+
+        # fig.legend(loc='outside lower center')
+
+        # plt.tight_layout(rect=[0, 0, 1 , .75])
+
+        plt.tight_layout()
+
+        print("saving plot to /tmp/layout.pdf")
+        plt.savefig("/tmp/layout.pdf")
+        file_out = f"../results_new_search/plots/plot_search_all_{date_time}.pdf"
+        print("saving to ", file_out)
+        pathlib.Path(file_out).parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(file_out)
+
+        # plt.show()
+
+        # could even put here the number or expanded nodes...
+        fig.clf()
+        option2 = True
+        fig = plt.figure(figsize=(5, 3))
+        print(Ddata)
+        if option2:
+            i = 0
+            for alg in algs:
+                data = Ddata[alg]["time_search_mean"]
+                width = 0.25
+                y = np.arange(len(data))
+                # plt.plot(y, data, label=Dalg2label[alg], marker='o', linestyle='None')
+
+                print("data ", data)
+                plt.bar(
+                    [yy + (i - 1) * width for yy in y],
+                    data,
+                    width,
+                    label=Dalg2label[alg],
+                )
+                i += 1
+                # ax.bar([x[i] + + width, yb, width, color='C2')
+
+            # plt.yscale('log')
+            # plt.ylim([1,20])
+            plt.ylim([1, 20])
+            plt.ylabel("Time [s]")
+            ax = plt.gca()
+            # print("problems", problems)
+            ax.set_xticks(np.arange(len(problems)))
+            # print(problems)
+
+            ax.set_xlim([-1, len(problems)])
+            ax.set_xticklabels([f"P{i}" for i in range(len(problems))])
+            # plt.legend(loc='lower right')
+            # plt.legend(bbox_to_anchor =(0.5,0.5), loc='lower center')
+            # box = ax.get_position()
+            # ax.set_position([box.x0, box.y0 + box.height * 0.1,
+            #                  box.width, box.height * 0.9])
+
+            # Put a legend below current axis
+            # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
+            #            ncol=3)
+
+            plt.legend(
+                bbox_to_anchor=(0, 1, 1, 0), loc="lower left", mode="expand", ncol=3
+            )
+
+            # ax.legend(bbox_to_anchor =(0.5, 1.25))
+
+            # fig.legend(loc='outside lower center')
+
+            # plt.tight_layout(rect=[0, 0, 1 , .75])
+
+            plt.tight_layout()
+
+            print("saving plot to /tmp/layout2.pdf")
+            plt.savefig("/tmp/layout2.pdf")
+            file_out = f"../results_new_search/plots/plot_search_all_{date_time}_2.pdf"
+            print("saving to ", file_out)
+            pathlib.Path(file_out).parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(file_out)
+            # plt.show()
+
+        # OPTION 2 -- Standard
+
+        option3 = True
+        if option3:
+            fig, ax = plt.subplots(2, 1, sharex=True, figsize=(5, 5))
+            # fig = plt.figure(figsize=(5, 3))
+            print(Ddata)
+            i = 0
+            width = 0.22
+            for alg in algs:
+                data = Ddata[alg]["time_search_mean"]
+                data = [d if d < 1e8 else 50 for d in data]
+                if np.inf in data:
+                    print("inf")
+                    exit(1)
+                if np.nan in data:
+                    print("nan")
+                    exit(1)
+                y = np.arange(len(data))
+                # ax[0].plot(y, data, label=Dalg2label[alg], marker='o', linestyle='None')
+                # print("data " , data)
+                ax[0].bar(
+                    [yy + (i - 1) * width for yy in y],
+                    data,
+                    width,
+                    label=Dalg2label[alg],
+                )
+                i += 1
+
+            i = 0
+            for alg in algs:
+                data = Ddata[alg]["expands_mean"]
+                data = [d if d < 1e8 else 200 for d in data]
+                y = np.arange(len(data))
+                # plt.plot(y, data, label=Dalg2label[alg], marker='o', linestyle='None')
+                # print("data " , data)
+                # ax[1].plot(y, data, label=Dalg2label[alg], marker='o', linestyle='None')
+                ax[1].bar(
+                    [yy + (i - 1) * width for yy in y],
+                    data,
+                    width,
+                    label=Dalg2label[alg],
+                )
+                i += 1
+
+                # ax.bar([x[i] + + width, yb, width, color='C2')
+
+            # plt.yscale('log')
+            # plt.ylim([1,20])
+            ax[0].set_ylim([1, 22])
+            ax[1].set_ylim([1, 150])
+            ax[0].set_ylabel("Time [s]", fontsize=11)
+            ax[1].set_ylabel("Expands", fontsize=11)
+            # ax = plt.gca()
+            # print("problems", problems)
+            ax[1].set_xticks(np.arange(len(problems)))
+            # print(problems)
+
+            ax[1].set_xlim([-1, len(problems)])
+
+            xtick_labels = [
+                "u1-bug",
+                "u2-bug",
+                # "car-bug",
+                "r2-bug",
+                "q-obs",
+                "q-recobs",
+                "r2pole-win",
+            ]
+
+            # ax[1].set_xticklabels(xtick_labels)
+
+            ax[1].set_xticklabels(xtick_labels, rotation=45, ha="right")
+
+            # [f"P{i}" for i in range(len(problems))])
+
+            # plt.legend(loc='lower right')
+            # plt.legend(bbox_to_anchor =(0.5,0.5), loc='lower center')
+            # box = ax.get_position()
+            # ax.set_position([box.x0, box.y0 + box.height * 0.1,
+            #                  box.width, box.height * 0.9])
+
+            # Put a legend below current axis
+            # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
+            #            ncol=3)
+
+            fig.align_ylabels(ax)
+
+            ax[0].legend(
+                bbox_to_anchor=(0, 1, 1, 0), loc="lower left", mode="expand", ncol=3
+            )
+
+            # ax.legend(bbox_to_anchor =(0.5, 1.25))
+
+            # fig.legend(loc='outside lower center')
+
+            # plt.tight_layout(rect=[0, 0, 1 , .75])
+
+            plt.tight_layout()
+
+            print("saving plot to /tmp/layout3.pdf")
+            plt.savefig("/tmp/layout3.pdf")
+            file_out = f"../results_new_search/plots/plot_search_all_{date_time}_3.pdf"
+            print("saving to ", file_out)
+            pathlib.Path(file_out).parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(file_out)
+            # plt.show()
 
     for problem in problems:
         line = []
@@ -1058,16 +1401,18 @@ def compare_time(
 
     all_problems = sorted(list(all_problems))
 
+    # exit(-1)
     if len(selected_problems):
         print("Warning: only chosen problems!!")
         print(all_problems)
-        all_problems = sorted(
-            list(set(all_problems).intersection(set(selected_problems)))
-        )
-        print("after")
-        print(all_problems)
+        # all_problems = sorted(
+        #     list(set(all_problems).intersection(set(selected_problems)))
+        # )
+        # print("after")
+        # print(all_problems)
         # sys.exit(0)
 
+        all_problems = selected_problems
     # with open("/tmp/dynoplan/all_problem_time_opt.yaml", "w") as f:
     #     yaml.dump({"all_problems": all_problems}, f)
     #
@@ -1146,11 +1491,15 @@ def compare_time(
 
     with open("/tmp/dynoplan/guesses.yaml", "w") as f:
         yaml.dump({"guesses": guesses}, f)
-
     if len(selected_guesses):
+        # raise ValueError("stop here")
         print("Warning: only chosen problems!!")
-        print(guesses)
-        guesses = sorted(list(set(guesses).intersection(set(selected_guesses))))
+        # print(guesses)
+        # guesses = sorted(
+        #     list(
+        #         set(guesses).intersection(
+        #             set(selected_guesses))))
+        guesses = selected_guesses
         print("after")
         print(guesses)
 
@@ -1163,8 +1512,8 @@ def compare_time(
         header = [
             r"\begin{tabular}{llcccccccccc}",
             r"\toprule",
-            r" & & & &  \multicolumn{2}{c}{dt} & \multicolumn{2}{c}{search} & \multicolumn{2}{c}{mpc}",
-            r"& \multicolumn{2}{c}{mpcc} \\",
+            r" & & & &  \multicolumn{2}{c}{Free-dt} & \multicolumn{2}{c}{Search-T} & \multicolumn{2}{c}{MPC}",
+            r"& \multicolumn{2}{c}{MPCC} \\",
             r"\cmidrule(lr){5-6}\cmidrule(lr){7-8}\cmidrule(lr){9-10}\cmidrule(lr){11-12}",
             r"System & Instance & $\delta$ & K  & " + " & ".join(4 * cols) + r" \\",
             r"\midrule",
@@ -1200,6 +1549,174 @@ def compare_time(
     df.loc[df.success_rate < success_rate_limit, "time_mean"] = np.nan
 
     separate_dynamics_scenario = True
+
+    # take the data for plotting
+
+    additional_plot = True
+
+    if additional_plot:
+        try:
+            matplotlib.rcParams.update({"font.size": 10})
+
+            # consider only the selected guesss
+            dfs = df.loc[df["guess"].isin(guesses)]
+
+            Dalg2label = {
+                "idbastar_v0_fixedtime": "Fixed",
+                "idbastar_v0_freetime": "Free-dt",
+                "idbastar_v0_mpc": "MPC",
+                "idbastar_v0_mpcc": "MPCC",
+                "idbastar_v0_search": "Search-T",
+            }
+
+            Ddata = {}
+            for alg in algs:
+                Dalg = {"time_mean": [], "cost_mean": []}
+                for guess in guesses:
+                    dalg = dfs.loc[dfs["alg"] == alg]
+                    dguess = dalg.loc[dalg["guess"] == guess]
+                    print("alg")
+                    print(dguess)
+                    Dalg["time_mean"].append(dguess["time_mean"].tolist()[0])
+                    Dalg["cost_mean"].append(dguess["cost_mean"].tolist()[0])
+                Ddata[alg] = Dalg
+                # Ddata[alg] = {
+                #     "time_mean": dguess["time_mean"].tolist(),
+                #     "cost_mean": dguess["cost_mean"].tolist()}
+                #
+                # dalg = dfs.loc[dfs["alg"] == alg]
+                # print("alg")
+                # print(dalg)
+                # Ddata[alg] = {
+                #     "time_mean": dalg["time_mean"].tolist(),
+                #     "cost_mean": dalg["cost_mean"].tolist()}
+
+            plt.close("all")
+            plt.cla()
+            plt.clf()
+
+            fig, ax = plt.subplots(2, 1, sharex=True, figsize=(5, 5))
+            # fig = plt.figure(figsize=(5, 3))
+            print(Ddata)
+            i = 0
+            width = 0.2
+            for alg in algs:
+                data = Ddata[alg]["time_mean"]
+                y = np.arange(len(data))
+                data = [d if not math.isnan(d) else 100 for d in data]
+                ax[0].bar(
+                    [yy + (i - 1) * width for yy in y],
+                    data,
+                    width,
+                    label=Dalg2label[alg],
+                )
+                i += 1
+
+            i = 0
+            for alg in algs:
+                data = Ddata[alg]["cost_mean"]
+                data = [d if d < 10 else d / 10 for d in data]
+                data = [d if not math.isnan(d) else 100 for d in data]
+                y = np.arange(len(data))
+
+                for d in data:
+                    print("d", d)
+                    print(math.isnan(d))
+
+                print("data", data)
+                if np.inf in data:
+                    print("inf")
+                    raise ValueError("")
+                if np.nan in data:
+                    print("nan")
+                    raise ValueError("")
+                if float("nan") in data:
+                    print("nan")
+                    raise ValueError("")
+
+                print("data", data)
+                ax[1].bar(
+                    [yy + (i - 1) * width for yy in y],
+                    data,
+                    width,
+                    label=Dalg2label[alg],
+                )
+                i += 1
+
+                # ax.bar([x[i] + + width, yb, width, color='C2')
+
+            # plt.yscale('log')
+            # plt.ylim([1,20])
+            # ax[0].set_ylim([1, 20])
+            # ax[1].set_ylim([1, 150])
+            ax[0].set_ylabel("Compute Time [s]", fontsize=11)
+            ax[1].set_ylabel("J [s]", fontsize=11)
+            # ax.legend()
+            # ax = plt.gca()
+            # print("problems", problems)
+            ax[1].set_xticks(np.arange(len(guesses)))
+            # print(problems)
+
+            ax[0].set_ylim([0, 2.5])
+            ax[1].set_ylim([0, 8])
+
+            ax[1].set_xlim([-1, len(guesses)])
+            # ax[1].set_xticklabels([f"P{i}" for i in range(len(guesses))])
+
+            # - quad2d/bugtrap/delta_04_v0
+            # - quad2d/bugtrap/delta_10_v0
+            # - quadrotor_v0/recovery/delta_05_v0
+            # - quadrotor_v0/recovery/delta_10_v0
+            # - unicycle2_v0/bugtrap_0/delta_05_v0
+            # - unicycle2_v0/bugtrap_0/delta_15_v0
+
+            xticks = [
+                "r2-bug-0.4",
+                "r2-bug-1.0",
+                "q-rec-0.5",
+                "q-rec-1.0",
+                "u2-bug-0.5",
+                "u2-bug-1.0",
+            ]
+
+            # ax[1].set_xticklabels([f"P{i}" for i in range(len(guesses))])
+
+            ax[1].set_xticklabels(xticks, rotation=45, ha="right")
+
+            # plt.legend(loc='lower right')
+            # plt.legend(bbox_to_anchor =(0.5,0.5), loc='lower center')
+            # box = ax.get_position()
+            # ax.set_position([box.x0, box.y0 + box.height * 0.1,
+            #                  box.width, box.height * 0.9])
+
+            # Put a legend below current axis
+            # ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1),
+            #            ncol=3)
+
+            fig.align_ylabels(ax)
+
+            ax[0].legend(
+                bbox_to_anchor=(0, 1, 1, 0), loc="lower left", mode="expand", ncol=4
+            )
+
+            # ax.legend(bbox_to_anchor =(0.5, 1.25))
+
+            # fig.legend(loc='outside lower center')
+
+            # plt.tight_layout(rect=[0, 0, 1 , .75])
+
+            plt.tight_layout()
+
+            filetmp = "/tmp/layout4.pdf"
+            print("saving plot to ", filetmp)
+            plt.savefig(filetmp)
+            file_out = f"../results_new_timeopt/plots/plot_timeopt_all_{date_time}.pdf"
+            print("saving to ", file_out)
+            pathlib.Path(file_out).parent.mkdir(parents=True, exist_ok=True)
+            plt.savefig(file_out)
+            plt.show()
+        except Exception as e:
+            print("ERROR", e)
 
     for guess in guesses:
         line = []
@@ -1240,6 +1757,9 @@ def compare_time(
 
         else:
             line.append(guess)
+
+        print(df)
+        # sys.exit(0)
 
         for alg in algs:
             for key in keys:
@@ -1439,9 +1959,10 @@ def __benchmark_search(bench_cfg: str) -> List[str]:
         print(*cmd, sep=" ")
         print("\n")
 
-    print(f"Start a pool with {n_cores}:")
+    random.shuffle(cmds)
+    print("total number of commands", len(cmds))
     with Pool(n_cores) as p:
-        p.map(run_cmd, cmds)
+        p.map(run_cmd, list(enumerate(cmds)), 1)
     print("Pool is DONE")
 
     fileouts = []
@@ -1466,6 +1987,7 @@ def __benchmark_search(bench_cfg: str) -> List[str]:
 def benchmark_search(bench_cfg: str) -> None:
     # open the bench_cfg file
 
+    selected_problems = []
     with open(bench_cfg) as f:
         data = yaml.load(f, Loader=yaml.CLoader)
 
@@ -1481,27 +2003,10 @@ def benchmark_search(bench_cfg: str) -> None:
         print(f"{bench_cfg} is a bench file for doing experiments")
         fileouts = __benchmark_search(bench_cfg)
 
-    # data_file = "../bench/search_results.yaml"
-    # with open(data_file) as f:
-    #     d = yaml.safe_load(f)
-    #
-    # print(d)
+    if "selected_problems" in data:
+        selected_problems = data["selected_problems"]
 
-    # fileouts = [
-    #     '../results_new_search/unicycle_first_order_0/bugtrap_0/dbastar_v0_heu0/2023-06-22--20-40-26/report.yaml',
-    #     '../results_new_search/unicycle_first_order_0/bugtrap_0/dbastar_v0_heu1/2023-06-22--20-40-26/report.yaml',
-    #     '../results_new_search/unicycle_first_order_0/bugtrap_0/dbastar_v0_heuNO/2023-06-22--20-40-26/report.yaml',
-    #     '../results_new_search/unicycle_second_order_0/bugtrap_0/dbastar_v0_heu0/2023-06-22--20-40-26/report.yaml',
-    #     '../results_new_search/unicycle_second_order_0/bugtrap_0/dbastar_v0_heu1/2023-06-22--20-40-26/report.yaml',
-    #     '../results_new_search/unicycle_second_order_0/bugtrap_0/dbastar_v0_heuNO/2023-06-22--20-40-26/report.yaml',
-    #     '../results_new_search/quad2d/quad_bugtrap/dbastar_v0_heu0/2023-06-22--20-40-26/report.yaml',
-    #     '../results_new_search/quad2d/quad_bugtrap/dbastar_v0_heu1/2023-06-22--20-40-26/report.yaml',
-    #     '../results_new_search/quad2d/quad_bugtrap/dbastar_v0_heuNO/2023-06-22--20-40-26/report.yaml',
-    #     '../results_new_search/quadrotor_0/quad_one_obs/dbastar_v0_heu0/2023-06-22--20-40-26/report.yaml',
-    #     '../results_new_search/quadrotor_0/quad_one_obs/dbastar_v0_heu1/2023-06-22--20-40-26/report.yaml',
-    #     '../results_new_search/quadrotor_0/quad_one_obs/dbastar_v0_heuNO/2023-06-22--20-40-26/report.yaml']
-
-    compare_search(fileouts)
+    compare_search(fileouts, selected_problems)
 
 
 def __benchmark_opti(bench_cfg: str) -> List[str]:
@@ -1570,8 +2075,10 @@ def __benchmark_opti(bench_cfg: str) -> List[str]:
         print("\n")
 
     print(f"Start a pool with {n_cores}:")
+    random.shuffle(cmds)
+    print("total number of commands", len(cmds))
     with Pool(n_cores) as p:
-        p.map(run_cmd, cmds)
+        p.map(run_cmd, list(enumerate(cmds)), 1)
     print("Pool is DONE")
 
     fileouts = []
@@ -1624,8 +2131,6 @@ def benchmark_opti(bench_cfg: str) -> None:
     print("selected_guesses", selected_guesses)
     compare_time(fileouts, selected_problems, selected_guesses)
 
-    # compare(fileouts, False)
-
 
 def __benchmark(bench_cfg: str):
     with open(bench_cfg) as f:
@@ -1669,29 +2174,38 @@ def __benchmark(bench_cfg: str):
         print(*cmd, sep=" ")
         print("\n")
 
+    print("random shuffle of commands")
+    random.shuffle(cmds)
+
     print(f"Start a pool with {n_cores}:")
-    with Pool(n_cores) as p:
-        p.map(run_cmd, cmds)
-    print("Pool is DONE")
+    print("total number of cmds", len(cmds))
 
-    fileouts = []
+    if True:
+        random.shuffle(cmds)
+        with Pool(n_cores) as p:
+            p.map(run_cmd, list(enumerate(cmds)), 1)
+        print("Pool is DONE")
 
-    experiments_outs = [e.to_dict() for e in experiments]
-    id = str(uuid.uuid4())[:7]
-    filename_experimentes_out = f"/tmp/dynoplan/experimentes_info_{id}.yaml"
-    pathlib.Path(filename_experimentes_out).parent.mkdir(parents=True, exist_ok=True)
-    with open(filename_experimentes_out, "w") as f:
-        yaml.dump(experiments_outs, f)
+        fileouts = []
 
-    # experiments = []
-    # fileouts = []
+        experiments_outs = [e.to_dict() for e in experiments]
+        id = str(uuid.uuid4())[:7]
+        filename_experimentes_out = f"/tmp/dynoplan/experimentes_info_{id}.yaml"
+        pathlib.Path(filename_experimentes_out).parent.mkdir(
+            parents=True, exist_ok=True
+        )
+        with open(filename_experimentes_out, "w") as f:
+            yaml.dump(experiments_outs, f)
 
-    # path = "../results_new/unicycle_first_order_0/bugtrap_0/geo_v0/2023-07-06--14-22-28/"
-    # experiments.append(
-    #     Experiment(
-    #         path=path,
-    #         problem="unicycle_first_order_0/bugtrap_0",
-    #         alg="geo_v0"))
+    if False:
+        pass
+        experiments = []
+        fileouts = []
+
+        path = "../results_new/quadrotor_v1/window/geo_v0/2023-11-06--10-33-07/"
+        experiments.append(
+            Experiment(path=path, problem="quadrotor_v1/window", alg="geo_v0")
+        )
 
     for experiment in experiments:
         print("experiment")
@@ -1709,7 +2223,8 @@ def __benchmark(bench_cfg: str):
 
 
 # TODO: small script to solve all and store the output in the dynpobench, with nice names.
-# Lets store the final solution trajectory, the first db-astar and the last db-astar, and the corresponding solved.
+# Lets store the final solution trajectory, the first db-astar and the
+# last db-astar, and the corresponding solved.
 
 # what to do with the other planners?
 
@@ -1718,13 +2233,18 @@ def benchmark(bench_cfg: str):
     with open(bench_cfg) as f:
         d = yaml.load(f, Loader=yaml.CLoader)
 
+    selected_problems = []
     if "files" in d:
         fileouts = d["files"]
     elif "input" in d:
         fileouts = d["input"]
     else:
         fileouts = __benchmark(bench_cfg)
-    compare(fileouts, False)
+
+    if "selected_problems" in d:
+        selected_problems = d["selected_problems"]
+
+    compare(fileouts, selected_problems, False)
 
 
 def study(bench_cfg: str):
@@ -1759,7 +2279,9 @@ def study(bench_cfg: str):
     parse_for_component_analysis(files_)
 
 
-def compare(files: List[str], interactive: bool = False):
+def compare(
+    files: List[str], selected_problems: List[str] = [], interactive: bool = False
+):
     print("calling compare:")
     print(f"files {files}")
 
@@ -1782,6 +2304,12 @@ def compare(files: List[str], interactive: bool = False):
         print("selected_algs")
         print(selected_algs)
         datas = [d for d in datas if d["alg"] in selected_algs]
+
+    if len(selected_problems):
+        print("WARNING: using only some problems!")
+        print("selected_problems")
+        print(selected_problems)
+        datas = [d for d in datas if d["problem"] in selected_problems]
 
     # print("artificially adding the problem...")
     # for data in datas:
@@ -1863,7 +2391,7 @@ def compare(files: List[str], interactive: bool = False):
     try:
         print("Creating Fancy table...")
         fancy_table([filename_csv], [], ["idbastar_v0", "sst_v0", "geo_v0"])
-    except:
+    except BaseException:
         print("Errror creating fancy table")
 
     # check
@@ -1873,7 +2401,17 @@ def compare(files: List[str], interactive: bool = False):
 
     all_problems = set([data["problem"] for data in reduced_data])
     all_problems = sorted(list(all_problems))
+
+    if len(selected_problems):
+        all_problems = selected_problems
+
+    #                = []
+    #
+    #    all_problems =
+    #          list (set
+
     print(all_problems)
+    # exit(0)
     # sys.exit(1)
 
     # print hardcoding the problems!
@@ -1924,10 +2462,13 @@ def compare(files: List[str], interactive: bool = False):
 
     pp = PdfPages(filename_pdf)
 
+    paper_plot = int(os.environ.get("PAPER_PLOT", 0))
+    print(paper_plot)
+
     Dproblem2title = {
-        "quad2dpole/up_obs": "Rotor pole - up_obstacles",
-        "quadrotor_0/window": "Quadrotor -  window",
-        "unicycle_first_order_0/bugtrap_0": "Unicycle1 - bugtrap",
+        "quad2dpole_v0/up_obs": "Rotor Pole - Swing up obstacles",
+        "quadrotor_v1/window": "Quadrotor v1 - Window",
+        "unicycle1_v0/bugtrap_0": "Unicycle 1 v0 - Bugtrap",
     }
     Dalg2label = {"idbastar_v0": "IDBA*", "sst_v0": "SST*", "geo_v0": "RRT*-TO"}
 
@@ -1936,10 +2477,10 @@ def compare(files: List[str], interactive: bool = False):
         counter += 1
 
         if D[problem]:
-            matplotlib.rcParams.update({"font.size": 14})
+            matplotlib.rcParams.update({"font.size": 11})
 
-            plt.rc("text", usetex=True)
-            plt.rc("font", family="serif")
+            # plt.rc("text", usetex=True)
+            # plt.rc("font", family="serif")
 
             # fig = plt.figure(figsize=(6, 4))
             # ax = fig.add_subplot(2, 1, sharex=True)
@@ -1974,7 +2515,7 @@ def compare(files: List[str], interactive: bool = False):
                 ax[0].step(
                     times,
                     cost_mean,
-                    color=color,
+                    # color=color,
                     label=Dalg2label.get(alg, alg),
                     where="post",
                 )
@@ -1985,11 +2526,19 @@ def compare(files: List[str], interactive: bool = False):
 
                 assert len(cost_mean) == len(cost_ub)
 
-                for i in range(len(cost_mean)):
-                    if cost_mean[i] != np.nan and cost_mean[i] < np.inf:
-                        if cost_ub[i] == np.nan or cost_ub[i] == np.inf:
-                            # cost_ub[i] = 100 TODO For nice Plotting
-                            pass
+                if paper_plot == 1:
+                    for i in range(len(cost_mean)):
+                        if cost_mean[i] != np.nan and cost_mean[i] < np.inf:
+                            if (
+                                cost_ub[i] == np.nan
+                                or cost_ub[i] == np.inf
+                                or math.isnan(cost_ub[i])
+                                or math.isinf(cost_ub[i])
+                            ):
+                                cost_ub[i] = 100
+                                # exit(-1)
+                                # TODO For nice Plotting
+                                pass
 
                             # cost_lb != np.nan && cost_ub != np.nan):
 
@@ -2003,14 +2552,14 @@ def compare(files: List[str], interactive: bool = False):
                     cost_ub,
                     # np.array(cost_mean) + np.array(cost_std),
                     # np.array(cost_mean) - np.array(cost_std),
-                    facecolor=color,
+                    # facecolor=color,
                     alpha=0.5,
                 )
                 # ax[1].plot(times, success, color=color, label=alg)
                 ax[1].step(
                     times,
                     success,
-                    color=color,
+                    # color=color,
                     label=Dalg2label.get(alg, alg),
                     where="post",
                 )
@@ -2019,25 +2568,73 @@ def compare(files: List[str], interactive: bool = False):
                 ax[1].set_xscale("log")
 
             Dproblem2limit = {
-                "quad2dpole/up_obs": [0, 30],
-                "quadrotor_0/window": [0, 5],
-                "unicycle_first_order_0/bugtrap_0": [0, 80],
+                "quad2dpole_v0/up_obs": [3.5, 5],
+                "quadrotor_v1/window": [2, 8],
+                "unicycle1_v0/bugtrap_0": [15, 70],
             }
 
+            if problem == "unicycle1_v0/bugtrap_0":
+                print("adding sbpl results")
+                sbpl_data = (
+                    "./../results_sbpl/tmp_stats_unicycle_first_order_0_bugtrap_0.yaml"
+                )
+                with open(sbpl_data, "r") as f:
+                    d = yaml.load(f, Loader=yaml.CLoader)
+                times = d["times"]
+                success = np.array(d["success"]) / 2.0
+                median = d["median"]
+                percentileL = d["percentileL"]
+                percentileH = d["percentileH"]
+
+                ax[0].step(
+                    times,
+                    median,
+                    # color=color,
+                    label="SBPL",
+                    where="post",
+                )
+
+                ax[0].fill_between(
+                    times,
+                    percentileL,
+                    percentileH,
+                    # np.array(cost_mean) + np.array(cost_std),
+                    # np.array(cost_mean) - np.array(cost_std),
+                    # facecolor=color,
+                    alpha=0.5,
+                )
+                ax[1].step(
+                    times,
+                    success,
+                    # color=color,
+                    label="SBPL",
+                    where="post",
+                )
+
+                ax[0].set_xscale("log")
+                ax[1].set_xscale("log")
+
             ax[0].set_title(Dproblem2title.get(problem, problem))
-            # if counter == 3:
-            ax[1].legend(loc="lower right")
+
+            # Used for the paper
+            if counter == 3:
+                ax[1].legend(loc="lower right")
 
             ax[1].set_xlabel("time [s]")
-            # if counter == 1:
-            ax[0].set_ylabel("cost[s]")
+            ax[0].set_ylabel("cost [s]")
             ax[1].set_ylabel("success %")
 
-            if problem in Dproblem2limit:
+            print("problems is", problem)
+            # if problem in Dproblem2limit:
+
+            if paper_plot:
                 ax[0].set_ylim(Dproblem2limit[problem][0], Dproblem2limit[problem][1])
 
             ax[1].set_ylim(-10, 110)
-            ax[1].set_xlim(0.5, MAX_TIME_PLOTS)
+            ax[1].set_xlim(0.2, MAX_TIME_PLOTS)
+
+            fig.align_ylabels(ax)
+            # plt.show()
 
             fig.tight_layout()
 
@@ -2122,8 +2719,10 @@ def get_av_cost_new(all_costs_np) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     median = []
     median_ub = []
     median_lb = []
-    rate_ub = 0.8
-    rate_lb = 0.2
+    rate_ub = 15.0 / 20.0
+    rate_lb = 6.0 / 20.0
+    # assuming 20 trials, 95 % confidence interval
+    # 20 : (6, 15, 0.9586105346679688)
     for j in range(all_costs_np.shape[1]):
         column = np.copy(all_costs_np[:, j])
         # how many nan?
@@ -2339,15 +2938,18 @@ def analyze_runs(
     path_to_dir: str, problem: str, alg: str, visualize: bool, **kwargs
 ) -> Tuple[str, str]:
     print(
-        f"path_to_dir:{path_to_dir}",
-        f"problem:{problem}",
-        f"alg:{alg}",
-        f"visualize:{visualize}",
+        f"path_to_dir:{path_to_dir}\n",
+        f"problem:{problem}\n",
+        f"alg:{alg}\n",
+        f"visualize:{visualize}\n",
     )
 
     __files = [f for f in pathlib.Path(path_to_dir).iterdir() if f.is_file()]
 
     # filter some files out.
+
+    print("__files")
+    print(__files)
 
     files = [
         f
@@ -2739,7 +3341,10 @@ def fancy_table(
 
     if len(benchmark_problems):
         print("Warning: only chose problems!!")
+        print(f"problems size {len(problems)}")
+        print(f"problems size {len(benchmark_problems)}")
         problems = sorted(list(set(problems).intersection(set(benchmark_problems))))
+        print(f"problems size {len(problems)}")
 
     all_df = pandas.DataFrame()
 
@@ -2779,10 +3384,10 @@ def fancy_table(
     also_success = True
 
     if also_success:
-        algs_line = r"& & &  \multicolumn{4}{c}{iDbA*} & \multicolumn{4}{c}{SST*} & \multicolumn{4}{c}{RRT*+TO}\\"
+        algs_line = r"& & &  \multicolumn{4}{c}{iDb-A*} & \multicolumn{4}{c}{SST*} & \multicolumn{4}{c}{RRT*+TO}\\"
         mid_rules = r"\cmidrule(lr){4-7}\cmidrule(lr){8-11}\cmidrule(lr){12-15}"
     else:
-        algs_line = r"&  \multicolumn{3}{c}{iDbA*} & \multicolumn{3}{c}{SST*} & \multicolumn{3}{c}{RRT*+TO}\\"
+        algs_line = r"&  \multicolumn{3}{c}{iDb-A*} & \multicolumn{3}{c}{SST*} & \multicolumn{3}{c}{RRT*+TO}\\"
         mid_rules = r"\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}"
 
     lines.insert(2, algs_line)
@@ -2825,7 +3430,10 @@ def fancy_table(
     custom_lines = []
     id = 0
     separate_dynamics_scenario = True
+    print("problems")
+    print(problems)
     for problem in problems:
+        print(f"problem {problem}")
         custom_line = []
         custom_line.append(str(id))
         id += 1
@@ -2841,22 +3449,19 @@ def fancy_table(
         else:
             custom_line.append(problem)
 
-        # custom_line.append(problem)
-
-        # separate for dynamics
-
-        # code to separate string by a character
-        # res = [i for j in s.split(' ') for i in (j, ' ')][:-1]
-
         for ik, k in enumerate(_algs):
             for token in _metrics:
                 full_key = k + token
                 val = dict_data[problem][full_key]
-                is_bold = is_best(val, token, problem, _algs)
-                if is_bold:
-                    tt = r"\textbf{" + f"{val:.1f}" + "}"
+                is_solved = dict_data[problem][k + "p"] > 0.5 or token == "p"
+                if is_solved:
+                    is_bold = is_best(val, token, problem, _algs)
+                    if is_bold:
+                        tt = r"\textbf{" + f"{val:.1f}" + "}"
+                    else:
+                        tt = f"{val:.1f}"
                 else:
-                    tt = f"{val:.1f}"
+                    tt = "-"
                 custom_line.append(str(tt))
         print(f"custom_line {custom_line}")
         custom_lines.append(custom_line)
@@ -2873,7 +3478,8 @@ def fancy_table(
         # r"\begin{tabular}{lrrrrrrrrr}",
         # r"\begin{tabular}{lrrrrrrrrrrrr}",
         # r"\begin{tabular}{lrrrrrrrrrrrrr}",  # include a number
-        r"\begin{tabular}{cccrrrrrrrrrrrr}",
+        # r"\begin{tabular}{cccrrrrrrrrrrrr}",
+        r"\begin{tabular}{lllrrrrrrrrrrrr}",
         # include a number #1 and separte dynamics and scenario
         r"\toprule",
         algs_line,
@@ -2950,7 +3556,7 @@ def format_latex_str(str_in: str) -> str:
         "unicycle_first_order_1": "uni1_1",
         "unicycle_first_order_2": "uni1_2",
         "unicycle_second_order_0": "uni2_0",
-        "parallelpark_0": "park",
+        "parallelpark_0": "Park",
         "cost_at": "c",
         "cost_first_solution": "cs",
         "time_first_solution": "ts",
@@ -3060,6 +3666,9 @@ def parse_for_component_analysis(files: List[str]):
                 f,
             )
 
+        # rc.
+
+        matplotlib.rcParams.update({"font.size": 11})
         fig, ax = plt.subplots()
 
         bottom = 0
@@ -3122,8 +3731,8 @@ def parse_for_component_analysis(files: List[str]):
     print("parsing done, lets print DS")
     # lets print the content of Ds!
 
-    matplotlib.rcParams.update({"font.size": 12})
-    fig = plt.figure(figsize=(6, 4))
+    # matplotlib.rcParams.update({"font.size": 12})
+    fig = plt.figure(figsize=(6, 3))
     ax = fig.add_subplot(1, 1, 1)
     width = 0.5
     keys = Ds[0].keys()
@@ -3152,7 +3761,7 @@ def parse_for_component_analysis(files: List[str]):
     print(" len(Ds)")
     print(len(Ds))
     it = [D["robot_type"] + str(D["delta"]) for D in Ds]
-    it = ["uni1_0.3", "uni1_0.2", "uni2_0.5", "uni2_0.3", "rotor2_0.55", "rotor2_0.5"]
+    it = ["u1-0.3", "u1-0.2", "u2-0.5", "u2-0.3", "r2-0.55", "r2-0.5"]
 
     x = np.arange(len(it))
     print(it)
@@ -3173,9 +3782,9 @@ def parse_for_component_analysis(files: List[str]):
         p = ax.bar(x, vv, width, label=Dkey_to_label[key], bottom=bottom)
         bottom += vv
 
-    MAX_Y = 15
+    MAX_Y = 12
     ax.set_ylim([0, MAX_Y])
-    ax.set_ylabel("Time [s]")
+    ax.set_ylabel("Time [s]", fontsize=11)
     # locs, labels = ax.yticks()  # Get the current locations and labels.
 
     # yticks([5,10,15,20])
@@ -3189,7 +3798,7 @@ def parse_for_component_analysis(files: List[str]):
     #
     # yticks([])  # Disable yticks.
 
-    ax.set_yticks([5, 10, 15, 20])
+    # ax.set_yticks([5, 10, 15 ])
 
     # ax.set_title("Component analysis")
     ax.set_xticks(x)

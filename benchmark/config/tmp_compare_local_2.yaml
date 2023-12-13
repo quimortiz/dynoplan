@@ -1,0 +1,13 @@
+date: 2023-10-24--09-53-19
+hostname: fourier
+input:
+- ../results_new/unicycle1_v0/parallelpark_0/idbastar_v0/2023-10-24--08-45-31/report.yaml
+- ../results_new/unicycle1_v0/parallelpark_0/geo_v0/2023-10-24--08-45-31/report.yaml
+- ../results_new/unicycle1_v0/parallelpark_0/sst_v0/2023-10-24--08-45-31/report.yaml
+- ../results_new/unicycle1_v0/bugtrap_0/idbastar_v0/2023-10-24--08-45-31/report.yaml
+- ../results_new/unicycle1_v0/bugtrap_0/geo_v0/2023-10-24--08-45-31/report.yaml
+- ../results_new/unicycle1_v0/bugtrap_0/sst_v0/2023-10-24--08-45-31/report.yaml
+- ../results_new/unicycle1_v0/kink_0/idbastar_v0/2023-10-24--08-45-31/report.yaml
+- ../results_new/unicycle1_v0/kink_0/geo_v0/2023-10-24--08-45-31/report.yaml
+- ../results_new/unicycle1_v0/kink_0/sst_v0/2023-10-24--08-45-31/report.yaml
+output: ../results_new/plots/plot_2023-10-24--09-53-19.pdf

@@ -34,7 +34,6 @@ car1_v0:
   default:
     motionsFile: ../dynomotions_full/car1_v0_all.bin.sp.bin.msgpack
     num_primitives_0: 400
-    delta: .5
     max_motions_primitives: 20000
 
 quad2d_v0:
