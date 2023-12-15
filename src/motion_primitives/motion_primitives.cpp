@@ -413,6 +413,7 @@ void improve_motion_primitives(const Options_trajopt &options_trajopt,
     problem.start = traj.states.front();
     problem.robotType = dynamics;
     problem.models_base_path = options_primitives.models_base_path;
+    problem.robotTypes.resize(1);
 
     Result_opti opti_out;
 
