@@ -656,7 +656,7 @@ void generate_primitives(const Options_trajopt &options_trajopt,
     problem.goal = goal;
     problem.start = start;
     problem.robotType = options_primitives.dynamics;
-
+    problem.robotTypes.resize(1);
     // double try
 
     std::vector<double> try_rates{.5, 1., 2.};
