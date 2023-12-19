@@ -8,6 +8,15 @@ project(
   LANGUAGES CXX)
 
 # find_package(pinocchio REQUIRED)
+
+# Set the RPATH in your executable to ensure it looks for libraries in the
+# correct directories at runtime. This can be done using CMake's
+# SET(CMAKE_INSTALL_RPATH "..."). Alternatively, you can set the LD_LIBRARY_PATH
+# environment variable to include the preferred library path when running your
+# application.
+
+# SET(CMAKE_INSTALL_RPATH "/home/quim/miniconda3/envs/feat-mim/lib")
+
 find_package(Boost REQUIRED COMPONENTS program_options serialization
                                        stacktrace_basic)
 find_package(ompl REQUIRED)
@@ -22,6 +31,10 @@ message(STATUS "OMPL_VERSION: ${OMPL_VERSION}")
 find_package(fcl REQUIRED)
 find_package(yaml-cpp REQUIRED)
 find_package(crocoddyl REQUIRED)
+# SET( mim_solvers_DIR
+# "/home/quim/miniconda3/pkgs/mim-solvers-0.0.2-py312hfb10629_1/lib/cmake/mim_solvers/")
+
+find_package(mim_solvers REQUIRED)
 
 message(STATUS "CROCO_VERSION: ${CROCODDYL_VERSION}")
 
@@ -36,7 +49,7 @@ message(STATUS "Finding LZ4 libraries...")
 find_library(
   LZ4_LIBRARIES
   NAMES liblz4.so
-  HINTS "lz4/lib")
+  HINTS "/home/quim/miniconda3/envs/feat-mim/lib/")
 if(LZ4_LIBRARIES)
   message(STATUS "Found: ${LZ4_LIBRARIES}")
 else()
@@ -231,8 +244,13 @@ target_link_libraries(
 target_link_libraries(
   optimization
   PUBLIC Eigen3::Eigen dynobench::dynobench
-  PRIVATE ${CROCODDYL_LIBRARIES} fcl yaml-cpp Boost::program_options
-          Boost::serialization libipopt.so)
+  PRIVATE mim_solvers
+          ${CROCODDYL_LIBRARIES}
+          fcl
+          yaml-cpp
+          Boost::program_options
+          Boost::serialization
+          libipopt.so)
 
 target_link_libraries(
   main_optimization

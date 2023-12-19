@@ -2,6 +2,7 @@
 #include "crocoddyl/core/utils/timer.hpp"
 #include "dynobench/dyno_macros.hpp"
 #include "dynoplan/optimization/ocp.hpp"
+#include <atomic>
 #include <thread>
 
 namespace dynoplan {

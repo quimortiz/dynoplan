@@ -43,6 +43,7 @@ BOOST_AUTO_TEST_CASE(second_order_park_traj_opt) {
   options_trajopt.use_warmstart = 1;
   options_trajopt.weight_goal = 100;
   options_trajopt.max_iter = 50;
+  options_trajopt.soft_control_bounds = true;
   problem.models_base_path = dynobench_base + std::string("models/");
 
   Result_opti result;

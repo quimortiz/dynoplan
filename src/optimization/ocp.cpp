@@ -17,6 +17,9 @@
 #include "dynobench/robot_models.hpp"
 #include "dynoplan/optimization/croco_models.hpp"
 
+#include "mim_solvers/sqp.hpp"
+#include <crocoddyl/core/utils/exception.hpp>
+
 using vstr = std::vector<std::string>;
 using V2d = Eigen::Vector2d;
 using V3d = Eigen::Vector3d;
@@ -489,9 +492,13 @@ void solve_for_fixed_penalty(
   }
 
   // solve
-  crocoddyl::SolverBoxFDDP ddp(problem_croco);
-  ddp.set_th_stop(options_trajopt_local.th_stop);
-  ddp.set_th_acceptnegstep(options_trajopt_local.th_acceptnegstep);
+  // crocoddyl::SolverBoxFDDP ddp(problem_croco);
+  // ddp.set_th_stop(options_trajopt_local.th_stop);
+  // ddp.set_th_acceptnegstep(options_trajopt_local.th_acceptnegstep);
+
+  mim_solvers::SolverSQP ddp(problem_croco);
+
+  ddp.setCallbacks(true);
 
   if (options_trajopt_local.CALLBACKS) {
     std::vector<ptr<crocoddyl::CallbackAbstract>> cbs;
@@ -499,7 +506,7 @@ void solve_for_fixed_penalty(
     if (store_iterations) {
       cbs.push_back(callback_dyno);
     }
-    ddp.setCallbacks(cbs);
+    // ddp.setCallbacks(cbs);
   }
 
   std::cout << "CROCO optimize" << AT << std::endl;
@@ -934,9 +941,12 @@ void __trajectory_optimization(
 
       // auto models = problem->get_runningModels();
 
-      crocoddyl::SolverBoxFDDP ddp(problem_croco);
-      ddp.set_th_stop(options_trajopt_local.th_stop);
-      ddp.set_th_acceptnegstep(options_trajopt_local.th_acceptnegstep);
+      // crocoddyl::SolverBoxFDDP ddp(problem_croco);
+      // ddp.set_th_stop(options_trajopt_local.th_stop);
+      // ddp.set_th_acceptnegstep(options_trajopt_local.th_acceptnegstep);
+
+      mim_solvers::SolverSQP ddp(problem_croco);
+      ddp.setCallbacks(true);
 
       if (options_trajopt_local.CALLBACKS) {
         std::vector<ptr<crocoddyl::CallbackAbstract>> cbs;
@@ -944,7 +954,7 @@ void __trajectory_optimization(
         if (store_iterations) {
           cbs.push_back(callback_dyno);
         }
-        ddp.setCallbacks(cbs);
+        // ddp.setCallbacks(cbs);
       }
 
       if (options_trajopt_local.noise_level > 1e-8) {
