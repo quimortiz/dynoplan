@@ -55,6 +55,14 @@ using __SpaceUni2WithCost =
                          nigh::ScaledSpace<nigh::L2Space<double, 1>>,
                          nigh::ScaledSpace<nigh::L2Space<double, 1>>>;
 
+using SpaceIntegrator2 = nigh::CartesianSpace<
+    nigh::L2Space<double, 2>,
+    nigh::ScaledSpace<nigh::L2Space<double, 2>, std::ratio<1, 4>>>;
+
+using __SpaceIntegrator2 =
+    nigh::CartesianSpace<nigh::ScaledSpace<nigh::L2Space<double, 2>>,
+                         nigh::ScaledSpace<nigh::L2Space<double, 2>>>;
+
 // x y theta  vx  vw
 using SpaceQuad2d = nigh::CartesianSpace<
     nigh::L2Space<double, 2>,
@@ -446,9 +454,18 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
       out =
           new NearestNeighborsNigh<_T, __SpaceUni2WithCost>(space, data_to_key);
     }
-  }
+  } else if (startsWith(name, "integrator2")) {
+      auto data_to_key = [robot, fun](_T const &m) {
+      using Vector4d = Eigen::Matrix<double, 4, 1>;
+      Vector4d __x = fun(m);
+      return std::tuple(Eigen::Vector2d(__x.head(2)),Eigen::Vector2d(__x(2), __x(3)));
+    };
 
-  else if (startsWith(name, "quad2dpole")) {
+    DYNO_CHECK_EQ(w.size(), 2, AT);
+    __SpaceIntegrator2 space(w(0), w(1));
+    out =
+        new NearestNeighborsNigh<_T, __SpaceIntegrator2>(space, data_to_key);
+  } else if (startsWith(name, "quad2dpole")) {
 
     auto data_to_key = [robot, fun](_T const &m) {
       using Vector8d = Eigen::Matrix<double, 8, 1>;
