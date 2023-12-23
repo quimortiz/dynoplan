@@ -459,20 +459,18 @@ bool check_lazy_trajectory(
   });
   time_bench.num_col_motions++;
   // check with constraints
-  std::cout << "Printing the tmp traj: " << std::endl;
-  for (auto tr : tmp_traj.get_states()){
-      std::cout << tr.format(dynobench::FMT) << std::endl;
-  }
-  std::cout << "Finishing printing the tmp traj" << std::endl;
+  // std::cout << "Printing the tmp traj: " << std::endl;
+  // for (auto tr : tmp_traj.get_states()){
+  //     std::cout << tr.format(dynobench::FMT) << std::endl;
+  // }
+  // std::cout << "Finishing printing the tmp traj" << std::endl;
 
   for (const auto& constraint : constraints){
     // a constraint violation can only occur between t in [current->gScore, tentative_gScore]
     float time_offset = constraint.time - best_node_gScore;
     int time_index = std::lround(time_offset / robot.ref_dt);
 
-    std::cout << "Time index: " << time_index << std::endl;
-    std::cout << "Gscore: " << best_node_gScore << std::endl;
-    std::cout << "Constraint time: " << constraint.time << std::endl;
+    // std::cout << "Time index: " << time_index << std::endl;
 
     Eigen::VectorXd state_to_check;
     if (reachesGoal && time_index >= (int)tmp_traj.get_size() - 1) {
@@ -484,20 +482,20 @@ bool check_lazy_trajectory(
     }
 
     if (state_to_check.size() > 0) {
-      std::cout << "State to check: " << state_to_check.format(dynobench::FMT) << std::endl;
-      std::cout << "Constraint state: " << constraint.constrained_state.format(dynobench::FMT) << std::endl;
+      // std::cout << "--State to check: " << state_to_check.format(dynobench::FMT) << std::endl;
+      // std::cout << "Constraint state: " << constraint.constrained_state.format(dynobench::FMT) << std::endl;
       bool violation = robot.distance(state_to_check, constraint.constrained_state) <= delta;
       if (violation) {
         motion_valid = false;
-        std::cout << "VIOLATION inside lazy traj check " << time_index << " " << std::endl;
-        std::cout << "State to check: " << state_to_check.format(dynobench::FMT) << std::endl;
-        std::cout << "Constraint state: " << constraint.constrained_state.format(dynobench::FMT) << std::endl;
+        std::cout << "VIOLATION inside lazy traj check" << time_index << " " << tmp_traj.get_size() << std::endl;
+        // std::cout << "State to check: " << state_to_check.format(dynobench::FMT) << std::endl;
+        // std::cout << "Constraint state: " << constraint.constrained_state.format(dynobench::FMT) << std::endl;
         // throw std::runtime_error("Internal error: constraint violation in check lazy trajectory!");
-        // break;
+        break;
       }
     }
   }
-  // std::cout << "Motion validity: " << motion_valid << std::endl;
+  std::cout << "Motion validity: " << motion_valid << std::endl;
   return motion_valid;
 };
 
@@ -631,8 +629,7 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
   fakeMotion.traj.states.push_back(Eigen::VectorXd::Zero(robot->nx));
 
   AStarNode tmp_node;
-  tmp_node.state_eig = Eigen::VectorXd::Zero(robot->nx); // not robot's current state ? 
-  std::cout << tmp_node.state_eig.format(FMT) << std::endl;
+  tmp_node.state_eig = Eigen::VectorXd::Zero(robot->nx);
 
   double best_distance_to_goal =
       robot->distance(start_node->state_eig, problem.goals[robot_id]);
@@ -696,7 +693,7 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
   std::vector<AStarNode *> neighbors_n;
   std::vector<Trajectory> expanded_trajs; // for debugging
 
-  const bool debug = true; // Set to true to write save to disk a lot of stuff
+  const bool debug = true; 
 
   const bool check_intermediate_goal = true;
   const size_t num_check_goal =
@@ -800,7 +797,6 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
                  num_check_goal, chosen_index);
 
       // Tentative hScore, gScore
-      std::cout << tmp_node.state_eig.format(FMT) << std::endl;
       double hScore;
       time_bench.time_hfun +=
           timed_fun_void([&] { hScore = h_fun->h(tmp_node.state_eig); });
