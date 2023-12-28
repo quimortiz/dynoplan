@@ -522,15 +522,21 @@ void check_goal(dynobench::Model_robot &robot, Eigen::Ref<Eigen::VectorXd> x,
 };
 
 // for standalone_tdbastar
-void export_constraints(const std::vector<Constraint>& constrained_states,
-                      std::ofstream *out){
+void export_constraints(const std::vector<Constraint>& constrained_states, std::string robot_type,
+                        size_t robot_id, std::ofstream *out){
+  *out << "robot_type:" << std::endl;
+  *out << "        ";
+  *out << robot_type << std::endl;
+  *out << "robot_id:" << std::endl;
+  *out << "        ";
+  *out << robot_id << std::endl;
   *out << "constraints:" << std::endl;
   for (size_t i = 0; i < constrained_states.size(); ++i){ 
       *out << "  - states:" << std::endl;
-      *out << "      - ";
+      *out << "        ";
       *out << constrained_states[i].constrained_state.format(dynobench::FMT)<< std::endl;
       *out << "    time:" << std::endl;
-      *out << "      - ";
+      *out << "        ";
       *out << constrained_states[i].time << std::endl;
   } 
 };
@@ -861,7 +867,7 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
             std::string constraintsFile = "../debug/constaints_" + gen_random(2) + ".yaml";
             create_dir_if_necessary(constraintsFile);
             std::ofstream constraint_out(constraintsFile);
-            export_constraints(constraints, &constraint_out);
+            export_constraints(constraints, robot->name, robot_id, &constraint_out);
           }
         }
       } 

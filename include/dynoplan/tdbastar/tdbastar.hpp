@@ -143,8 +143,8 @@ struct Constraint {
   double time;
   Eigen::VectorXd constrained_state;
 };
-void export_constraints(const std::vector<Constraint>& constrained_states,
-                      std::ofstream *out);
+void export_constraints(const std::vector<Constraint>& constrained_states, std::string robot_type,
+                      size_t robot_id, std::ofstream *out);
                       
 void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_dbastar,
              dynobench::Trajectory &traj_out, const std::vector<Constraint>& constraints,
