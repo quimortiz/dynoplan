@@ -80,16 +80,16 @@ struct AStarNode {
   }
 };
 
-float heuristic(std::shared_ptr<RobotOmpl> robot, const ob::State *s,
-                const ob::State *g);
+// float heuristic(std::shared_ptr<RobotOmpl> robot, const ob::State *s,
+//                 const ob::State *g);
 
 using Edge = std::pair<int, int>;
-void backward_tree_with_dynamics(
-    const std::vector<std::vector<double>> &data,
-    std::vector<Motion> &primitives, std::vector<Edge> &edge_list,
-    std::vector<double> &distance_list,
-    std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env,
-    double delta_sq);
+// void backward_tree_with_dynamics(
+//     const std::vector<std::vector<double>> &data,
+//     std::vector<Motion> &primitives, std::vector<Edge> &edge_list,
+//     std::vector<double> &distance_list,
+//     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env,
+//     double delta_sq);
 
 enum class Duplicate_detection {
   NO = 0,
@@ -139,14 +139,13 @@ struct Out_info_tdb {
 double automatic_delta(double delta_in, double alpha, RobotOmpl &robot,
                        ompl::NearestNeighbors<Motion *> &T_m);
 
-void filte_duplicates(std::vector<Motion> &motions, double delta, double alpha,
-                      RobotOmpl &robot, ompl::NearestNeighbors<Motion *> &T_m);
-
 struct Constraint {
   double time;
   Eigen::VectorXd constrained_state;
 };
-
+void export_constraints(const std::vector<Constraint>& constrained_states,
+                      std::ofstream *out);
+                      
 void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_dbastar,
              dynobench::Trajectory &traj_out, const std::vector<Constraint>& constraints,
              Out_info_tdb &out_info_tdb, size_t &robot_id);

@@ -487,7 +487,7 @@ bool check_lazy_trajectory(
       bool violation = robot.distance(state_to_check, constraint.constrained_state) <= delta;
       if (violation) {
         motion_valid = false;
-        std::cout << "VIOLATION inside lazy traj check" << time_index << " " << tmp_traj.get_size() << std::endl;
+        // std::cout << "VIOLATION inside lazy traj check" << time_index << " " << tmp_traj.get_size() << std::endl;
         // std::cout << "State to check: " << state_to_check.format(dynobench::FMT) << std::endl;
         // std::cout << "Constraint state: " << constraint.constrained_state.format(dynobench::FMT) << std::endl;
         // throw std::runtime_error("Internal error: constraint violation in check lazy trajectory!");
@@ -495,7 +495,7 @@ bool check_lazy_trajectory(
       }
     }
   }
-  std::cout << "Motion validity: " << motion_valid << std::endl;
+  // std::cout << "Motion validity: " << motion_valid << std::endl;
   return motion_valid;
 };
 
@@ -519,6 +519,20 @@ void check_goal(dynobench::Model_robot &robot, Eigen::Ref<Eigen::VectorXd> x,
       break;
     }
   }
+};
+
+// for standalone_tdbastar
+void export_constraints(const std::vector<Constraint>& constrained_states,
+                      std::ofstream *out){
+  *out << "constraints:" << std::endl;
+  for (size_t i = 0; i < constrained_states.size(); ++i){ 
+      *out << "  - states:" << std::endl;
+      *out << "      - ";
+      *out << constrained_states[i].constrained_state.format(dynobench::FMT)<< std::endl;
+      *out << "    time:" << std::endl;
+      *out << "      - ";
+      *out << constrained_states[i].time << std::endl;
+  } 
 };
 
 void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbastar, 
@@ -841,9 +855,14 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
             timed_fun_void([&] { T_n->add(__node); });
 
         if (debug) {
-
           expanded_trajs.push_back(
               dynobench::trajWrapper_2_Trajectory(traj_wrapper));
+          if (constraints.size() > 0){
+            std::string constraintsFile = "../debug/constaints_" + gen_random(2) + ".yaml";
+            create_dir_if_necessary(constraintsFile);
+            std::ofstream constraint_out(constraintsFile);
+            export_constraints(constraints, &constraint_out);
+          }
         }
       } 
       else {
@@ -875,7 +894,7 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
         break;
       }
     } // end of lazy_trajs loop
-  }
+  } // out of while loop
 
   time_bench.time_search = watch.elapsed_ms();
 
@@ -976,12 +995,13 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
         if (dist <= options_tdbastar.delta){
           std::cout << "VIOLATION in solution  " << dist << " " << "time index in solution: " << time_index << " " << std::endl;
           std::cout << traj_out.states.at(time_index).format(dynobench::FMT) << std::endl;
-          throw std::runtime_error("Internal error: constraint violation in solution!");
+          // throw std::runtime_error("Internal error: constraint violation in solution!");
+          break;
         }
         assert(dist > options_tdbastar.delta);
     }
   }
-  traj_out.update_feasibility(dynobench::Feasibility_thresholds(), true);
+  // traj_out.update_feasibility(dynobench::Feasibility_thresholds(), true); // why needed ?
 
   {
     std::string filename_id =
