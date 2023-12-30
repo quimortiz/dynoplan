@@ -278,12 +278,18 @@ DO something
 If you use or work for academic research, please cite:
 
 ```
-COOL TRO paper
+@misc{ortizharo2023idba,
+      title={iDb-A*: Iterative Search and Optimization for Optimal Kinodynamic Motion Planning}, 
+      author={Joaquim Ortiz-Haro and Wolfgang Hoenig and Valentin N. Hartmann and Marc Toussaint},
+      year={2023},
+      eprint={2311.03553},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO}
 ```
 
 
 ```
-@online{hoenigDbADiscontinuityboundedSearch2022,
+@misc{hoenigDbADiscontinuityboundedSearch2022,
   title = {Db-A*: Discontinuity-Bounded Search for Kinodynamic Mobile Robot Motion Planning},
   author = {Hoenig, Wolfgang and Ortiz-Haro, Joaquim and Toussaint, Marc},
   year = {2022},
