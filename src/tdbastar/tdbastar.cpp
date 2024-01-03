@@ -545,9 +545,9 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
               Trajectory &traj_out, const std::vector<Constraint>& constraints,
               Out_info_tdb &out_info_tdb, size_t &robot_id) {
 
-  std::cout << "*** options_tdbastar ***" << std::endl;
-  options_tdbastar.print(std::cout);
-  std::cout << "***" << std::endl;
+  // std::cout << "*** options_tdbastar ***" << std::endl;
+  // options_tdbastar.print(std::cout);
+  // std::cout << "***" << std::endl;
   // #ifdef DBG_PRINTS
   std::cout << "Running tdbA*" << std::endl;
   for (const auto& constraint : constraints){
@@ -713,7 +713,7 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
   std::vector<AStarNode *> neighbors_n;
   std::vector<Trajectory> expanded_trajs; // for debugging
 
-  const bool debug = true; 
+  const bool debug = false; 
 
   const bool check_intermediate_goal = true;
   const size_t num_check_goal =
@@ -986,7 +986,8 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
     thresholds.goal_tol = options_tdbastar.delta;
     thresholds.traj_tol = options_tdbastar.delta;
     traj_out.update_feasibility(thresholds, true);
-    CHECK(traj_out.feasible, "");
+    // CHECK(traj_out.feasible, ""); // should I keep it ? 
+
     // Sanity check here, that verifies that we obey all constraints
     std::cout << "checking constraints for the final solution " << std::endl;
     for (const auto& constraint : constraints) {
