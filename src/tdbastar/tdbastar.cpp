@@ -875,9 +875,9 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
         for (auto &n : neighbors_n) {
           // STATE is not novel, we udpate
           // the similar nodes
-          if (double tentative_g = gScore;
-                  // gScore +
-                  // robot->lower_bound_time(tmp_node.state_eig, n->state_eig);
+          if (double tentative_g = gScore + 
+                  options_tdbastar.cost_delta_factor *
+                  robot->lower_bound_time(tmp_node.state_eig, n->state_eig);
               tentative_g < n->gScore) {
             n->gScore = tentative_g;
             n->fScore = tentative_g + n->hScore;
