@@ -31,20 +31,6 @@ using namespace dynobench;
 
 BOOST_AUTO_TEST_CASE(t_multi_robot_cli) {
 
-  {
-    std::vector<std::string> build_cmd_new = {
-        "make",
-        "../main_multirobot_optimization",
-    };
-
-    std::string build_cmd = "";
-
-    for (auto &s : build_cmd_new) {
-      build_cmd += s + " ";
-    }
-    int out = std::system(build_cmd.c_str());
-    BOOST_TEST(out == 0);
-  }
 
   std::vector<std::string> run_cmd_new = {
       "../main_multirobot_optimization",
@@ -383,7 +369,8 @@ BOOST_AUTO_TEST_CASE(t_hetero_random_2) {
 
   bool sum_robots_cost = 1;
   std::string dynobench_base = "../../dynobench/";
-  std::string env_file = dynobench_base + "envs/multirobot/example/gen_p10_n2_1_hetero.yaml";
+  std::string env_file =
+      dynobench_base + "envs/multirobot/example/gen_p10_n2_1_hetero.yaml";
   std::string initial_guess_file =
       dynobench_base + "envs/multirobot/results/gen_p10_n2_1_hetero_db.yaml";
 
@@ -452,12 +439,15 @@ BOOST_AUTO_TEST_CASE(t_hetero_random_2) {
 
   multi_out.to_yaml_format("/tmp/test_gen_p10_n2_1_hetero_solution.yaml");
 }
+
+
 // needs to be debugged
 BOOST_AUTO_TEST_CASE(t_gen_p10_n8_9_hetero) {
 
   bool sum_robots_cost = 1;
   std::string dynobench_base = "../../dynobench/";
-  std::string env_file = dynobench_base + "envs/multirobot/example/gen_p10_n8_9_hetero.yaml";
+  std::string env_file =
+      dynobench_base + "envs/multirobot/example/gen_p10_n8_9_hetero.yaml";
   std::string initial_guess_file =
       dynobench_base + "envs/multirobot/results/gen_p10_n8_9_hetero_db.yaml";
 
@@ -526,3 +516,5 @@ BOOST_AUTO_TEST_CASE(t_gen_p10_n8_9_hetero) {
 
   multi_out.to_yaml_format("/tmp/test_gen_p10_n8_9_hetero_solution.yaml");
 }
+
+
