@@ -66,6 +66,7 @@ struct AStarNode {
   open_t::handle_type handle;
   bool is_in_open = false;
   bool valid = true;
+  bool reaches_goal;
 
   const ob::State *getState() { return state; }
   const Eigen::VectorXd &getStateEig() { return state_eig; }
@@ -307,15 +308,15 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
 void check_goal(dynobench::Model_robot &robot, Eigen::Ref<Eigen::VectorXd> x,
                 const Eigen::Ref<const Eigen::VectorXd> &goal,
                 dynobench::TrajWrapper &traj_wrapper, double distance_bound,
-                size_t num_check_goal, int &chosen_index);
+                size_t num_check_goal, int &chosen_index, bool &reaches_goal);
 
 bool check_lazy_trajectory(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
+    const Eigen::Ref<const Eigen::VectorXd> &goal,
     Time_benchmark &time_bench, dynobench::TrajWrapper &tmp_traj,
     const std::vector<Constraint>& constraints,
     const float best_node_gscore,
     float delta,
-    bool reachesGoal,
     Eigen::Ref<Eigen::VectorXd> aux_last_state,
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
     int *num_valid_states = nullptr, bool forward = true);
