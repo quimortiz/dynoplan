@@ -52,6 +52,7 @@ struct Options_tdbastar {
   double heu_connection_radius = 1; // connection radius for ROADMAP heuristic
   bool use_nigh_nn = true; // use nigh for nearest neighbor. 
   bool check_cols = true;
+  bool rewire = true; // to allow rewiring during the search
 
   void add_options(po::options_description &desc);
 

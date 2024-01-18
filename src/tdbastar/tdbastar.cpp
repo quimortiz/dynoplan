@@ -870,44 +870,44 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
         }
       } 
       else {
-        for (auto &n : neighbors_n) {
-          // STATE is not novel, we udpate
-          // the similar nodes
-          if (double tentative_g = gScore + 
-                  options_tdbastar.cost_delta_factor *
-                  robot->lower_bound_time(tmp_node.state_eig, n->state_eig);
-              tentative_g < n->gScore) {
-            bool update_valid = true;
-            if (n->reaches_goal){
-              for (const auto& constraint : constraints) {
-                if (constraint.time >= best_node->gScore - 1e-6) {
-                  bool violation = robot->distance(n->state_eig, constraint.constrained_state) <= options_tdbastar.delta;
-                  if (violation) {
-                    update_valid = false;
-                    break;
+        if(options_tdbastar.rewire){
+          for (auto &n : neighbors_n) {
+            // STATE is not novel, we udpate
+            if (double tentative_g = gScore + 
+                    options_tdbastar.cost_delta_factor *
+                    robot->lower_bound_time(tmp_node.state_eig, n->state_eig);
+                tentative_g < n->gScore) {
+              bool update_valid = true;
+              if (n->reaches_goal){
+                for (const auto& constraint : constraints) {
+                  if (constraint.time >= best_node->gScore - 1e-6) {
+                    bool violation = robot->distance(n->state_eig, constraint.constrained_state) <= options_tdbastar.delta;
+                    if (violation) {
+                      update_valid = false;
+                      break;
+                    }
                   }
                 }
               }
-            }
-            if (update_valid){
-              n->gScore = tentative_g;
-              n->fScore = tentative_g + n->hScore;
-              n->came_from = best_node;
-              n->used_motion = lazy_traj.motion->idx;
-              n->intermediate_state = -1; // reset intermediate
-                                          // state.
-              if (n->is_in_open) {
-                time_bench.time_queue +=
-                    timed_fun_void([&] { open.increase(n->handle); });
-              } else {
-                time_bench.time_queue +=
-                    timed_fun_void([&] { n->handle = open.push(n); });
+              if (update_valid){
+                n->gScore = tentative_g;
+                n->fScore = tentative_g + n->hScore;
+                n->came_from = best_node;
+                n->used_motion = lazy_traj.motion->idx;
+                n->intermediate_state = -1; // reset intermediate
+                                            // state.
+                if (n->is_in_open) {
+                  time_bench.time_queue +=
+                      timed_fun_void([&] { open.increase(n->handle); });
+                } else {
+                  time_bench.time_queue +=
+                      timed_fun_void([&] { n->handle = open.push(n); });
+                }
               }
             }
           }
         }
       }
-
       if (num_expansion_best_node >= options_tdbastar.limit_branching_factor) {
         break;
       }
