@@ -199,9 +199,9 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     // TODO: missing additional offset, if any
 
     double jump = robot.lower_bound_time(node_state, xs.front());
-    CSTR_V(node_state);
-    CSTR_V(xs.front());
-    std::cout << "jump " << jump << std::endl;
+    // CSTR_V(node_state);
+    // CSTR_V(xs.front());
+    // std::cout << "jump " << jump << std::endl;
 
     if (out) {
       *out << space6 + "# (traj.states.front) "
@@ -543,7 +543,7 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
   // #ifdef DBG_PRINTS
   std::cout << "Running tdbA* for robot " << robot_id << std::endl;
   for (const auto& constraint : constraints){
-    std::cout << "constraint at time: " << constraint.time << std::endl;
+    std::cout << "constraint at time: " << constraint.time << " ";
     std::cout << constraint.constrained_state.format(dynobench::FMT) << std::endl;
   }
   // #endif
@@ -986,7 +986,7 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
   from_solution_to_yaml_and_traj(*robot, motions, solution, problem, traj_out);
   traj_out.start = problem.starts[robot_id];
   traj_out.goal = problem.goals[robot_id];
-  traj_out.check(robot, true);
+  traj_out.check(robot, false);
   traj_out.cost = traj_out.actions.size() * robot->ref_dt;
 
   if (status == Terminate_status::SOLVED) {
@@ -997,14 +997,14 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
     // could be slightly in collision.
     thresholds.goal_tol = options_tdbastar.delta;
     thresholds.traj_tol = options_tdbastar.delta;
-    traj_out.update_feasibility(thresholds, true);
+    traj_out.update_feasibility(thresholds, false);
     // CHECK(traj_out.feasible, ""); // should I keep it ? 
 
     // Sanity check here, that verifies that we obey all constraints
     std::cout << "checking constraints for the final solution " << std::endl;
     for (const auto& constraint : constraints) {
-        std::cout << "constraint t = " << constraint.time << std::endl;
-        std::cout << constraint.constrained_state.format(dynobench::FMT) << std::endl;
+        // std::cout << "constraint t = " << constraint.time << std::endl;
+        // std::cout << constraint.constrained_state.format(dynobench::FMT) << std::endl;
         int time_index = std::lround(constraint.time / robot->ref_dt);
         assert(time_index >= 0);
         if (time_index > (int)traj_out.states.size()-1){
@@ -1012,11 +1012,10 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
         }
         // time_index = std::min<int>(time_index, (int)traj_out.states.size()-1);
         assert(time_index < (int)traj_out.states.size());
-        std::cout << robot->distance(traj_out.states.at(time_index), constraint.constrained_state) << std::endl;
-        std::cout << traj_out.states.at(time_index).format(dynobench::FMT) << std::endl;
+        // std::cout << robot->distance(traj_out.states.at(time_index), constraint.constrained_state) << std::endl;
+        // std::cout << traj_out.states.at(time_index).format(dynobench::FMT) << std::endl;
         float dist = robot->distance(traj_out.states.at(time_index), constraint.constrained_state);
         if (dist <= options_tdbastar.delta){
-          std::cout << "cost: " << traj_out.cost << std::endl;
           std::cout << "VIOLATION in solution  " << dist << " " << "time index in solution: " << time_index << " " << std::endl;
           std::cout << traj_out.states.at(time_index).format(dynobench::FMT) << std::endl;
           // throw std::runtime_error("Internal error: constraint violation in solution!");
