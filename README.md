@@ -281,7 +281,7 @@ If you use or work for academic research, please cite:
 
 ```
 @misc{ortizharo2023idba,
-      title={iDb-A*: Iterative Search and Optimization for Optimal Kinodynamic Motion Planning}, 
+      title={iDb-A*: Iterative Search and Optimization for Optimal Kinodynamic Motion Planning},
       author={Joaquim Ortiz-Haro and Wolfgang Hoenig and Valentin N. Hartmann and Marc Toussaint},
       year={2023},
       eprint={2311.03553},
