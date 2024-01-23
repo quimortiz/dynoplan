@@ -10,6 +10,8 @@ Dynoplan is a small library for solving kinodynamic motion planning problems, as
 
 
 
+
+
 The first version [kinodynamic-motion-planning-benchmark](https://github.com/imrCLab/kinodynamic-motion-planning-benchmark) is now deprecated.
 
 ## Robots and Problem Description
