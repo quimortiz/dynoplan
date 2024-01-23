@@ -15,7 +15,7 @@ BOOST_AUTO_TEST_CASE(t_cli) {
       "30",
       "--max_expands",
       "30000",
-      "--fix_seed",
+      "--seed",
       "1",
       "--do_optimization",
       "1",

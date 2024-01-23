@@ -1,13 +1,23 @@
 # Dynoplan 🦖
 
+Note: We have just submitted a publication to T-RO. Preprint is available [here](https://arxiv.org/abs/2311.03553).
+We will clean the code, update the readme and write a small tutorial in the following weeks.
+
+<!---
+<p align="center">
+<img src="https://github.com/quimortiz/dynoplan/assets/32126190/87259a14-cbe4-4f9f-9cbb-47053cde594f">
+</p >
+-->
+<p>
+  <p align="center">
+    <img src="https://github.com/quimortiz/dynoplan/assets/32126190/b14905b7-8a8b-435e-be6e-11dfc49f909a">
+</p >
+
 Dynoplan is a small library for solving kinodynamic motion planning problems, as defined in [Dynobench](https://github.com/quimortiz/dynobench) :t-rex:. It implements 3 different algorithms: Trajectory Optimization with geometric initial guess (RRT*-TO), Sample based Motion Planning (SST*), and Iterative Search and Optimization (iDb-A*).
 
 <p align="center">
 <img src="assets/example1.png" width=60% height=auto>
 </p >
-
-
-
 
 
 
@@ -100,48 +110,37 @@ https://drive.google.com/file/d/1OLuw5XICTueoZuleXOuD6vNh3PCWfHif/view?usp=drive
 
 ## How to generate motion primitives for new systems
 
+We will show how to generate motion primitives for the `integrator1_2d_v0`
 
-Step one: Implement the Dynamics in Dynobench, Following the tutorial for the `Integrator2_2d` in the `README`
+* Step one: Implement the Dynamics in Dynobench, following the tutorial for the `Integrator2_2d` in the `README` (in this case `integrator1_2d_v0` is already implemented)
 
+* Step two: Solve Optimization Problems with Random Start and Goals
 ```
-
-
-
-
-```
-
-Step two: Solve Optimization Problems with Random Start and Goals
-
-```
-
 ./main_primitives --mode_gen_id 0  --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/   --max_num_primitives 200 --out_file /tmp/my_motions.bin
 ```
-Primitives will be store in `/tmp/my_motions.bin` and `/tmp/my_motions.bin.yaml`
+Primitives will be store in `/tmp/my_motions.bin` and `/tmp/my_motions.bin.yaml`.  You can pass options to the solver for trajectory optimization.
 
-
-Step Three: Improve the quality of the primitives
+* Step Three: Improve the cost of the primitives
 
 ```
 ./main_primitives --mode_gen_id 1  --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/   --max_num_primitives 200  --in_file /tmp/my_motions.bin --solver_id 1
-
 ```
 
-By default, primitives are stored in `/tmp/my_motions.bin.im.bin` and `/tmp/my_motions.bin.im.bin.yaml`
+By default, primitives are stored in `/tmp/my_motions.bin.im.bin` and `/tmp/my_motions.bin.im.bin.yaml`. You can pass options to the solver for trajectory optimization.
 
 
-Step Fours: Randomnly cut primitives
+* Step Fours: Randomnly cut primitives
 
 ```
-m4 main_primitives &&    ./main_primitives --mode_gen_id 2 --in_file     /tmp/my_motions.bin.im.bin    --max_num_primitives -1   --max_splits 1  --max_length_cut 50  --min_length_cut 5 --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/
+./main_primitives --mode_gen_id 2 --in_file     /tmp/my_motions.bin.im.bin    --max_num_primitives -1   --max_splits 1  --max_length_cut 50  --min_length_cut 5 --dynamics integrator1_2d_v0 --models_base_path ../dynobench/models/
 ```
 
 By default, primitives will be stored in `/tmp/my_motions.bin.im.bin.sp.bin` and `/tmp/my_motions.bin.im.bin.sp.bin.yaml`
 
 
-
 Done!
 
-`main_primitives` provide more utils, such as conversion between formats, computing statistics, generating primitives with random rollouts, sorting primitives and resampling of primitives
+Additionally, `main_primitives` provide more useful functionality, such as conversion between formats, computing statistics, generating primitives with random rollouts, sorting primitives and resampling of primitives.
 
 
 ## Benchmark
@@ -162,16 +161,76 @@ Benchmark between planners
 python3 ../benchmark/benchmark.py -m bench -bc    ../benchmark/config/compare.yaml
 ```
 
-Study of heuristic functions
+Generate fancy table
+```
+python3  ../benchmark/benchmark.py --mode fancy --bench_cfg ../benchmark/config/plot_results_v3.yaml
+```
 
+(last version)
+```
+python3  ../benchmark/benchmark.py --mode fancy --bench_cfg ../benchmark/config/plot_results_v4.yaml
+```
+
+Generate table for website
+```
+python3  ../benchmark/benchmark.py --mode fancy --bench_cfg ../benchmark/config/plot_results_v_all.yaml
+```
+
+(last version)
+```
+python3  ../benchmark/benchmark.py --mode fancy --bench_cfg ../benchmark/config/plot_results_v_all_v4.yaml
+```
+
+
+
+Generate plots only for three for the paper.
+```
+PAPER=1 python3  ../benchmark/benchmark.py --mode bench --bench_cfg  ../benchmark/config/plot_results_v3_threePlots.yaml
+```
+
+
+
+### Search heuristic
+
+Study of heuristic functions
 ```
 python3 ../benchmark/benchmark.py -m bench_search -bc    ../benchmark/config/bench_search.yaml
 ```
+
+Only analyze the results
+```
+python3 ../benchmark/benchmark.py -m bench_search -bc    ../benchmark/config/bench_search_make_table_tro.yaml
+```
+
+Results for website
+```
+python3 ../benchmark/benchmark.py -m bench_search -bc    ../benchmark/config/bench_search_make_table_tro_all.yaml
+```
+
+
+
+### Optimization with Free terminal time
 
 Study of strategy for trajectoy optimization with free terminal time
 ```
 python3 ../benchmark/benchmark.py -m bench_time -bc    ../benchmark/config/bench_time.yaml
 ```
+
+Latex Table with subset of results shown in the paper:
+```
+time python3 ../benchmark/benchmark.py -m bench_time -bc ../benchmark/config/make_table_time_tro.yaml
+```
+
+For website table:
+```
+time python3 ../benchmark/benchmark.py -m bench_time -bc ../benchmark/config/make_table_time_tro_all.yaml
+```
+
+
+
+
+
+
 
 Study of time spent in each component
 
@@ -179,10 +238,39 @@ Study of time spent in each component
 python3   ../benchmark/benchmark.py -m study  -bc ../benchmark/config/bench_abblation_study.yaml
 ```
 
+(Results in TRO)
+
+```
+python3   ../benchmark/benchmark.py -m study  -bc ../benchmark/config/bench_abblation_results_tro.yaml
+```
+
+
+
+
 You can modify each config file to change the number of runs, the evaluated problems and the maximum time.
 The configurations files we used for `TRO` have prefix `TRO`.
 
 The paramteres for each algorithm are in `.yaml` files inside the `benchmark/config/algs` directory, for example `idbastar_v0.yaml`.
+
+
+
+## Visualization
+
+
+Plot environments (modify python file to select which envs to print)
+```
+cd build
+python3 ../plot_all_envs.py
+```
+
+Visualize trajectores
+
+```
+DO something
+```
+
+
+
 
 
 
@@ -192,12 +280,19 @@ The paramteres for each algorithm are in `.yaml` files inside the `benchmark/con
 If you use or work for academic research, please cite:
 
 ```
-COOL TRO paper
+@misc{ortizharo2023idba,
+      title={iDb-A*: Iterative Search and Optimization for Optimal Kinodynamic Motion Planning}, 
+      author={Joaquim Ortiz-Haro and Wolfgang Hoenig and Valentin N. Hartmann and Marc Toussaint},
+      year={2023},
+      eprint={2311.03553},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO}
+}
 ```
 
 
 ```
-@online{hoenigDbADiscontinuityboundedSearch2022,
+@misc{hoenigDbADiscontinuityboundedSearch2022,
   title = {Db-A*: Discontinuity-Bounded Search for Kinodynamic Mobile Robot Motion Planning},
   author = {Hoenig, Wolfgang and Ortiz-Haro, Joaquim and Toussaint, Marc},
   year = {2022},

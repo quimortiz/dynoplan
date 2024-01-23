@@ -413,6 +413,7 @@ void improve_motion_primitives(const Options_trajopt &options_trajopt,
     problem.start = traj.states.front();
     problem.robotType = dynamics;
     problem.models_base_path = options_primitives.models_base_path;
+    problem.robotTypes.resize(1);
 
     Result_opti opti_out;
 
@@ -656,7 +657,7 @@ void generate_primitives(const Options_trajopt &options_trajopt,
     problem.goal = goal;
     problem.start = start;
     problem.robotType = options_primitives.dynamics;
-
+    problem.robotTypes.resize(1);
     // double try
 
     std::vector<double> try_rates{.5, 1., 2.};
