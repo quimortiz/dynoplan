@@ -2,9 +2,9 @@ name: CMake
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "dev", "tmp-dev"]
   pull_request:
-    branches: [ "main" , "dev"]
+    branches: [ "main" , "dev", "tmp-dev"]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
@@ -39,10 +39,10 @@ jobs:
     - name: Install latest ompl
       run: |
         # sudo apt install libompl-dev -y
-        cd 
+        cd
         mkdir __local
         git clone https://github.com/ompl/ompl
-        cd ompl 
+        cd ompl
         git checkout e2994e5
         mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=~/__local  && make install -j4
 
