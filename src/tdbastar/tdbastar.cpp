@@ -411,9 +411,14 @@ bool check_lazy_trajectory(
 
   Stopwatch watch_check_motion;
 
+  if (num_valid_states && *num_valid_states < 1 ) {
+    return false;
+  }
+
   if (check_state) {
     // bounds are check when doing the rollout
-    assert(num_valid_states);
+    if (forward)
+      assert(num_valid_states);
     if (*num_valid_states < lazy_traj.motion->traj.states.size()) {
       return false;
     }
@@ -658,7 +663,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   start_node->gScore = 0;
   start_node->state_eig = problem.starts[robot_id];
   start_node->hScore = h_fun->h(problem.starts[robot_id]); // robot->lower_bound_time()
-  start_node->fScore = start_node->gScore + start_node->hScore;
+  start_node->fScore = start_node->gScore + start_node->hScore; // TODO: BUG
   start_node->came_from = nullptr;
   start_node->is_in_open = true;
   start_node->reaches_goal = (robot->distance(problem.starts[robot_id], problem.goals[robot_id]) <= options_tdbastar.delta);
