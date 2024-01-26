@@ -1,6 +1,6 @@
 
 #include <boost/test/unit_test.hpp>
-#define dynobench_base "../../dynobench/"
+#define dynobench_base "../../dynobench/dynobench/"
 
 BOOST_AUTO_TEST_CASE(t_main_optimization) {
 
@@ -13,8 +13,7 @@ BOOST_AUTO_TEST_CASE(t_main_optimization) {
       "--models_base_path",
       dynobench_base + std::string("models/"),
       "--init_file",
-      dynobench_base +
-          std::string("data/unicycle2_0_parallelark_guess_0.yaml")};
+      "../../dynobench/data/unicycle2_0_parallelark_guess_0.yaml"};
 
   std::string cmd = "";
 

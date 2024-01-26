@@ -1,7 +1,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#define DYNOBENCH_BASE "../../dynobench/"
+#define DYNOBENCH_BASE "../../dynobench/dynobench/"
 
 BOOST_AUTO_TEST_CASE(t_cli) {
 
