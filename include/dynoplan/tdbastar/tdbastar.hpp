@@ -147,9 +147,11 @@ struct Constraint {
 void export_constraints(const std::vector<Constraint>& constrained_states, std::string robot_type,
                       size_t robot_id, std::ofstream *out);
                       
-void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_dbastar,
+void tdbastar(dynobench::Problem &problem, Options_tdbastar options_dbastar,
              dynobench::Trajectory &traj_out, const std::vector<Constraint>& constraints,
-             Out_info_tdb &out_info_tdb, size_t &robot_id);
+             Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
+             ompl::NearestNeighbors<AStarNode*>* heuristic_nn = nullptr,
+             ompl::NearestNeighbors<AStarNode*>** heuristic_result = nullptr);
 
 struct LazyTraj {
 
@@ -170,34 +172,12 @@ struct LazyTraj {
                                  motion->traj.actions, tmp, check_state,
                                  num_valid_states);
 
-    } else {
-
-      if (startsWith(robot->name, "quad2d")) {
-
-        auto ptr = dynamic_cast<dynobench::Model_quad2d *>(robot);
-        assert(ptr);
-        ptr->transform_primitiveDirectReverse(*offset, motion->traj.states,
-                                              motion->traj.actions, tmp,
-                                              check_state, num_valid_states);
-
-      } else if (startsWith(robot->name, "quad3d")) {
-        auto ptr = dynamic_cast<dynobench::Model_quad3d *>(robot);
-        assert(ptr);
-        ptr->transform_primitiveDirectReverse(*offset, motion->traj.states,
-                                              motion->traj.actions, tmp,
-                                              check_state, num_valid_states);
-      }
-
-      else if (startsWith(robot->name, "unicycle")) {
-        robot->transform_primitive(*offset, motion->traj.states,
-                                   motion->traj.actions, tmp, check_state,
-                                   num_valid_states);
-      }
-
-      else {
-        std::string msg = "backward not implemented for " + robot->name;
-        ERROR_WITH_INFO(msg);
-      }
+    } 
+    // reverse
+    else {
+      robot->transform_primitive(*offset-motion->traj.states.back().head(2), motion->traj.states,
+                                 motion->traj.actions, tmp, check_state,
+                                 num_valid_states);
     }
   }
 
@@ -308,7 +288,7 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
 void check_goal(dynobench::Model_robot &robot, Eigen::Ref<Eigen::VectorXd> x,
                 const Eigen::Ref<const Eigen::VectorXd> &goal,
                 dynobench::TrajWrapper &traj_wrapper, double distance_bound,
-                size_t num_check_goal, int &chosen_index, bool &reaches_goal);
+                size_t num_check_goal, int &chosen_index, bool forward);
 
 bool check_lazy_trajectory(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,

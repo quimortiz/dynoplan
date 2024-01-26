@@ -3169,6 +3169,7 @@ void load_motion_primitives_new(const std::string &motionsFile,
 
   for (size_t idx = 0; idx < motions.size(); ++idx) {
     motions[idx].idx = idx;
+    // motions[idx].last_state_translated = motions[idx].traj.states.back();
   }
 }
 

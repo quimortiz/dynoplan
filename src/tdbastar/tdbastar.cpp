@@ -461,10 +461,16 @@ bool check_lazy_trajectory(
   // check with constraints
   // std::cout << "Printing the tmp traj: " << std::endl;
   // for (auto tr : tmp_traj.get_states()){
-  //     // std::cout << tr.format(dynobench::FMT) << std::endl;
+  //     std::cout << tr.format(dynobench::FMT) << std::endl;
   // }
   // std::cout << "Finishing printing the tmp traj" << std::endl;
-  bool reachesGoal = robot.distance(tmp_traj.get_state(tmp_traj.get_size() - 1), goal) <= delta;
+  bool reachesGoal;
+  if (!forward){
+    reachesGoal = robot.distance(tmp_traj.get_state(tmp_traj.get_size() - 1), goal) <= delta;
+  }
+  else{
+    reachesGoal = robot.distance(tmp_traj.get_state(0), goal) <= delta;
+  }
   for (const auto& constraint : constraints){
     // a constraint violation can only occur between t in [current->gScore, tentative_gScore]
     float time_offset = constraint.time - best_node_gScore;
@@ -497,8 +503,14 @@ bool check_lazy_trajectory(
 void check_goal(dynobench::Model_robot &robot, Eigen::Ref<Eigen::VectorXd> x,
                 const Eigen::Ref<const Eigen::VectorXd> &goal,
                 dynobench::TrajWrapper &traj_wrapper, double distance_bound,
-                size_t num_check_goal, int &chosen_index) {
-  x = traj_wrapper.get_state(traj_wrapper.get_size() - 1);
+                size_t num_check_goal, int &chosen_index, bool forward) {
+  if(forward){
+    x = traj_wrapper.get_state(traj_wrapper.get_size() - 1);
+  }
+  // for the reverse search
+  else {
+    x = traj_wrapper.get_state(0);
+  }
   Eigen::VectorXd intermediate_sol(robot.nx);
   for (size_t nn = 0; nn < num_check_goal; nn++) {
     size_t index_to_check =
@@ -536,9 +548,12 @@ void export_constraints(const std::vector<Constraint>& constrained_states, std::
   } 
 };
 
-void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbastar, 
+void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar, 
               Trajectory &traj_out, const std::vector<Constraint>& constraints,
-              Out_info_tdb &out_info_tdb, size_t &robot_id) {
+              Out_info_tdb &out_info_tdb, size_t &robot_id, 
+              bool reverse_search,
+              ompl::NearestNeighbors<AStarNode *>* heuristic_nn,
+              ompl::NearestNeighbors<AStarNode *>** heuristic_result) {
 
   // #ifdef DBG_PRINTS
   std::cout << "Running tdbA* for robot " << robot_id << std::endl;
@@ -559,6 +574,9 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
   CHECK(options_tdbastar.motions_ptr,
         "motions should be loaded before calling dbastar");
   std::vector<Motion> &motions = *options_tdbastar.motions_ptr;
+  // for the reverse search debug
+  std::ofstream out2("../dynoplan/expanded_trajs.yaml");
+  out2 << "trajs:" << std::endl;
 
   auto check_motions = [&] {
     for (size_t idx = 0; idx < motions.size(); ++idx) {
@@ -572,33 +590,46 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
   assert(check_motions());
 
   Time_benchmark time_bench;
-
+  if (reverse_search){
+    Eigen::VectorXd tmp_state = problem.starts[robot_id];
+    problem.starts[robot_id] = problem.goals[robot_id];
+    problem.goals[robot_id] = tmp_state;
+  }
   // build kd-tree for motion primitives
   ompl::NearestNeighbors<Motion *> *T_m = nullptr;
   ompl::NearestNeighbors<AStarNode *> *T_n = nullptr;
-
-  if (options_tdbastar.use_nigh_nn) {
-    T_m = nigh_factory2<Motion *>(problem.robotTypes[robot_id], robot);
-  } else {
-    NOT_IMPLEMENTED;
-  }
-
-  time_bench.time_nearestMotion += timed_fun_void([&] {
-    for (size_t i = 0;
-         i < std::min(motions.size(), options_tdbastar.max_motions); ++i) {
-      T_m->add(&motions.at(i));
-    }
-  });
 
   if (options_tdbastar.use_nigh_nn) {
     T_n = nigh_factory2<AStarNode *>(problem.robotTypes[robot_id], robot);
   } else {
     NOT_IMPLEMENTED;
   }
-
+  // for the initial heuristics
+  if (heuristic_result) {
+    *heuristic_result = T_n;
+  }
+  if (options_tdbastar.use_nigh_nn) {
+    // if (reverse_search){
+    //    T_m = nigh_factory2<Motion *>(problem.robotTypes[robot_id], robot,
+    //    [](Motion& m) { return m->getLastStateEig(); });
+    // }
+    // else {
+    //    T_m = nigh_factory2<Motion *>(problem.robotTypes[robot_id], robot);
+    // }
+    T_m = nigh_factory_t<Motion *>(problem.robotTypes[robot_id], robot, reverse_search);
+  } else {
+    NOT_IMPLEMENTED;
+  }
+  
+  time_bench.time_nearestMotion += timed_fun_void([&] {
+    for (size_t i = 0;
+         i < std::min(motions.size(), options_tdbastar.max_motions); ++i) {
+      T_m->add(&motions.at(i));
+    }
+  }); 
+  
   Expander expander(robot.get(), T_m,
                     options_tdbastar.alpha * options_tdbastar.delta);
-
   if (options_tdbastar.alpha <= 0 || options_tdbastar.alpha >= 1) {
     ERROR_WITH_INFO("Alpha needs to be between 0 and 1!");
   }
@@ -621,7 +652,7 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
   AStarNode *start_node = all_nodes.at(0).get();
   start_node->gScore = 0;
   start_node->state_eig = problem.starts[robot_id];
-  start_node->hScore = h_fun->h(problem.starts[robot_id]);
+  start_node->hScore = h_fun->h(problem.starts[robot_id]); // robot->lower_bound_time()
   start_node->fScore = start_node->gScore + start_node->hScore;
   start_node->came_from = nullptr;
   start_node->is_in_open = true;
@@ -705,8 +736,8 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
   std::vector<AStarNode *> neighbors_n;
   std::vector<Trajectory> expanded_trajs; // for debugging
 
-  const bool debug = false; 
-
+  const bool debug = true; 
+  
   const bool check_intermediate_goal = true;
   const size_t num_check_goal = 0;
     //  4; // Eg, for n = 4 I check: 1/5 , 2/5 , 3/5 , 4/5
@@ -786,9 +817,7 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
     std::vector<LazyTraj> lazy_trajs;
     time_bench.time_lazy_expand += timed_fun_void(
         [&] { expander.expand_lazy(best_node->state_eig, lazy_trajs); });
-
-    // CSTR_(lazy_trajs.size());
-    // dynobench::Trajectory tmp_traj;
+    // lazy_trajs = neighbors_m within R
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
 
@@ -798,22 +827,25 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
       bool motion_valid =
           check_lazy_trajectory(lazy_traj, *robot, problem.goals[robot_id], time_bench, traj_wrapper, 
                                 constraints, best_node->gScore, options_tdbastar.delta,
-                                aux_last_state, &ff, &num_valid_states);
+                                aux_last_state, &ff, &num_valid_states, !reverse_search);
       if (!motion_valid) {
         continue;
       }
-
+ 
       // Additional CHECK: if a intermediate state is close to goal. It really
       // helps!
 
       int chosen_index = -1;
       check_goal(*robot, tmp_node.state_eig, problem.goals[robot_id], traj_wrapper,
                  options_tdbastar.delta_factor_goal * options_tdbastar.delta,
-                 num_check_goal, chosen_index);
-
+                 num_check_goal, chosen_index, !reverse_search);
+      // for DEBUG the reverse search
+      expanded_trajs.push_back(
+              dynobench::trajWrapper_2_Trajectory(traj_wrapper));
+      out2 << "  - " << std::endl;
+      (dynobench::trajWrapper_2_Trajectory(traj_wrapper)).to_yaml_format(out2, "    ");
       // for the Node 
       bool reachesGoal = robot->distance(tmp_node.state_eig, problem.goals[robot_id]) <= options_tdbastar.delta;
-
       // Tentative hScore, gScore
       double hScore;
       time_bench.time_hfun +=
@@ -935,32 +967,25 @@ void tdbastar(const dynobench::Problem &problem, Options_tdbastar options_tdbast
             << time_bench.extra_time / time_bench.time_search * 100 << "%"
             << std::endl;
 
-  if (debug) {
-    std::ofstream out("../dynoplan/nodes_list.yaml");
-    out << "close_list:" << std::endl;
-    for (auto &c : closed_list) {
-      out << "- " << c->state_eig.format(dynobench::FMT) << std::endl;
-    }
-    out << "all_nodes:" << std::endl;
-    for (auto &c : all_nodes) {
-      out << "- " << c->state_eig.format(dynobench::FMT) << std::endl;
-    }
-    std::ofstream out2("../dynoplan/expanded_trajs.yaml");
+  // if (debug) {
+  //   std::ofstream out("../dynoplan/nodes_list.yaml");
+  //   out << "close_list:" << std::endl;
+  //   for (auto &c : closed_list) {
+  //     out << "- " << c->state_eig.format(dynobench::FMT) << std::endl;
+  //   }
+  //   out << "all_nodes:" << std::endl;
+  //   for (auto &c : all_nodes) {
+  //     out << "- " << c->state_eig.format(dynobench::FMT) << std::endl;
+  //   }
+  //   std::ofstream out2("../dynoplan/expanded_trajs.yaml");
 
-    out2 << "trajs:" << std::endl;
-    for (auto &traj : expanded_trajs) {
-      out2 << "  - " << std::endl;
-      traj.to_yaml_format(out2, "    ");
-    }
+  //   out2 << "trajs:" << std::endl;
+  //   for (auto &traj : expanded_trajs) {
+  //     out2 << "  - " << std::endl;
+  //     traj.to_yaml_format(out2, "    ");
+  //   }
 
-    // {
-    //   dynobench::Trajectories trajs;
-    //   trajs.data = expanded_trajs;
-    //   trajs.save_file_msgpack("/tmp/dynoplan/expanded_trajs.msgpack");
-    // }
-
-    // write in msgpack format
-  }
+  // }
 
   std::cout << "Terminate status: " << static_cast<int>(status) << " "
             << terminate_status_str[static_cast<int>(status)] << std::endl;
