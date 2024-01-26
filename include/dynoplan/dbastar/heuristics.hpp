@@ -190,6 +190,33 @@ struct Heu_roadmap : Heu_fun {
   };
 };
 
+template<typename _T, typename _Node>
+struct Heu_roadmap_bwd : Heu_fun {
+
+  Heu_roadmap_bwd(std::shared_ptr<dynobench::Model_robot> robot,
+                  const _T heuristic_nn,
+                  const Eigen::VectorXd &goal)
+      : robot(robot), heuristic_nn(heuristic_nn), goal(goal) {}
+
+  std::shared_ptr<dynobench::Model_robot> robot;
+  const _T heuristic_nn;
+  Eigen::VectorXd goal;
+
+  virtual double h(const Eigen::VectorXd &x) override {
+    assert(x.size() == robot->nx);
+    if (heuristic_nn){
+      _Node fake_node;
+      fake_node.state_eig = x;
+      return heuristic_nn->nearest(&fake_node)->gScore;
+    }
+    else {
+      return robot->lower_bound_time(x, goal);
+    }
+  }
+
+  virtual ~Heu_roadmap_bwd() override{};
+};
+
 void build_heuristic_distance_new(
     const std::vector<Eigen::VectorXd> &batch_samples,
     std::shared_ptr<dynobench::Model_robot> &robot,

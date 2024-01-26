@@ -641,9 +641,14 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
 
   std::shared_ptr<Heu_fun> h_fun = nullptr;
   std::vector<Heuristic_node> heu_map;
-
-  h_fun = std::make_shared<Heu_euclidean>(robot, problem.goals[robot_id]);
+  // h_fun = std::make_shared<Heu_euclidean>(robot, problem.goals[robot_id]);
   
+  if(reverse_search){
+    h_fun = std::make_shared<Heu_blind>();
+  }
+  else{
+    h_fun = std::make_shared<Heu_roadmap_bwd<ompl::NearestNeighbors<AStarNode *>*, AStarNode>>(robot, heuristic_nn, problem.goals[robot_id]);
+  }
   // all_nodes manages the memory.
   // c-pointer don't have onwership.
   std::vector<std::unique_ptr<AStarNode>> all_nodes;
