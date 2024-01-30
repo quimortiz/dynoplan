@@ -580,7 +580,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
         "motions should be loaded before calling dbastar");
   std::vector<Motion> &motions = *options_tdbastar.motions_ptr;
   // for the reverse search debug
-  std::ofstream out2("../dynoplan/expanded_trajs.yaml");
+  std::ofstream out2("../dynoplan/expanded_trajs_rev.yaml");
   out2 << "trajs:" << std::endl;
 
   auto check_motions = [&] {
@@ -833,7 +833,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
 
       int num_valid_states = -1;
       traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
-
+      
       bool motion_valid =
           check_lazy_trajectory(lazy_traj, *robot, problem.goals[robot_id], time_bench, traj_wrapper, 
                                 constraints, best_node->gScore, options_tdbastar.delta,
@@ -841,26 +841,21 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
       if (!motion_valid) {
         continue;
       }
- 
+      
       // Additional CHECK: if a intermediate state is close to goal. It really
       // helps!
-
       int chosen_index = -1;
       check_goal(*robot, tmp_node.state_eig, problem.goals[robot_id], traj_wrapper,
                  options_tdbastar.delta_factor_goal * options_tdbastar.delta,
                  num_check_goal, chosen_index, !reverse_search);
-      // for DEBUG the reverse search
-      expanded_trajs.push_back(
-              dynobench::trajWrapper_2_Trajectory(traj_wrapper));
-      out2 << "  - " << std::endl;
-      (dynobench::trajWrapper_2_Trajectory(traj_wrapper)).to_yaml_format(out2, "    ");
-      // for the Node 
+
+      // for the Node, if it reaches after the motion being transferred
       bool reachesGoal = robot->distance(tmp_node.state_eig, problem.goals[robot_id]) <= options_tdbastar.delta;
       // Tentative hScore, gScore
       double hScore;
       time_bench.time_hfun +=
           timed_fun_void([&] { hScore = h_fun->h(tmp_node.state_eig); });
-      assert(hScore >= 0);
+      // assert(hScore >= 0);
 
       double cost_motion = chosen_index != -1
                                ? chosen_index * robot->ref_dt
@@ -872,6 +867,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
                       options_tdbastar.cost_delta_factor *
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
+
 
       // CHECK if new State is NOVEL
       time_bench.time_nearestNode_search += timed_fun_void([&] {
@@ -901,8 +897,12 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
             timed_fun_void([&] { T_n->add(__node); });
 
         if (debug) {
-          expanded_trajs.push_back(
-              dynobench::trajWrapper_2_Trajectory(traj_wrapper));
+          // for the reverse search
+          auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
+          tmp_traj.cost = best_node->gScore; // or gScore + hScore ?
+          expanded_trajs.push_back(tmp_traj);
+          out2 << "  - " << std::endl;
+          tmp_traj.to_yaml_format(out2, "    ");
           // if (constraints.size() > 0){
           //   std::string constraintsFile = "../debug/constaints_" + gen_random(2) + ".yaml";
           //   create_dir_if_necessary(constraintsFile);
@@ -979,14 +979,24 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
 
   // if (debug) {
   //   std::ofstream out("../dynoplan/nodes_list.yaml");
-  //   out << "close_list:" << std::endl;
-  //   for (auto &c : closed_list) {
-  //     out << "- " << c->state_eig.format(dynobench::FMT) << std::endl;
-  //   }
-  //   out << "all_nodes:" << std::endl;
-  //   for (auto &c : all_nodes) {
-  //     out << "- " << c->state_eig.format(dynobench::FMT) << std::endl;
-  //   }
+
+  // for REVERSE debug
+  // out << "all_nodes:" << std::endl;
+  // for (auto &c : all_nodes) {
+  //   out << "- " << c->state_eig.format(dynobench::FMT) << std::endl;
+  // }
+
+  // // for REVERSE search
+  // std::ofstream out3("../dynoplan/closed_nodes_list.yaml");
+  // out3 << "close_list:" << std::endl;
+  // for (auto &c : closed_list) {
+  //   out3 << "  - state:" << std::endl;
+  //   out3 << c->state_eig.format(dynobench::FMT) << std::endl;
+  //   out3 << "  - cost:" << std::endl;
+  //   out3 << c->gScore << std::endl;
+  //   // out3 << "- " << c->state_eig.format(dynobench::FMT) << std::endl;
+  // }
+
   //   std::ofstream out2("../dynoplan/expanded_trajs.yaml");
 
   //   out2 << "trajs:" << std::endl;
