@@ -68,69 +68,27 @@ bool compareAStarNode::operator()(const AStarNode *a,
   }
 }
 
-void plot_search_tree(std::vector<AStarNode *> nodes,
-                      std::vector<Motion> &motions,
-                      dynobench::Model_robot &robot, const char *filename) {
-
-  std::cout << "plotting search tree to: " << filename << std::endl;
-  std::ofstream out(filename);
-  out << "nodes:" << std::endl;
-  const std::string indent2 = "  ";
-  const std::string indent4 = "    ";
-  const std::string indent6 = "      ";
-  for (auto &n : nodes) {
-    out << indent2 << "-" << std::endl;
-    out << indent4 << "x: " << n->state_eig.format(dynobench::FMT) << std::endl;
-    out << indent4 << "fScore: " << n->fScore << std::endl;
-    out << indent4 << "gScore: " << n->gScore << std::endl;
-    out << indent4 << "hScore: " << n->hScore << std::endl;
-  }
-  
-  out << "edges:" << std::endl;
-
-  for (auto &n : nodes) {
-    if (n->came_from) {
-      out << indent2 << "-" << std::endl;
-      out << indent4
-          << "from: " << n->came_from->state_eig.format(dynobench::FMT)
-          << std::endl;
-      out << indent4 << "to: " << n->state_eig.format(dynobench::FMT)
-          << std::endl;
-      // get the motion
-
-      Eigen::VectorXd offset(robot.get_offset_dim());
-      robot.offset(n->came_from->state_eig, offset);
-      LazyTraj lazy_traj{.offset = &offset,
-                         .robot = &robot,
-                         .motion = &motions.at(n->used_motion)};
-
-      dynobench::Trajectory traj;
-      traj.states = lazy_traj.motion->traj.states;
-      traj.actions = lazy_traj.motion->traj.actions;
-      lazy_traj.compute(traj);
-      out << indent4 << "traj:" << std::endl;
-      for (auto &s : traj.states) {
-        out << indent6 << "- " << s.format(dynobench::FMT) << std::endl;
-      }
-    }
-  }
-}
-
 void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     const std::vector<Motion> &motions,
                                     AStarNode *solution,
                                     const dynobench::Problem &problem,
                                     dynobench::Trajectory &traj_out,
                                     std::ofstream *out) {
-  std::vector<const AStarNode *> result;
-
+  // std::vector<const AStarNode *> result;
+  std::vector<std::pair<AStarNode *, size_t>> result;
   CHECK(solution, AT);
   // TODO: check what happens if a solution is a single state?
 
-  const AStarNode *n = solution;
+  // const AStarNode *n = solution;
+  AStarNode *n = solution;
+  size_t arrival_idx = n->current_arrival_idx;
   while (n != nullptr) {
-    result.push_back(n);
-    n = n->came_from;
+    // result.push_back(n);
+    // n = n->came_from;
+    result.push_back(std::make_pair(n, arrival_idx));
+    const auto& arrival = n->arrivals[arrival_idx];
+    n = arrival.came_from;
+    arrival_idx = arrival.arrival_idx;
   }
 
   std::reverse(result.begin(), result.end());
@@ -144,10 +102,12 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     if (out) {
       *out << "  - states:" << std::endl;
       *out << space6 << "- ";
-      *out << result.front()->state_eig.format(FMT) << std::endl;
+      // *out << result.front()->state_eig.format(FMT) << std::endl;
+      *out << result.front().first->state_eig.format(FMT) << std::endl;
       *out << "    actions: []" << std::endl;
     }
-    traj_out.states.push_back(result.front()->state_eig);
+    // traj_out.states.push_back(result.front()->state_eig);
+    traj_out.states.push_back(result.front().first->state_eig);
   }
 
   if (out) {
@@ -156,10 +116,13 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
 
   Eigen::VectorXd __tmp(robot.nx);
   Eigen::VectorXd __offset(robot.get_offset_dim());
+  // get states
   for (size_t i = 0; i < result.size() - 1; ++i) {
-    const auto node_state = result.at(i)->state_eig;
-    const auto &motion = motions.at(result.at(i + 1)->used_motion);
-    int take_until = result.at(i + 1)->intermediate_state;
+    const auto node_state = result[i].first->state_eig;
+    // const auto &motion = motions.at(result.at(i + 1)->used_motion);
+    const auto &motion = motions.at(result[i+1].first->arrivals[result[i+1].second].used_motion);
+    // int take_until = result.at(i + 1)->intermediate_state;
+    int take_until = result[i+1].first->intermediate_state;
     if (take_until != -1) {
       if (out) {
         *out << std::endl;
@@ -226,7 +189,8 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
         if (out) {
           *out << space6 << "- ";
         }
-        traj_out.states.push_back(result.at(i + 1)->state_eig);
+        // traj_out.states.push_back(result.at(i + 1)->state_eig);
+        traj_out.states.push_back(result[i+1].first->state_eig);
         // traj_out.states.push_back(xs.at(k)); This was before, fails if I have
         // change the parent of the last node before it goes out of the queue.
       } else {
@@ -250,8 +214,10 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
   }
 
   for (size_t i = 0; i < result.size() - 1; ++i) {
-    const auto &motion = motions.at(result.at(i + 1)->used_motion);
-    int take_until = result.at(i + 1)->intermediate_state;
+    // const auto &motion = motions.at(result.at(i + 1)->used_motion);
+    // int take_until = result.at(i + 1)->intermediate_state;
+    const auto &motion = motions.at(result[i+1].first->arrivals[result[i+1].second].used_motion);
+    int take_until = result[i+1].first->intermediate_state;
     if (take_until != -1) {
       if (out) {
         *out << space6 + "# (note: we have stop at intermediate state) "
@@ -288,7 +254,9 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     if (out)
       *out << std::endl;
   }
-  DYNO_CHECK_LEQ((result.back()->state_eig - traj_out.states.back()).norm(),
+  // DYNO_CHECK_LEQ((result.back()->state_eig - traj_out.states.back()).norm(),
+  //                1e-6, "");
+  DYNO_CHECK_LEQ((result.back().first->state_eig - traj_out.states.back()).norm(),
                  1e-6, "");
 };
 
@@ -664,9 +632,10 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   start_node->state_eig = problem.starts[robot_id];
   start_node->hScore = h_fun->h(problem.starts[robot_id]); // robot->lower_bound_time()
   start_node->fScore = start_node->gScore + start_node->hScore; // TODO: BUG
-  start_node->came_from = nullptr;
+  // start_node->came_from = nullptr;
   start_node->is_in_open = true;
   start_node->reaches_goal = (robot->distance(problem.starts[robot_id], problem.goals[robot_id]) <= options_tdbastar.delta);
+  start_node->arrivals.push_back({.gScore = 0, .came_from = nullptr, .used_motion = (size_t)-1, .arrival_idx = (size_t)-1});
 
   DYNO_DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
@@ -868,7 +837,14 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
 
-
+      if (debug && reverse_search) {
+        // for the reverse search
+        auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
+        tmp_traj.cost = best_node->gScore; // or gScore + hScore ?
+        expanded_trajs.push_back(tmp_traj);
+        out2 << "  - " << std::endl;
+        tmp_traj.to_yaml_format_short(out2, "    ");
+      }
       // CHECK if new State is NOVEL
       time_bench.time_nearestNode_search += timed_fun_void([&] {
         T_n->nearestR(&tmp_node,
@@ -884,25 +860,21 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
         __node->gScore = gScore;
         __node->hScore = hScore;
         __node->fScore = gScore + hScore;
-        __node->came_from = best_node;
-        __node->used_motion = lazy_traj.motion->idx;
+        // __node->came_from = best_node;
+        // __node->used_motion = lazy_traj.motion->idx;
         if (chosen_index != -1)
           __node->intermediate_state = chosen_index;
         __node->is_in_open = true;
         __node->reaches_goal = reachesGoal; 
-
+        __node->arrivals.push_back({.gScore = gScore, .came_from = best_node, 
+                                    .used_motion = lazy_traj.motion->idx, .arrival_idx = best_node->current_arrival_idx});
         time_bench.time_queue +=
             timed_fun_void([&] { __node->handle = open.push(__node); });
         time_bench.time_nearestNode_add +=
             timed_fun_void([&] { T_n->add(__node); });
 
         if (debug) {
-          // for the reverse search
-          auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
-          tmp_traj.cost = best_node->gScore; // or gScore + hScore ?
-          expanded_trajs.push_back(tmp_traj);
-          out2 << "  - " << std::endl;
-          tmp_traj.to_yaml_format(out2, "    ");
+          expanded_trajs.push_back(dynobench::trajWrapper_2_Trajectory(traj_wrapper));
           // if (constraints.size() > 0){
           //   std::string constraintsFile = "../debug/constaints_" + gen_random(2) + ".yaml";
           //   create_dir_if_necessary(constraintsFile);
@@ -934,10 +906,11 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
               if (update_valid){
                 n->gScore = tentative_g;
                 n->fScore = tentative_g + n->hScore;
-                n->came_from = best_node;
-                n->used_motion = lazy_traj.motion->idx;
-                n->intermediate_state = -1; // reset intermediate
-                                            // state.
+                // n->came_from = best_node;
+                // n->used_motion = lazy_traj.motion->idx;
+                n->intermediate_state = -1; // reset intermediate state.
+                n->arrivals.push_back({.gScore = tentative_g, .came_from = best_node, 
+                                          .used_motion = lazy_traj.motion->idx, .arrival_idx = best_node->current_arrival_idx});
                 if (n->is_in_open) {
                   time_bench.time_queue +=
                       timed_fun_void([&] { open.increase(n->handle); });
@@ -980,7 +953,6 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   // if (debug) {
   //   std::ofstream out("../dynoplan/nodes_list.yaml");
 
-  // for REVERSE debug
   // out << "all_nodes:" << std::endl;
   // for (auto &c : all_nodes) {
   //   out << "- " << c->state_eig.format(dynobench::FMT) << std::endl;

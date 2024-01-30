@@ -57,9 +57,9 @@ struct AStarNode {
 
   double get_cost() const { return gScore; }
 
-  const AStarNode *came_from;
+  // const AStarNode *came_from;
   fcl::Vector3d used_offset;
-  size_t used_motion;
+  // size_t used_motion;
   int intermediate_state =
       -1; // checking intermediate states for reaching the goal.
 
@@ -67,6 +67,15 @@ struct AStarNode {
   bool is_in_open = false;
   bool valid = true;
   bool reaches_goal;
+  // can arrive at this node at time gScore, starting from came_from, using motion used_motion
+  struct arrival {
+    float gScore;
+    AStarNode* came_from;
+    size_t used_motion;
+    size_t arrival_idx;
+  };
+  std::vector<arrival> arrivals;
+  size_t current_arrival_idx;
 
   const ob::State *getState() { return state; }
   const Eigen::VectorXd &getStateEig() { return state_eig; }
@@ -75,8 +84,8 @@ struct AStarNode {
     out << state_eig.format(dynobench::FMT) << std::endl;
     out << "fScore: " << fScore << " gScore: " << gScore
         << " hScore: " << hScore << std::endl;
-    out << " used_motion: " << used_motion
-        << " intermediate_state: " << intermediate_state
+    // out << " used_motion: " << used_motion
+    out << " intermediate_state: " << intermediate_state
         << " is_in_open: " << is_in_open << " valid: " << valid << std::endl;
   }
 };
