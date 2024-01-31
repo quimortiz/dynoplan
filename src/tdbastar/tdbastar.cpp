@@ -525,6 +525,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
               Trajectory &traj_out, const std::vector<Constraint>& constraints,
               Out_info_tdb &out_info_tdb, size_t &robot_id, 
               bool reverse_search,
+              std::vector<dynobench::Trajectory> &expanded_trajs,
               ompl::NearestNeighbors<AStarNode *>* heuristic_nn,
               ompl::NearestNeighbors<AStarNode *>** heuristic_result) {
 
@@ -547,9 +548,9 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   CHECK(options_tdbastar.motions_ptr,
         "motions should be loaded before calling dbastar");
   std::vector<Motion> &motions = *options_tdbastar.motions_ptr;
-  // for the reverse search debug
-  std::ofstream out2("../dynoplan/expanded_trajs_rev.yaml");
-  out2 << "trajs:" << std::endl;
+// for the reverse search debug
+  // std::ofstream out2("../dynoplan/expanded_trajs_rev.yaml");
+  // out2 << "trajs:" << std::endl;
 
   auto check_motions = [&] {
     for (size_t idx = 0; idx < motions.size(); ++idx) {
@@ -713,7 +714,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   AStarNode *best_node = nullptr;
   std::vector<AStarNode *> closed_list;
   std::vector<AStarNode *> neighbors_n;
-  std::vector<Trajectory> expanded_trajs; // for debugging
+  // std::vector<Trajectory> expanded_trajs; // for debugging
 
   const bool debug = true; 
   
@@ -836,15 +837,18 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
                       options_tdbastar.cost_delta_factor *
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
-
-      if (debug && reverse_search) {
-        // for the reverse search
+      // for motion primitives plot with correct cost
+      if (debug) {
         auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
         tmp_traj.cost = best_node->gScore; // or gScore + hScore ?
         expanded_trajs.push_back(tmp_traj);
-        out2 << "  - " << std::endl;
-        tmp_traj.to_yaml_format_short(out2, "    ");
+        // out2 << "  - " << std::endl;
+        // tmp_traj.to_yaml_format_short(out2, "    ");
       }
+
+      auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
+      tmp_traj.cost = best_node->gScore; // or gScore + hScore ?
+      expanded_trajs.push_back(tmp_traj);
       // CHECK if new State is NOVEL
       time_bench.time_nearestNode_search += timed_fun_void([&] {
         T_n->nearestR(&tmp_node,
@@ -874,15 +878,15 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
         time_bench.time_nearestNode_add +=
             timed_fun_void([&] { T_n->add(__node); });
 
-        if (debug) {
-          expanded_trajs.push_back(dynobench::trajWrapper_2_Trajectory(traj_wrapper));
+        // if (debug) {
+        //   expanded_trajs.push_back(dynobench::trajWrapper_2_Trajectory(traj_wrapper));
           // if (constraints.size() > 0){
           //   std::string constraintsFile = "../debug/constaints_" + gen_random(2) + ".yaml";
           //   create_dir_if_necessary(constraintsFile);
           //   std::ofstream constraint_out(constraintsFile);
           //   export_constraints(constraints, robot->name, robot_id, &constraint_out);
           // }
-        }
+        // }
       } 
       else {
         if(options_tdbastar.rewire){
