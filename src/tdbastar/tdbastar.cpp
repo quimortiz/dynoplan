@@ -868,6 +868,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
         __node->reaches_goal = reachesGoal; 
         __node->arrivals.push_back({.gScore = gScore, .came_from = best_node, 
                                     .used_motion = lazy_traj.motion->idx, .arrival_idx = best_node->current_arrival_idx});
+        __node->current_arrival_idx = 0;
         time_bench.time_queue +=
             timed_fun_void([&] { __node->handle = open.push(__node); });
         time_bench.time_nearestNode_add +=
@@ -911,6 +912,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
                 n->intermediate_state = -1; // reset intermediate state.
                 n->arrivals.push_back({.gScore = tentative_g, .came_from = best_node, 
                                           .used_motion = lazy_traj.motion->idx, .arrival_idx = best_node->current_arrival_idx});
+                ++n->current_arrival_idx;
                 if (n->is_in_open) {
                   time_bench.time_queue +=
                       timed_fun_void([&] { open.increase(n->handle); });
