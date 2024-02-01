@@ -117,7 +117,7 @@ void disable_motions(std::shared_ptr<dynobench::Model_robot>& robot,
         }
       }
     }
-    // std::cout << "There are " << num_enabled_motions << " motions enabled." << std::endl;
+    std::cout << "There are " << num_enabled_motions << " motions enabled." << std::endl;
   }
 
 void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
