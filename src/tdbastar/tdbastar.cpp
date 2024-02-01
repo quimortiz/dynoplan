@@ -880,7 +880,6 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
               if (update_valid){
                 n->gScore = tentative_g;
                 n->fScore = tentative_g + n->hScore;
-                n->is_in_open = true;
                 // n->came_from = best_node;
                 // n->used_motion = lazy_traj.motion->idx;
                 n->intermediate_state = -1; // reset intermediate state.
@@ -891,6 +890,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
                   time_bench.time_queue +=
                       timed_fun_void([&] { open.increase(n->handle); });
                 } else {
+                  n->is_in_open = true;
                   time_bench.time_queue +=
                       timed_fun_void([&] { n->handle = open.push(n); });
                 }
