@@ -538,11 +538,6 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   assert(check_motions());
 
   Time_benchmark time_bench;
-  if (reverse_search){
-    Eigen::VectorXd tmp_state = problem.starts[robot_id];
-    problem.starts[robot_id] = problem.goals[robot_id];
-    problem.goals[robot_id] = tmp_state;
-  }
   // build kd-tree for motion primitives
   ompl::NearestNeighbors<Motion *> *T_m = nullptr;
   ompl::NearestNeighbors<AStarNode *> *T_n = nullptr;
@@ -885,6 +880,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
               if (update_valid){
                 n->gScore = tentative_g;
                 n->fScore = tentative_g + n->hScore;
+                n->is_in_open = true;
                 // n->came_from = best_node;
                 // n->used_motion = lazy_traj.motion->idx;
                 n->intermediate_state = -1; // reset intermediate state.
