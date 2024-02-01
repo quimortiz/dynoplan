@@ -311,7 +311,13 @@ bool check_lazy_trajectory(
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
     int *num_valid_states = nullptr, bool forward = true);
 
-
+void disable_motions(std::shared_ptr<dynobench::Model_robot>& robot,
+    std::string &robot_name,
+    float delta,
+    bool filterDuplicates,
+    float alpha,
+    size_t num_max_motions,
+    std::vector<Motion>& motions);
 
 
 } // namespace dynoplan

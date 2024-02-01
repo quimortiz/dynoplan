@@ -252,7 +252,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
   ompl::NearestNeighbors<_T> *out = nullptr;
 
   auto &w = robot->diff_model->distance_weights;
-  CSTR_V(w);
+  // CSTR_V(w);
 
   if (startsWith(name, "unicycle1")) {
 
@@ -390,7 +390,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
   ompl::NearestNeighbors<_T> *out = nullptr;
 
   auto &w = robot->distance_weights;
-  CSTR_V(w);
+  // CSTR_V(w);
 
   if (startsWith(name, "unicycle1")) {
 
@@ -564,7 +564,7 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
   ompl::NearestNeighbors<_T> *out = nullptr;
 
   auto &w = robot->distance_weights;
-  CSTR_V(w);
+  // CSTR_V(w);
 
   if (startsWith(name, "unicycle1")) {
 

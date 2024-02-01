@@ -67,6 +67,58 @@ bool compareAStarNode::operator()(const AStarNode *a,
     return a->gScore < b->gScore;
   }
 }
+void disable_motions(std::shared_ptr<dynobench::Model_robot>& robot,
+    std::string &robot_name,
+    float delta,
+    bool filterDuplicates,
+    float alpha,
+    size_t num_max_motions,
+    std::vector<Motion>& motions) {
+    ompl::NearestNeighbors<Motion *> *T_m = nullptr;
+    T_m = nigh_factory_t<Motion *>(robot_name, robot, /*reverse search*/false);
+    // enable all motions
+    for (size_t i = 0; i < motions.size(); ++i) {
+      motions[i].disabled = false;
+      T_m->add(&motions.at(i));
+    } 
+    if(filterDuplicates){
+      size_t num_duplicates = 0;
+      Motion fakeMotion;
+      fakeMotion.idx = -1;
+      fakeMotion.traj.states.push_back(Eigen::VectorXd(robot->nx));
+      std::vector<Motion *> neighbors_m;
+      for (const auto& m : motions) {
+        if (m.disabled) {
+          continue;
+        }
+        fakeMotion.traj.states.at(0) = m.traj.states.at(0);
+        T_m->nearestR(&fakeMotion, delta*alpha, neighbors_m);
+        for (Motion* nm : neighbors_m){
+          if (nm == &m || nm->disabled) { 
+            continue;
+          }
+          float goal_delta = robot->distance(m.traj.states.back(), nm->traj.states.back());
+          if (goal_delta < delta*(1-alpha)) {
+          nm->disabled = true;
+          ++num_duplicates;
+          }
+        }
+      }
+      // std::cout << "There are " << num_duplicates << " duplicate motions!" << std::endl;
+    }
+    // limit to num_max_motions
+    size_t num_enabled_motions = 0;
+    for (size_t i = 0; i < motions.size(); ++i){
+      if (!motions[i].disabled) {
+        if (num_enabled_motions >= num_max_motions) {
+          motions[i].disabled = true;
+        } else {
+          ++num_enabled_motions;
+        }
+      }
+    }
+    // std::cout << "There are " << num_enabled_motions << " motions enabled." << std::endl;
+  }
 
 void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     const std::vector<Motion> &motions,
@@ -74,17 +126,13 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     const dynobench::Problem &problem,
                                     dynobench::Trajectory &traj_out,
                                     std::ofstream *out) {
-  // std::vector<const AStarNode *> result;
   std::vector<std::pair<AStarNode *, size_t>> result;
   CHECK(solution, AT);
   // TODO: check what happens if a solution is a single state?
 
-  // const AStarNode *n = solution;
   AStarNode *n = solution;
   size_t arrival_idx = n->current_arrival_idx;
   while (n != nullptr) {
-    // result.push_back(n);
-    // n = n->came_from;
     result.push_back(std::make_pair(n, arrival_idx));
     const auto& arrival = n->arrivals[arrival_idx];
     n = arrival.came_from;
@@ -102,11 +150,9 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     if (out) {
       *out << "  - states:" << std::endl;
       *out << space6 << "- ";
-      // *out << result.front()->state_eig.format(FMT) << std::endl;
       *out << result.front().first->state_eig.format(FMT) << std::endl;
       *out << "    actions: []" << std::endl;
     }
-    // traj_out.states.push_back(result.front()->state_eig);
     traj_out.states.push_back(result.front().first->state_eig);
   }
 
@@ -119,9 +165,7 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
   // get states
   for (size_t i = 0; i < result.size() - 1; ++i) {
     const auto node_state = result[i].first->state_eig;
-    // const auto &motion = motions.at(result.at(i + 1)->used_motion);
     const auto &motion = motions.at(result[i+1].first->arrivals[result[i+1].second].used_motion);
-    // int take_until = result.at(i + 1)->intermediate_state;
     int take_until = result[i+1].first->intermediate_state;
     if (take_until != -1) {
       if (out) {
@@ -214,8 +258,6 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
   }
 
   for (size_t i = 0; i < result.size() - 1; ++i) {
-    // const auto &motion = motions.at(result.at(i + 1)->used_motion);
-    // int take_until = result.at(i + 1)->intermediate_state;
     const auto &motion = motions.at(result[i+1].first->arrivals[result[i+1].second].used_motion);
     int take_until = result[i+1].first->intermediate_state;
     if (take_until != -1) {
@@ -254,77 +296,9 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     if (out)
       *out << std::endl;
   }
-  // DYNO_CHECK_LEQ((result.back()->state_eig - traj_out.states.back()).norm(),
-  //                1e-6, "");
   DYNO_CHECK_LEQ((result.back().first->state_eig - traj_out.states.back()).norm(),
                  1e-6, "");
 };
-
-double automatic_delta(double delta_in, double alpha, RobotOmpl &robot,
-                       ompl::NearestNeighbors<Motion *> &T_m) {
-  Motion fakeMotion;
-  fakeMotion.idx = -1;
-  auto si = robot.getSpaceInformation();
-  fakeMotion.states.push_back(si->allocState());
-  std::vector<Motion *> neighbors_m;
-  size_t num_desired_neighbors = (size_t)-delta_in;
-  size_t num_samples = std::min<size_t>(1000, T_m.size());
-
-  auto state_sampler = si->allocStateSampler();
-  double sum_delta = 0.0;
-  for (size_t k = 0; k < num_samples; ++k) {
-    do {
-      state_sampler->sampleUniform(fakeMotion.states[0]);
-    } while (!si->isValid(fakeMotion.states[0]));
-    robot.setPosition(fakeMotion.states[0], fcl::Vector3d(0, 0, 0));
-
-    T_m.nearestK(&fakeMotion, num_desired_neighbors + 1, neighbors_m);
-
-    double max_delta =
-        si->distance(fakeMotion.states[0], neighbors_m.back()->states.front());
-    sum_delta += max_delta;
-  }
-  double adjusted_delta = (sum_delta / num_samples) / alpha;
-  std::cout << "Automatically adjusting delta to: " << adjusted_delta
-            << std::endl;
-
-  si->freeState(fakeMotion.states.back());
-
-  return adjusted_delta;
-}
-
-void filter_duplicates(std::vector<Motion> &motions, double delta, double alpha,
-                       RobotOmpl &robot, ompl::NearestNeighbors<Motion *> &T_m,
-                       double factor) {
-
-  auto si = robot.getSpaceInformation();
-  size_t num_duplicates = 0;
-  Motion fakeMotion;
-  fakeMotion.idx = -1;
-  fakeMotion.states.push_back(si->allocState());
-  std::vector<Motion *> neighbors_m;
-  for (const auto &m : motions) {
-    if (m.disabled) {
-      continue;
-    }
-
-    si->copyState(fakeMotion.states[0], m.states[0]);
-    T_m.nearestR(&fakeMotion, factor * delta * alpha, neighbors_m);
-
-    for (Motion *nm : neighbors_m) {
-      if (nm == &m || nm->disabled) {
-        continue;
-      }
-      double goal_delta = si->distance(m.states.back(), nm->states.back());
-      if (goal_delta < factor * delta * (1 - alpha)) {
-        nm->disabled = true;
-        ++num_duplicates;
-      }
-    }
-  }
-  std::cout << "There are " << num_duplicates << " duplicate motions!"
-            << std::endl;
-}
 
 void __add_state_timed(AStarNode *node,
                        ompl::NearestNeighbors<AStarNode *> *T_n,
@@ -716,7 +690,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   std::vector<AStarNode *> neighbors_n;
   // std::vector<Trajectory> expanded_trajs; // for debugging
 
-  const bool debug = true; 
+  const bool debug = false; 
   
   const bool check_intermediate_goal = true;
   const size_t num_check_goal = 0;
@@ -1049,14 +1023,14 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   }
   // traj_out.update_feasibility(dynobench::Feasibility_thresholds(), true); // why needed ?
 
-  {
-    std::string filename_id =
-        "../dynoplan/traj_db_" + gen_random(6) + ".yaml";
-    std::cout << "saving traj to: " << filename_id << std::endl;
-    create_dir_if_necessary(filename_id.c_str());
-    std::ofstream out(filename_id);
-    traj_out.to_yaml_format(out);
-  }
+  // {
+  //   std::string filename_id =
+  //       "../dynoplan/traj_db_" + gen_random(6) + ".yaml";
+  //   std::cout << "saving traj to: " << filename_id << std::endl;
+  //   create_dir_if_necessary(filename_id.c_str());
+  //   std::ofstream out(filename_id);
+  //   traj_out.to_yaml_format(out);
+  // }
 
   out_info_tdb.solved = status == Terminate_status::SOLVED;
   out_info_tdb.cost = traj_out.cost;
