@@ -207,6 +207,8 @@ struct Heu_roadmap_bwd : Heu_fun {
     if (heuristic_nn){
       _Node fake_node;
       fake_node.state_eig = x;
+      // std::cout << "nearest gScore: " << heuristic_nn->nearest(&fake_node)->gScore << std::endl;
+      // std::cout << "nearest hScore: " << heuristic_nn->nearest(&fake_node)->hScore << std::endl;
       return heuristic_nn->nearest(&fake_node)->gScore;
     }
     else {

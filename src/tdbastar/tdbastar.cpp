@@ -501,7 +501,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
               bool reverse_search,
               std::vector<dynobench::Trajectory> &expanded_trajs,
               ompl::NearestNeighbors<AStarNode *>* heuristic_nn,
-              ompl::NearestNeighbors<AStarNode *>** heuristic_result) {
+              ompl::NearestNeighbors<AStarNode *>** heuristic_result){
 
   // #ifdef DBG_PRINTS
   std::cout << "Running tdbA* for robot " << robot_id << std::endl;
@@ -523,8 +523,8 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
         "motions should be loaded before calling dbastar");
   std::vector<Motion> &motions = *options_tdbastar.motions_ptr;
 // for the reverse search debug
-  std::ofstream out2("../dynoplan/expanded_trajs_rev.yaml");
-  out2 << "trajs:" << std::endl;
+  // std::ofstream out2("../dynoplan/expanded_trajs_rev.yaml");
+  // out2 << "trajs:" << std::endl;
 
   auto check_motions = [&] {
     for (size_t idx = 0; idx < motions.size(); ++idx) {
@@ -547,9 +547,10 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   } else {
     NOT_IMPLEMENTED;
   }
-  // for the initial heuristics
-  if (heuristic_result && reverse_search) {
-    *heuristic_result = T_n;
+  // // for the initial heuristics
+  if (heuristic_result) {
+    // *heuristic_result = T_n;
+    *heuristic_result = nigh_factory2<AStarNode *>(problem.robotTypes[robot_id], robot);
   }
   if (options_tdbastar.use_nigh_nn) {
     // if (reverse_search){
@@ -594,8 +595,10 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   }
   // all_nodes manages the memory.
   // c-pointer don't have onwership.
-  std::vector<std::unique_ptr<AStarNode>> all_nodes;
-  all_nodes.push_back(std::make_unique<AStarNode>());
+  // std::vector<std::unique_ptr<AStarNode>> all_nodes;
+  // all_nodes.push_back(std::make_unique<AStarNode>());
+  std::vector<std::shared_ptr<AStarNode>> all_nodes;
+  all_nodes.push_back(std::make_shared<AStarNode>());
 
   AStarNode *start_node = all_nodes.at(0).get();
   start_node->gScore = 0;
@@ -609,7 +612,8 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   DYNO_DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
 
-  auto goal_node = std::make_unique<AStarNode>();
+  // auto goal_node = std::make_unique<AStarNode>();
+  auto goal_node = std::make_shared<AStarNode>();
   goal_node->state_eig = problem.goals[robot_id];
   open_t open;
   start_node->handle = open.push(start_node);
@@ -639,7 +643,9 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
 
   time_bench.time_nearestNode_add +=
       timed_fun_void([&] { T_n->add(start_node); });
-
+  if (reverse_search){
+    (*heuristic_result)->add(start_node);
+  }
   const size_t print_every = 1000;
 
   double last_f_score = start_node->fScore;
@@ -818,7 +824,8 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
       if (!neighbors_n.size() || chosen_index != -1) {
         // STATE is NOVEL, we add the node
         num_expansion_best_node++;
-        all_nodes.push_back(std::make_unique<AStarNode>());
+        // all_nodes.push_back(std::make_unique<AStarNode>());
+        all_nodes.push_back(std::make_shared<AStarNode>());
         AStarNode *__node = all_nodes.back().get();
         __node->state_eig = tmp_node.state_eig;
         __node->gScore = gScore;
@@ -835,19 +842,16 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
             timed_fun_void([&] { __node->handle = open.push(__node); });
         time_bench.time_nearestNode_add +=
             timed_fun_void([&] { T_n->add(__node); });
+        if (reverse_search){
+          (*heuristic_result)->add(__node);
+        }
 
-          // if (constraints.size() > 0){
-          //   std::string constraintsFile = "../debug/constaints_" + gen_random(2) + ".yaml";
-          //   create_dir_if_necessary(constraintsFile);
-          //   std::ofstream constraint_out(constraintsFile);
-          //   export_constraints(constraints, robot->name, robot_id, &constraint_out);
-          // }
       } 
       else {
         if(options_tdbastar.rewire){
           for (auto &n : neighbors_n) {
             // STATE is not novel, we udpate
-            if (double tentative_g = gScore + 
+            if (float tentative_g = gScore + 
                     options_tdbastar.cost_delta_factor *
                     robot->lower_bound_time(tmp_node.state_eig, n->state_eig);
                 tentative_g < n->gScore) {
@@ -888,7 +892,6 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
       }
     } // end of lazy_trajs loop
   } // out of while loop
-
   time_bench.time_search = watch.elapsed_ms();
 
   time_bench.time_nearestMotion += expander.time_in_nn;
