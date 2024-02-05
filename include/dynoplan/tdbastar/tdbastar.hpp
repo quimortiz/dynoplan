@@ -39,9 +39,10 @@ using Sample_ = ob::State;
 
 struct AStarNode;
 struct compareAStarNode {
-  bool operator()(const AStarNode *a, const AStarNode *b) const;
+  bool operator()(const std::shared_ptr<AStarNode> a, const std::shared_ptr<AStarNode> b) const;
 };
-typedef typename boost::heap::d_ary_heap<AStarNode *, boost::heap::arity<2>,
+
+typedef typename boost::heap::d_ary_heap<std::shared_ptr<AStarNode>, boost::heap::arity<2>,
                                          boost::heap::compare<compareAStarNode>,
                                          boost::heap::mutable_<true>>
     open_t;
@@ -70,7 +71,8 @@ struct AStarNode {
   // can arrive at this node at time gScore, starting from came_from, using motion used_motion
   struct arrival {
     float gScore;
-    AStarNode* came_from;
+    // AStarNode* came_from;
+    std::shared_ptr <AStarNode> came_from;
     size_t used_motion;
     size_t arrival_idx;
   };
@@ -160,8 +162,8 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_dbastar,
              dynobench::Trajectory &traj_out, const std::vector<Constraint>& constraints,
              Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
              std::vector<dynobench::Trajectory> &expanded_trajs,
-             ompl::NearestNeighbors<AStarNode*>* heuristic_nn = nullptr,
-             ompl::NearestNeighbors<AStarNode*>** heuristic_result = nullptr);
+             ompl::NearestNeighbors<std::shared_ptr<AStarNode>>* heuristic_nn = nullptr,
+             ompl::NearestNeighbors<std::shared_ptr<AStarNode>>** heuristic_result = nullptr);
 
 struct LazyTraj {
 
@@ -290,7 +292,8 @@ void plot_search_tree(std::vector<AStarNode *> nodes,
 
 void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     const std::vector<Motion> &motions,
-                                    AStarNode *solution,
+                                    // AStarNode *solution,
+                                    std::shared_ptr<AStarNode> solution,
                                     const dynobench::Problem &problem,
                                     dynobench::Trajectory &traj_out,
                                     std::ofstream *out = nullptr);

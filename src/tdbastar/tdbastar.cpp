@@ -54,8 +54,8 @@ using Sample_ = ob::State;
 
 const char *duplicate_detection_str[] = {"NO", "HARD", "SOFT"};
 
-bool compareAStarNode::operator()(const AStarNode *a,
-                                  const AStarNode *b) const {
+bool compareAStarNode::operator()(const std::shared_ptr<AStarNode> a,
+                                  const std::shared_ptr<AStarNode> b) const {
   // Sort order
   // 1. lowest fScore
   // 2. highest gScore
@@ -122,15 +122,17 @@ void disable_motions(std::shared_ptr<dynobench::Model_robot>& robot,
 
 void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     const std::vector<Motion> &motions,
-                                    AStarNode *solution,
+                                    std::shared_ptr<AStarNode> solution,
                                     const dynobench::Problem &problem,
                                     dynobench::Trajectory &traj_out,
                                     std::ofstream *out) {
-  std::vector<std::pair<AStarNode *, size_t>> result;
+  // std::vector<std::pair<AStarNode *, size_t>> result;
+  std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>> result;
   CHECK(solution, AT);
   // TODO: check what happens if a solution is a single state?
 
-  AStarNode *n = solution;
+  // AStarNode *n = solution;
+  std::shared_ptr<AStarNode> n = solution;
   size_t arrival_idx = n->current_arrival_idx;
   while (n != nullptr) {
     result.push_back(std::make_pair(n, arrival_idx));
@@ -500,8 +502,8 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
               Out_info_tdb &out_info_tdb, size_t &robot_id, 
               bool reverse_search,
               std::vector<dynobench::Trajectory> &expanded_trajs,
-              ompl::NearestNeighbors<AStarNode *>* heuristic_nn,
-              ompl::NearestNeighbors<AStarNode *>** heuristic_result){
+              ompl::NearestNeighbors<std::shared_ptr<AStarNode>>* heuristic_nn,
+              ompl::NearestNeighbors<std::shared_ptr<AStarNode>>** heuristic_result) {
 
   // #ifdef DBG_PRINTS
   std::cout << "Running tdbA* for robot " << robot_id << std::endl;
@@ -540,17 +542,17 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   Time_benchmark time_bench;
   // build kd-tree for motion primitives
   ompl::NearestNeighbors<Motion *> *T_m = nullptr;
-  ompl::NearestNeighbors<AStarNode *> *T_n = nullptr;
+  ompl::NearestNeighbors<std::shared_ptr<AStarNode>> *T_n = nullptr;
 
   if (options_tdbastar.use_nigh_nn) {
-    T_n = nigh_factory2<AStarNode *>(problem.robotTypes[robot_id], robot);
+    T_n = nigh_factory2<std::shared_ptr<AStarNode>>(problem.robotTypes[robot_id], robot);
   } else {
     NOT_IMPLEMENTED;
   }
   // // for the initial heuristics
   if (heuristic_result) {
-    // *heuristic_result = T_n;
-    *heuristic_result = nigh_factory2<AStarNode *>(problem.robotTypes[robot_id], robot);
+    *heuristic_result = T_n;
+    // *heuristic_result = nigh_factory2<AStarNode *>(problem.robotTypes[robot_id], robot);
   }
   if (options_tdbastar.use_nigh_nn) {
     // if (reverse_search){
@@ -591,7 +593,8 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
     h_fun = std::make_shared<Heu_blind>();
   }
   else{
-    h_fun = std::make_shared<Heu_roadmap_bwd<ompl::NearestNeighbors<AStarNode *>*, AStarNode>>(robot, heuristic_nn, problem.goals[robot_id]);
+    // h_fun = std::make_shared<Heu_roadmap_bwd<ompl::NearestNeighbors<AStarNode *>*, AStarNode>>(robot, heuristic_nn, problem.goals[robot_id]);
+    h_fun = std::make_shared<Heu_roadmap_bwd<std::shared_ptr<AStarNode>, AStarNode>>(robot, heuristic_nn, problem.goals[robot_id]);
   }
   // all_nodes manages the memory.
   // c-pointer don't have onwership.
@@ -600,7 +603,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   std::vector<std::shared_ptr<AStarNode>> all_nodes;
   all_nodes.push_back(std::make_shared<AStarNode>());
 
-  AStarNode *start_node = all_nodes.at(0).get();
+  auto start_node = all_nodes.at(0);
   start_node->gScore = 0;
   start_node->state_eig = problem.starts[robot_id];
   start_node->hScore = h_fun->h(problem.starts[robot_id]); // robot->lower_bound_time()
@@ -616,14 +619,15 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   auto goal_node = std::make_shared<AStarNode>();
   goal_node->state_eig = problem.goals[robot_id];
   open_t open;
+  // start_node->handle = open.push(start_node.get());
   start_node->handle = open.push(start_node);
 
   Motion fakeMotion;
   fakeMotion.idx = -1;
   fakeMotion.traj.states.push_back(Eigen::VectorXd::Zero(robot->nx));
 
-  AStarNode tmp_node;
-  tmp_node.state_eig = Eigen::VectorXd::Zero(robot->nx);
+  auto tmp_node = std::make_shared<AStarNode>();
+  tmp_node->state_eig = Eigen::VectorXd::Zero(robot->nx);
 
   double best_distance_to_goal =
       robot->distance(start_node->state_eig, problem.goals[robot_id]);
@@ -643,9 +647,9 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
 
   time_bench.time_nearestNode_add +=
       timed_fun_void([&] { T_n->add(start_node); });
-  if (reverse_search){
-    (*heuristic_result)->add(start_node);
-  }
+  // if (reverse_search){
+  //   (*heuristic_result)->add(start_node);
+  // }
   const size_t print_every = 1000;
 
   double last_f_score = start_node->fScore;
@@ -684,9 +688,10 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
     return false;
   };
 
-  AStarNode *best_node = nullptr;
-  std::vector<AStarNode *> closed_list;
-  std::vector<AStarNode *> neighbors_n;
+  // AStarNode *best_node = nullptr;
+  std::shared_ptr<AStarNode> best_node;
+  // std::vector<AStarNode *> closed_list;
+  std::vector<std::shared_ptr<AStarNode>> neighbors_n;
 
   const bool debug = false; 
   
@@ -724,7 +729,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
       open.pop();
     });
     last_f_score = best_node->fScore;
-    closed_list.push_back(best_node);
+    // closed_list.push_back(best_node);
     best_node->is_in_open = false;
     // bool is_at_goal = best_node->reaches_goal;
   
@@ -787,16 +792,16 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
       // Additional CHECK: if a intermediate state is close to goal. It really
       // helps!
       int chosen_index = -1;
-      check_goal(*robot, tmp_node.state_eig, problem.goals[robot_id], traj_wrapper,
+      check_goal(*robot, tmp_node->state_eig, problem.goals[robot_id], traj_wrapper,
                  options_tdbastar.delta_factor_goal * options_tdbastar.delta,
                  num_check_goal, chosen_index, !reverse_search);
 
       // for the Node, if it reaches after the motion being transferred
-      bool reachesGoal = robot->distance(tmp_node.state_eig, problem.goals[robot_id]) <= options_tdbastar.delta;
+      bool reachesGoal = robot->distance(tmp_node->state_eig, problem.goals[robot_id]) <= options_tdbastar.delta;
       // Tentative hScore, gScore
       double hScore;
       time_bench.time_hfun +=
-          timed_fun_void([&] { hScore = h_fun->h(tmp_node.state_eig); });
+          timed_fun_void([&] { hScore = h_fun->h(tmp_node->state_eig); });
       // assert(hScore >= 0);
       double cost_motion = chosen_index != -1
                                ? chosen_index * robot->ref_dt
@@ -817,7 +822,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
       // tmp_traj.to_yaml_format_short(out2, "    ");
       // CHECK if new State is NOVEL
       time_bench.time_nearestNode_search += timed_fun_void([&] {
-        T_n->nearestR(&tmp_node,
+        T_n->nearestR(tmp_node,
                       (1. - options_tdbastar.alpha) * options_tdbastar.delta,
                       neighbors_n);
       });
@@ -826,8 +831,8 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
         num_expansion_best_node++;
         // all_nodes.push_back(std::make_unique<AStarNode>());
         all_nodes.push_back(std::make_shared<AStarNode>());
-        AStarNode *__node = all_nodes.back().get();
-        __node->state_eig = tmp_node.state_eig;
+        auto __node = all_nodes.back();
+        __node->state_eig = tmp_node->state_eig;
         __node->gScore = gScore;
         __node->hScore = hScore;
         __node->fScore = gScore + hScore;
@@ -842,9 +847,9 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
             timed_fun_void([&] { __node->handle = open.push(__node); });
         time_bench.time_nearestNode_add +=
             timed_fun_void([&] { T_n->add(__node); });
-        if (reverse_search){
-          (*heuristic_result)->add(__node);
-        }
+        // if (reverse_search){
+        //   (*heuristic_result)->add(__node);
+        // }
 
       } 
       else {
@@ -853,7 +858,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
             // STATE is not novel, we udpate
             if (float tentative_g = gScore + 
                     options_tdbastar.cost_delta_factor *
-                    robot->lower_bound_time(tmp_node.state_eig, n->state_eig);
+                    robot->lower_bound_time(tmp_node->state_eig, n->state_eig);
                 tentative_g < n->gScore) {
               bool update_valid = true;
               if (n->reaches_goal){
@@ -892,6 +897,7 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
       }
     } // end of lazy_trajs loop
   } // out of while loop
+
   time_bench.time_search = watch.elapsed_ms();
 
   time_bench.time_nearestMotion += expander.time_in_nn;
@@ -919,14 +925,14 @@ void tdbastar(dynobench::Problem &problem, Options_tdbastar options_tdbastar,
   std::cout << "time_bench:" << std::endl;
   time_bench.write(std::cout);
 
-  AStarNode *solution = nullptr;
+  std::shared_ptr<AStarNode> solution;
 
   if (status == Terminate_status::SOLVED) {
     solution = best_node;
     out_info_tdb.solved = true;
   } else {
       if (!reverse_search){
-        auto nearest = T_n->nearest(goal_node.get());
+        auto nearest = T_n->nearest(goal_node);
         std::cout << "Close distance T_n to goal: "
                   << robot->distance(goal_node->getStateEig(),
                                     nearest->getStateEig())
