@@ -31,7 +31,6 @@ using namespace dynobench;
 
 BOOST_AUTO_TEST_CASE(t_multi_robot_cli) {
 
-
   std::vector<std::string> run_cmd_new = {
       "../main_multirobot_optimization",
       "--env",
@@ -439,4 +438,3 @@ BOOST_AUTO_TEST_CASE(t_hetero_random_2) {
 
   multi_out.to_yaml_format("/tmp/test_gen_p10_n2_1_hetero_solution.yaml");
 }
-

@@ -77,9 +77,10 @@ int main(int argc, char *argv[]) {
       problem.p_lb, problem.p_ub);
 
   std::vector<Motion> motions;
-  load_motion_primitives_new(
-      options_tdbastar.motionsFile, *robot, motions, options_tdbastar.max_motions,
-      options_tdbastar.cut_actions, false, options_tdbastar.check_cols);
+  load_motion_primitives_new(options_tdbastar.motionsFile, *robot, motions,
+                             options_tdbastar.max_motions,
+                             options_tdbastar.cut_actions, false,
+                             options_tdbastar.check_cols);
 
   options_tdbastar.motions_ptr = &motions;
   size_t fake_id = 0;

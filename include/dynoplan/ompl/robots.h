@@ -232,7 +232,6 @@ public:
 
   const Eigen::VectorXd &getStateEig() const { return traj.states.front(); }
   const Eigen::VectorXd &getLastStateEig() const { return traj.states.back(); }
-
 };
 
 enum class MotionPrimitiveFormat { BOOST, YAML, JSON, MSGPACK, AUTO };

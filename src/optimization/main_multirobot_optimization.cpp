@@ -1,3 +1,4 @@
+#include "dynobench/multirobot_trajectory.hpp"
 #include <algorithm>
 #include <boost/program_options.hpp>
 #include <chrono>
@@ -5,15 +6,11 @@
 #include <iostream>
 #include <iterator>
 #include <yaml-cpp/yaml.h>
-#include "dynobench/multirobot_trajectory.hpp"
 
 // OMPL headers
 
-#include <dynoplan/optimization/ocp.hpp>
 #include <dynoplan/optimization/multirobot_optimization.hpp>
-
-
-
+#include <dynoplan/optimization/ocp.hpp>
 
 int main(int argc, char *argv[]) {
 
@@ -27,12 +24,10 @@ int main(int argc, char *argv[]) {
   desc.add_options()("help", "produce help message")(
       "env,e", po::value<std::string>(&envFile)->required())(
       "init,i", po::value<std::string>(&initFile)->required())(
-      "out,o", po::value<std::string>(&outFile)->required())
-(
+      "out,o", po::value<std::string>(&outFile)->required())(
       "base,b", po::value<std::string>(&dynobench_base)->required())
 
-    (
-      "sum,s", po::value<bool>(&sum_robots_cost)->required());
+      ("sum,s", po::value<bool>(&sum_robots_cost)->required());
 
   try {
     po::variables_map vm;
@@ -49,6 +44,6 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  execute_optimizationMultiRobot(envFile, initFile, outFile,
-                                 dynobench_base, sum_robots_cost);
+  execute_optimizationMultiRobot(envFile, initFile, outFile, dynobench_base,
+                                 sum_robots_cost);
 }

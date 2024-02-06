@@ -72,7 +72,8 @@ add_library(motion_primitives ./src/motion_primitives/motion_primitives.cpp)
 add_library(
   optimization
   ./src/optimization/ocp.cpp ./src/optimization/options.cpp
-  ./src/optimization/croco_models.cpp ./src/optimization/generate_ocp.cpp ./src/optimization/multirobot_optimization.cpp)
+  ./src/optimization/croco_models.cpp ./src/optimization/generate_ocp.cpp
+  ./src/optimization/multirobot_optimization.cpp)
 
 add_library(sst ./src/ompl/sst.cpp ./src/ompl/robots.cpp)
 add_library(rrt_to ./src/ompl/rrt_to.cpp ./src/ompl/robots.cpp)
@@ -81,7 +82,7 @@ add_library(dbastar ./src/dbastar/dbastar.cpp ./src/dbastar/options.cpp
                     ./src/ompl/robots.cpp ./src/dbastar/heuristics.cpp)
 
 add_library(tdbastar ./src/tdbastar/tdbastar.cpp ./src/ompl/robots.cpp
-./src/tdbastar/options.cpp  ./src/dbastar/heuristics.cpp)
+                     ./src/tdbastar/options.cpp ./src/dbastar/heuristics.cpp)
 
 add_library(dbrrt ./src/dbrrt/dbrrt.cpp ./src/ompl/robots.cpp)
 
@@ -272,15 +273,13 @@ target_include_directories(
           ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src)
 
 target_link_libraries(
-          tdbastar
-          PUBLIC Eigen3::Eigen dynobench::dynobench
-          PRIVATE fcl ${OMPL_LIBRARIES} ${LZ4_LIBRARIES})
+  tdbastar
+  PUBLIC Eigen3::Eigen dynobench::dynobench
+  PRIVATE fcl ${OMPL_LIBRARIES} ${LZ4_LIBRARIES})
 
-# target_link_libraries(
-#   main_tdbastar
-#   PUBLIC Eigen3::Eigen tdbastar 
-#   PRIVATE fcl dynobench::dynobench ${OMPL_LIBRARIES} Boost::program_options
-#           Boost::serialization ${LZ4_LIBRARIES})
+# target_link_libraries( main_tdbastar PUBLIC Eigen3::Eigen tdbastar PRIVATE fcl
+# dynobench::dynobench ${OMPL_LIBRARIES} Boost::program_options
+# Boost::serialization ${LZ4_LIBRARIES})
 
 enable_testing()
 add_subdirectory(test)

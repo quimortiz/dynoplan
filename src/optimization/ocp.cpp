@@ -585,7 +585,7 @@ void __trajectory_optimization(
 
   bool check_with_finite_diff = true;
   // std::string name = problem.robotType;
-  std::string name = model_robot->name; 
+  std::string name = model_robot->name;
   size_t _nx = model_robot->nx;
   size_t _nu = model_robot->nu;
 

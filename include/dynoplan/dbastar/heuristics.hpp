@@ -190,11 +190,10 @@ struct Heu_roadmap : Heu_fun {
   };
 };
 
-template<typename _T, typename _Node>
-struct Heu_roadmap_bwd : Heu_fun {
+template <typename _T, typename _Node> struct Heu_roadmap_bwd : Heu_fun {
 
   Heu_roadmap_bwd(std::shared_ptr<dynobench::Model_robot> robot,
-                  ompl::NearestNeighbors<_T> * heuristic_nn,
+                  ompl::NearestNeighbors<_T> *heuristic_nn,
                   const Eigen::VectorXd &goal)
       : robot(robot), heuristic_nn(heuristic_nn), goal(goal) {}
 
@@ -204,13 +203,12 @@ struct Heu_roadmap_bwd : Heu_fun {
 
   virtual double h(const Eigen::VectorXd &x) override {
     assert(x.size() == robot->nx);
-    if (heuristic_nn){
+    if (heuristic_nn) {
       auto fake_node = std::make_shared<_Node>();
       fake_node->state_eig = x;
       auto nearest_node = heuristic_nn->nearest(fake_node);
       return nearest_node->gScore;
-    }
-    else {
+    } else {
       return robot->lower_bound_time(x, goal);
     }
   }
