@@ -101,7 +101,7 @@ generate_problem(const Generate_params &gen_args,
 
     std::vector<ptr<Cost>> feats_run;
 
-     if (gen_args.model_robot->name == "joint_robot") {
+    if (gen_args.model_robot->name == "joint_robot") {
 
       auto ptr_derived = std::dynamic_pointer_cast<dynobench::Joint_robot>(
           gen_args.model_robot);
@@ -110,7 +110,6 @@ generate_problem(const Generate_params &gen_args,
 
       print_vec(goal_times.data(), goal_times.size());
       CSTR_(gen_args.N);
-
 
       if (goal_times.size()) {
         Eigen::VectorXd weights = Eigen::VectorXd::Zero(nx);

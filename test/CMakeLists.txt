@@ -6,8 +6,8 @@ find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
 add_executable(
   test_optimization
-  ./optimization/test_optimization_base.cpp 
-  ./optimization/test_optimization_0.cpp 
+  ./optimization/test_optimization_base.cpp
+  ./optimization/test_optimization_0.cpp
   ./optimization/test_optimization_1.cpp
   ./optimization/test_optimization_cli.cpp
   ./optimization/test_optimization_multirobot.cpp)
@@ -35,9 +35,8 @@ add_executable(test_rrt_to rrt_to/test_rrt_to_base.cpp rrt_to/test_rrt_to_0.cpp
                            rrt_to/test_rrt_to_cli.cpp)
 
 # tdb-A*
-add_executable(
-  test_tdbastar tdbastar/test_tdbastar_base.cpp tdbastar/test_tdbastar_cli.cpp)
-
+add_executable(test_tdbastar tdbastar/test_tdbastar_base.cpp
+                             tdbastar/test_tdbastar_cli.cpp)
 
 target_link_libraries(test_idbastar idbastar::idbastar
                       Boost::unit_test_framework)
@@ -56,8 +55,8 @@ target_link_libraries(test_rrt_to idbastar::rrt_to Boost::unit_test_framework
 target_link_libraries(test_dbrrt idbastar::dbrrt Boost::unit_test_framework
                       ${OMPL_LIBRARIES} ${LZ4_LIBRARIES})
 
-target_link_libraries(test_tdbastar idbastar::tdbastar Boost::unit_test_framework)
-
+target_link_libraries(test_tdbastar idbastar::tdbastar
+                      Boost::unit_test_framework)
 
 add_test(NAME test_sst COMMAND test_sst)
 add_test(NAME test_rrt_to COMMAND test_rrt_to)
@@ -66,4 +65,3 @@ add_test(NAME test_dbastar COMMAND test_dbastar)
 add_test(NAME test_idbastar COMMAND test_idbastar)
 add_test(NAME test_dbrrt COMMAND test_dbrrt)
 add_test(NAME test_tdbastar COMMAND test_tdbastar)
-

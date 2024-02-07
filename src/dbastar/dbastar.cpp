@@ -659,12 +659,12 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
     srand(time(0));
   }
 
-// from Quim
-//   auto my_func = [&](int c){std::cout << "hell"; return 1+c+cost_bound;}; // lambda
+  // from Quim
+  //   auto my_func = [&](int c){std::cout << "hell"; return 1+c+cost_bound;};
+  //   // lambda
 
-// int bb =
-//    my_func(0);
-
+  // int bb =
+  //    my_func(0);
 
   // Add the start node to the nearest neighbor data structure
   time_bench.time_nearestNode_add +=

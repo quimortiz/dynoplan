@@ -39,12 +39,13 @@ using Sample_ = ob::State;
 
 struct AStarNode;
 struct compareAStarNode {
-  bool operator()(const std::shared_ptr<AStarNode> a, const std::shared_ptr<AStarNode> b) const;
+  bool operator()(const std::shared_ptr<AStarNode> a,
+                  const std::shared_ptr<AStarNode> b) const;
 };
 
-typedef typename boost::heap::d_ary_heap<std::shared_ptr<AStarNode>, boost::heap::arity<2>,
-                                         boost::heap::compare<compareAStarNode>,
-                                         boost::heap::mutable_<true>>
+typedef typename boost::heap::d_ary_heap<
+    std::shared_ptr<AStarNode>, boost::heap::arity<2>,
+    boost::heap::compare<compareAStarNode>, boost::heap::mutable_<true>>
     open_t;
 // Node type (used for open and explored states)
 struct AStarNode {
@@ -68,11 +69,12 @@ struct AStarNode {
   bool is_in_open = false;
   bool valid = true;
   bool reaches_goal;
-  // can arrive at this node at time gScore, starting from came_from, using motion used_motion
+  // can arrive at this node at time gScore, starting from came_from, using
+  // motion used_motion
   struct arrival {
     float gScore;
     // AStarNode* came_from;
-    std::shared_ptr <AStarNode> came_from;
+    std::shared_ptr<AStarNode> came_from;
     size_t used_motion;
     size_t arrival_idx;
   };
@@ -147,7 +149,6 @@ struct Out_info_tdb {
   }
 };
 
-
 double automatic_delta(double delta_in, double alpha, RobotOmpl &robot,
                        ompl::NearestNeighbors<Motion *> &T_m);
 
@@ -155,15 +156,18 @@ struct Constraint {
   double time;
   Eigen::VectorXd constrained_state;
 };
-void export_constraints(const std::vector<Constraint>& constrained_states, std::string robot_type,
-                      size_t robot_id, std::ofstream *out);
-                      
-void tdbastar(dynobench::Problem &problem, Options_tdbastar options_dbastar,
-             dynobench::Trajectory &traj_out, const std::vector<Constraint>& constraints,
-             Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
-             std::vector<dynobench::Trajectory> &expanded_trajs,
-             ompl::NearestNeighbors<std::shared_ptr<AStarNode>>* heuristic_nn = nullptr,
-             ompl::NearestNeighbors<std::shared_ptr<AStarNode>>** heuristic_result = nullptr);
+void export_constraints(const std::vector<Constraint> &constrained_states,
+                        std::string robot_type, size_t robot_id,
+                        std::ofstream *out);
+
+void tdbastar(
+    dynobench::Problem &problem, Options_tdbastar options_dbastar,
+    dynobench::Trajectory &traj_out, const std::vector<Constraint> &constraints,
+    Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
+    std::vector<dynobench::Trajectory> &expanded_trajs,
+    ompl::NearestNeighbors<std::shared_ptr<AStarNode>> *heuristic_nn = nullptr,
+    ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result =
+        nullptr);
 
 struct LazyTraj {
 
@@ -184,12 +188,12 @@ struct LazyTraj {
                                  motion->traj.actions, tmp, check_state,
                                  num_valid_states);
 
-    } 
-    // reverse
+    }
+    // reverse, assumes 2d
     else {
-      robot->transform_primitive(*offset-motion->traj.states.back().head(2), motion->traj.states,
-                                 motion->traj.actions, tmp, check_state,
-                                 num_valid_states);
+      robot->transform_primitive(*offset - motion->traj.states.back().head(2),
+                                 motion->traj.states, motion->traj.actions, tmp,
+                                 check_state, num_valid_states);
     }
   }
 
@@ -233,7 +237,6 @@ struct Expander {
     fakeMotion.traj.states.push_back(Eigen::VectorXd(robot->nx));
     std::random_device rd;
     g = std::mt19937{rd()};
-
   }
 
   void seed(int seed) { g.seed(seed); }
@@ -305,22 +308,16 @@ void check_goal(dynobench::Model_robot &robot, Eigen::Ref<Eigen::VectorXd> x,
 
 bool check_lazy_trajectory(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
-    const Eigen::Ref<const Eigen::VectorXd> &goal,
-    Time_benchmark &time_bench, dynobench::TrajWrapper &tmp_traj,
-    const std::vector<Constraint>& constraints,
-    const float best_node_gscore,
-    float delta,
-    Eigen::Ref<Eigen::VectorXd> aux_last_state,
+    const Eigen::Ref<const Eigen::VectorXd> &goal, Time_benchmark &time_bench,
+    dynobench::TrajWrapper &tmp_traj,
+    const std::vector<Constraint> &constraints, const float best_node_gscore,
+    float delta, Eigen::Ref<Eigen::VectorXd> aux_last_state,
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
     int *num_valid_states = nullptr, bool forward = true);
 
-void disable_motions(std::shared_ptr<dynobench::Model_robot>& robot,
-    std::string &robot_name,
-    float delta,
-    bool filterDuplicates,
-    float alpha,
-    size_t num_max_motions,
-    std::vector<Motion>& motions);
-
+void disable_motions(std::shared_ptr<dynobench::Model_robot> &robot,
+                     std::string &robot_name, float delta,
+                     bool filterDuplicates, float alpha, size_t num_max_motions,
+                     std::vector<Motion> &motions);
 
 } // namespace dynoplan

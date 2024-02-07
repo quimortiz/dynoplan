@@ -5,7 +5,7 @@
 namespace dynoplan {
 
 void Options_tdbastar::__load_data(void *source, bool boost, bool write,
-                                  const std::string &be) {
+                                   const std::string &be) {
 
   Loader loader;
   loader.use_boost = boost;
@@ -46,7 +46,7 @@ void Options_tdbastar::add_options(po::options_description &desc) {
 }
 
 void Options_tdbastar::print(std::ostream &out, const std::string &be,
-                            const std::string &af) const {
+                             const std::string &af) const {
 
   auto ptr = const_cast<Options_tdbastar *>(this);
   ptr->__load_data(&out, false, true, be);
