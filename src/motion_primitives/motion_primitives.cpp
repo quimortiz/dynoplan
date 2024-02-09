@@ -126,7 +126,7 @@ void sort_motion_primitives_rand_config(
     default:
       NOT_IMPLEMENTED;
     }
-    DYNO_DYNO_CHECK_GEQ(best_index, 0, AT);
+    DYNO_CHECK_GEQ(best_index, 0, AT);
     DYNO_CHECK_LEQ(best_index, trajs.data.size() - 1, AT);
     // assert(best_index < traj.data.size());
 

@@ -648,7 +648,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   start_node->came_from = nullptr;
   start_node->is_in_open = true;
 
-  DYNO_DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
+  DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
 
   auto goal_node = std::make_unique<AStarNode>();
