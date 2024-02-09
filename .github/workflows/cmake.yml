@@ -47,13 +47,9 @@ jobs:
         cd
         mkdir __local
         git clone https://github.com/ompl/ompl
-<<<<<<< HEAD
         cd ompl
         git checkout e2994e5
-        mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=~/__local  && make install -j4
-=======
-        cd ompl && mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=~/__local  && make install -j2
->>>>>>> 5a5e37e1549e01c73a2f5264ecd217c4aeabaf40
+        mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=~/__local  && make install -j2
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
