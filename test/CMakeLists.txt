@@ -7,9 +7,10 @@ find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 add_executable(
   test_optimization
   ./optimization/test_optimization_base.cpp
-  ./optimization/test_optimization_0.cpp
+  ./optimization/test_optimization_0.cpp 
   ./optimization/test_optimization_1.cpp
   ./optimization/test_optimization_cli.cpp
+  ./optimization/test_optimization_payload.cpp
   ./optimization/test_optimization_multirobot.cpp)
 
 add_executable(

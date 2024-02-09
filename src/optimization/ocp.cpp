@@ -6,14 +6,12 @@
 
 #include "crocoddyl/core/numdiff/action.hpp"
 #include "crocoddyl/core/solvers/box-fddp.hpp"
-#include "crocoddyl/core/solvers/ddp.hpp"
-#include "crocoddyl/core/solvers/fddp.hpp"
-#include "crocoddyl/core/states/euclidean.hpp"
 #include "crocoddyl/core/utils/callbacks.hpp"
 #include "crocoddyl/core/utils/timer.hpp"
 
 #include "dynobench/general_utils.hpp"
 #include "dynobench/joint_robot.hpp"
+#include "dynobench/quadrotor_payload_n.hpp"
 #include "dynobench/robot_models.hpp"
 #include "dynoplan/optimization/croco_models.hpp"
 
@@ -63,6 +61,489 @@ public:
     }
   }
 };
+
+// const char *SOLVER_txt[] = {"traj_opt",
+//                             "traj_opt_free_time",
+//                             "traj_opt_smooth_then_free_time",
+//                             "mpc",
+//                             "mpcc",
+//                             "mpcc2",
+//                             "traj_opt_mpcc",
+//                             "mpc_nobound_mpcc",
+//                             "mpcc_linear",
+//                             "time_search_traj_opt",
+//                             "mpc_adaptative",
+//                             "traj_opt_free_time_proxi",
+//                             "traj_opt_no_bound_bound",
+//                             "traj_opt_free_time_proxi_linear",
+//                             "none"};
+
+
+#if 0
+void read_from_file(File_parser_inout &inout) {
+
+
+  YAML::Node init;
+  if (inout.init_guess != "") {
+    init = load_yaml_safe(inout.init_guess);
+  }
+  YAML::Node env = load_yaml_safe(inout.env_file);
+
+  if (!env["robots"]) {
+    CHECK(false, AT);
+    // ...
+  }
+
+  Problem problem;
+  problem.read_from_yaml(inout.env_file.c_str());
+
+  inout.name = problem.robotType;
+
+  Vxd uzero;
+
+  // if (__in(vstr{"unicycle_first_order_0", "unicycle_second_order_0",
+  //               "car_first_order_with_1_trailers_0"},
+  //          inout.name))
+  //   dt = .1;
+  // else if (__in(vstr{"quad2d", "quadrotor_0", "acrobot"}, inout.name))
+  //   dt = .01;
+  // else
+  //   CHECK(false, AT);
+
+  // load the yaml file
+
+  std::string base_path = "../models/";
+  std::string suffix = ".yaml";
+  inout.robot_model_file = base_path + inout.name + suffix;
+  std::cout << "loading file: " << inout.robot_model_file << std::endl;
+  YAML::Node robot_model = load_yaml_safe(inout.robot_model_file);
+  CHECK(robot_model["dt"], AT);
+  inout.dt = robot_model["dt"].as<double>();
+  std::cout << STR_(inout.dt) << std::endl;
+
+  // // load the collision checker
+  // if (__in(vstr{"unicycle_first_order_0", "unicycle_second_order_0",
+  //               "car_first_order_with_1_trailers_0", "quad2d",
+  //               "quadrotor_0"},
+  //          inout.name)) {
+  //   inout.cl = mk<CollisionChecker>();
+  //   inout.cl->load(inout.env_file);
+  // } else {
+  //   std::cout << "this robot doesn't have collision checking " << std::endl;
+  //   inout.cl = nullptr;
+  // }
+
+  std::vector<std::vector<double>> states;
+  // std::vector<Vxd> xs_init;
+  // std::vector<Vxd> us_init;
+
+  size_t N;
+  std::vector<std::vector<double>> actions;
+
+  inout.start = problem.start;
+  inout.goal = problem.goal;
+
+  if (inout.xs.size() && inout.us.size()) {
+    std::cout << "using xs and us as init guess " << std::endl;
+  } else if (inout.init_guess != "") {
+    if (!inout.new_format) {
+
+      CHECK(init["result"], AT);
+      CHECK(init["result"][0], AT);
+      get_states_and_actions(init["result"][0], inout.xs, inout.us);
+
+    } else {
+
+      std::vector<Vxd> _xs_init;
+      std::vector<Vxd> _us_init;
+
+      CHECK(init["result2"], AT);
+      CHECK(init["result2"][0], AT);
+
+      get_states_and_actions(init["result2"][0], _xs_init, _us_init);
+
+      std::cout << "Reading results in the new format " << std::endl;
+
+      std::vector<double> _times;
+
+      for (const auto &time : init["result2"][0]["times"]) {
+        _times.push_back(time.as<double>());
+      }
+
+      // 0 ... 3.5
+      // dt is 1.
+      // 0 1 2 3 4
+
+      // we use floor in the time to be more agressive
+      std::cout << STR_(inout.dt) << std::endl;
+
+      double total_time = _times.back();
+
+      size_t num_time_steps = std::ceil(total_time / inout.dt);
+
+      Vxd times = Vxd::Map(_times.data(), _times.size());
+
+      std::vector<Vxd> xs_init_new;
+      std::vector<Vxd> us_init_new;
+
+      size_t nx = states.at(0).size();
+      size_t nu = actions.at(0).size();
+
+      auto ts =
+          Vxd::LinSpaced(num_time_steps + 1, 0, num_time_steps * inout.dt);
+
+      std::cout << "taking samples at " << ts.transpose() << std::endl;
+
+      for (size_t ti = 0; ti < num_time_steps + 1; ti++) {
+        Vxd xout(nx);
+        Vxd Jout(nx);
+
+        if (ts(ti) > times.tail(1)(0))
+          xout = _xs_init.back();
+        else
+          dynobench::linearInterpolation(times, _xs_init, ts(ti), xout, Jout);
+        xs_init_new.push_back(xout);
+      }
+
+      auto times_u = times.head(times.size() - 1);
+      for (size_t ti = 0; ti < num_time_steps; ti++) {
+        Vxd uout(nu);
+        Vxd Jout(nu);
+        if (ts(ti) > times_u.tail(1)(0))
+          uout = _us_init.back();
+        else
+          linearInterpolation(times_u, _us_init, ts(ti), uout, Jout);
+        us_init_new.push_back(uout);
+      }
+
+      N = num_time_steps;
+
+      std::cout << "N: " << N << std::endl;
+      std::cout << "us:  " << us_init_new.size() << std::endl;
+      std::cout << "xs: " << xs_init_new.size() << std::endl;
+
+      inout.xs = xs_init_new;
+      inout.us = us_init_new;
+
+      std::ofstream debug_file("debug.txt");
+
+      for (auto &x : inout.xs) {
+        debug_file << x.format(FMT) << std::endl;
+      }
+      debug_file << "---" << std::endl;
+
+      for (auto &u : inout.us) {
+        debug_file << u.format(FMT) << std::endl;
+      }
+    }
+  } else {
+    std::cout << "Warning: "
+              << "no init guess " << std::endl;
+    std::cout << "using T: " << inout.T << " start " << inout.start.format(FMT)
+              << std::endl;
+
+    Vxd x0 = inout.start;
+
+    if (options_trajopt.ref_x0) {
+      std::cout << "Warning: using a ref x0, instead of start" << std::endl;
+
+      if (startsWith(inout.name, "unicycle1")) {
+        ;
+      } else if (startsWith(inout.name, "unicycle2")) {
+        x0.segment(3, 2) = Vxd::Zero(2);
+        ;
+      } else if (startsWith(inout.name, "quad2d")) {
+        x0.segment(2, 4) = Vxd::Zero(4);
+      } else if (startsWith(inout.name, "quadrotor_0")) {
+        x0.segment(3, 4) << 0, 0, 0, 1;
+        x0.segment(7, 6) = Vxd::Zero(6);
+      } else if (startsWith(inout.name, "acrobot")) {
+        x0.segment(2, 2) = Vxd::Zero(2);
+      } else if (startsWith(inout.name, "unicycle_first_order_0")) {
+        ;
+      } else if (startsWith(inout.name, "quad3d")) {
+        x0.segment(3, 3).setZero(); // quaternion imaginary
+        x0.segment(7, 6).setZero(); // velocities
+      } else {
+        ERROR_WITH_INFO("not implemented");
+      }
+      inout.xs = std::vector<Vxd>(inout.T + 1, x0);
+    }
+    // lets use slerp.
+    else if (options_trajopt.interp) {
+
+      if (inout.name == "quadrotor_0") {
+
+        auto x_s = inout.start.segment(0, 3);
+        auto x_g = inout.goal.segment(0, 3);
+        // auto  x_g = Eigen::Quaterniond(inout.goal.segment(3,4));
+
+        auto q_s = Eigen::Quaterniond(inout.start.segment<4>(3));
+        auto q_g = Eigen::Quaterniond(inout.goal.segment<4>(3));
+
+        inout.xs = std::vector<Vxd>(inout.T + 1, x0);
+
+        for (size_t i = 0; i < inout.xs.size(); i++) {
+
+          double dt = double(i) / (inout.xs.size() - 1);
+          auto q_ = q_s.slerp(dt, q_g);
+          auto x = x_s + dt * (x_g - x_s);
+          inout.xs.at(i).segment(0, 3) = x;
+          inout.xs.at(i).segment(3, 4) = q_.coeffs();
+        }
+      } else {
+        CHECK(false, AT);
+      }
+
+    } else {
+      inout.xs = std::vector<Vxd>(inout.T + 1, x0);
+    }
+
+    if (startsWith(inout.name, "unicycle")) {
+      uzero = Vxd::Zero(2);
+    } else if (startsWith(inout.name, "car")) {
+      uzero = Vxd::Zero(2);
+    } else if (startsWith(inout.name, "quad2d")) {
+      uzero = Vxd::Ones(2);
+    } else if (startsWith(inout.name, "quad3d")) {
+      uzero = Vxd::Ones(4);
+    } else if (inout.name == "acrobot") {
+      uzero = Vxd::Zero(1);
+    } else {
+      CHECK(false, AT);
+    }
+
+    inout.us = std::vector<Vxd>(inout.T, uzero);
+  }
+
+  bool verbose = false;
+  if (verbose) {
+
+    std::cout << "states " << std::endl;
+    for (auto &x : inout.xs)
+      std::cout << x.format(FMT) << std::endl;
+
+    std::cout << "actions " << std::endl;
+    for (auto &u : inout.us)
+      std::cout << u.format(FMT) << std::endl;
+  }
+}
+#endif
+
+void convert_traj_with_variable_time(const std::vector<Vxd> &xs,
+                                     const std::vector<Vxd> &us,
+                                     std::vector<Vxd> &xs_out,
+                                     std::vector<Vxd> &us_out, const double &dt,
+                                     const dynobench::StateDyno &state) {
+  DYNO_CHECK(xs.size(), AT);
+  DYNO_CHECK(us.size(), AT);
+  DYNO_CHECK_EQ(xs.size(), us.size() + 1, AT);
+
+  size_t N = us.size();
+  size_t nx = xs.front().size();
+
+  size_t nu = us.front().size();
+  double total_time =
+      std::accumulate(us.begin(), us.end(), 0., [&dt](auto &a, auto &b) {
+        return a + dt * b(b.size() - 1);
+      });
+
+  std::cout << "original total time: " << dt * us.size() << std::endl;
+  std::cout << "new total_time: " << total_time << std::endl;
+
+  size_t num_time_steps = std::ceil(total_time / dt);
+  std::cout << "number of time steps " << num_time_steps << std::endl;
+  std::cout << "new total time " << num_time_steps * dt << std::endl;
+  double scaling_factor = num_time_steps * dt / total_time;
+  std::cout << "scaling factor " << scaling_factor << std::endl;
+  DYNO_CHECK_GEQ(scaling_factor, 1, AT);
+  DYNO_CHECK_GEQ(scaling_factor, 1., AT);
+
+  // now I have to sample at every dt
+  // TODO: lOOK for Better solution than the trick with scaling
+
+  auto times = Vxd(N + 1);
+  times.setZero();
+  for (size_t i = 1; i < static_cast<size_t>(times.size()); i++) {
+    times(i) = times(i - 1) + dt * us.at(i - 1)(nu - 1);
+  }
+  // std::cout << times.transpose() << std::endl;
+
+  // TODO: be careful with SO(2)
+  std::vector<Vxd> x_out, u_out;
+  for (size_t i = 0; i < num_time_steps + 1; i++) {
+    double t = i * dt / scaling_factor;
+    Vxd out(nx);
+    Vxd Jout(nx);
+    linearInterpolation(times, xs, t, state, out, Jout);
+    x_out.push_back(out);
+  }
+
+  std::vector<Vxd> u_nx_orig(us.size());
+  std::transform(us.begin(), us.end(), u_nx_orig.begin(),
+                 [&nu](auto &s) { return s.head(nu - 1); });
+
+  for (size_t i = 0; i < num_time_steps; i++) {
+    double t = i * dt / scaling_factor;
+    Vxd out(nu - 1);
+    // std::cout << " i and time and num_time_steps is " << i << " " << t << "
+    // "
+    //           << num_time_steps << std::endl;
+    Vxd J(nu - 1);
+    linearInterpolation(times.head(times.size() - 1), u_nx_orig, t, state, out,
+                        J);
+    u_out.push_back(out);
+  }
+
+  std::cout << "u out " << u_out.size() << std::endl;
+  std::cout << "x out " << x_out.size() << std::endl;
+
+  xs_out = x_out;
+  us_out = u_out;
+}
+
+// std::vector<ReportCost> report_problem(ptr<crocoddyl::ShootingProblem>
+// problem,
+//                                        const std::vector<Vxd> &xs,
+//                                        const std::vector<Vxd> &us,
+//                                        const char *file_name) {
+//   std::vector<ReportCost> reports;
+//
+//   for (size_t i = 0; i < problem->get_runningModels().size(); i++) {
+//     auto &x = xs.at(i);
+//     auto &u = us.at(i);
+//     auto p = boost::static_pointer_cast<ActionModelDyno>(
+//         problem->get_runningModels().at(i));
+//     std::vector<ReportCost> reports_i = get_report(
+//         p, [&](ptr<Cost> f, Eigen::Ref<Vxd> r) { f->calc(r, x, u); });
+//
+//     for (auto &report_ii : reports_i)
+//       report_ii.time = i;
+//     reports.insert(reports.end(), reports_i.begin(), reports_i.end());
+//   }
+//
+//   auto p =
+//       boost::static_pointer_cast<ActionModelDyno>(problem->get_terminalModel());
+//   std::vector<ReportCost> reports_t = get_report(
+//       p, [&](ptr<Cost> f, Eigen::Ref<Vxd> r) { f->calc(r, xs.back()); });
+//
+//   for (auto &report_ti : reports_t)
+//     report_ti.time = xs.size() - 1;
+//   ;
+//
+//   reports.insert(reports.begin(), reports_t.begin(), reports_t.end());
+//
+//   // write down the reports.
+//   //
+//
+//   std::string one_space = " ";
+//   std::string two_space = "  ";
+//   std::string four_space = "    ";
+//
+//   create_dir_if_necessary(file_name);
+//
+//   std::ofstream reports_file(file_name);
+//   for (auto &report : reports) {
+//     reports_file << "-" << one_space << "name: " << report.name << std::endl;
+//     reports_file << two_space << "time: " << report.time << std::endl;
+//     reports_file << two_space << "cost: " << report.cost << std::endl;
+//     reports_file << two_space << "type: " << static_cast<int>(report.type)
+//                  << std::endl;
+//     if (report.r.size()) {
+//       reports_file << two_space << "r: " << report.r.format(FMT) <<
+//       std::endl;
+//     }
+//   }
+//
+//   return reports;
+// }
+
+// bool check_problem(ptr<crocoddyl::ShootingProblem> problem,
+//                    ptr<crocoddyl::ShootingProblem> problem2,
+//                    const std::vector<Vxd> &xs, const std::vector<Vxd> &us) {
+//
+//   bool equal = true;
+//   // for (auto &x : xs) {
+//   //   CSTR_V(x);
+//   //   CSTR_(x.size());
+//   // }
+//   // std::cout << "us" << std::endl;
+//   // for (auto &u : us) {
+//   //
+//   //   CSTR_(u.size());
+//   //   CSTR_V(u);
+//   // }
+//
+//   problem->calc(xs, us);
+//   problem->calcDiff(xs, us);
+//   auto data_running = problem->get_runningDatas();
+//   auto data_terminal = problem->get_terminalData();
+//
+//   // now with finite diff
+//   problem2->calc(xs, us);
+//   problem2->calcDiff(xs, us);
+//   auto data_running_diff = problem2->get_runningDatas();
+//   auto data_terminal_diff = problem2->get_terminalData();
+//
+//   double tol = 1e-3;
+//   bool check;
+//
+//   check = dynobench::check_equal(data_terminal_diff->Lx, data_terminal->Lx,
+//   tol, tol); WARN(check, std::string("LxT:") + AT);
+//
+//   if (!check)
+//     equal = false;
+//
+//   check = dynobench::check_equal(data_terminal_diff->Lxx, data_terminal->Lxx,
+//   tol, tol); if (!check)
+//     equal = false;
+//   WARN(check, std::string("LxxT:") + AT);
+//
+//   DYNO_CHECK_EQ(data_running_diff.size(), data_running.size(), AT);
+//   for (size_t i = 0; i < data_running_diff.size(); i++) {
+//     auto &d = data_running.at(i);
+//     auto &d_diff = data_running_diff.at(i);
+//     CSTR_V(xs.at(i));
+//     CSTR_V(us.at(i));
+//     check = dynobench::check_equal(d_diff->Fx, d->Fx, tol, tol);
+//     if (!check)
+//       equal = false;
+//     WARN(check, std::string("Fx:") + AT);
+//     check = dynobench::check_equal(d_diff->Fu, d->Fu, tol, tol);
+//     if (!check)
+//       equal = false;
+//     WARN(check, std::string("Fu:") + AT);
+//     check = dynobench::check_equal(d_diff->Lx, d->Lx, tol, tol);
+//     if (!check)
+//       equal = false;
+//     WARN(check, std::string("Lx:") + AT);
+//     check = dynobench::check_equal(d_diff->Lu, d->Lu, tol, tol);
+//     if (!check)
+//       equal = false;
+//     WARN(check, std::string("Lu:") + std::to_string(i) + ":" + AT);
+//     check = dynobench::check_equal(d_diff->Fx, d->Fx, tol, tol);
+//     if (!check)
+//       equal = false;
+//     WARN(check, std::string("Fx:") + AT);
+//     check = dynobench::check_equal(d_diff->Fu, d->Fu, tol, tol);
+//     if (!check)
+//       equal = false;
+//     WARN(check, std::string("Fu:") + AT);
+//     check = dynobench::check_equal(d_diff->Lxx, d->Lxx, tol, tol);
+//     if (!check)
+//       equal = false;
+//     WARN(check, std::string("Lxx:") + AT);
+//     check = dynobench::check_equal(d_diff->Lxu, d->Lxu, tol, tol);
+//     if (!check)
+//       equal = false;
+//     WARN(check, std::string("Lxu:") + AT);
+//     check = dynobench::check_equal(d_diff->Luu, d->Luu, tol, tol);
+//     if (!check)
+//       equal = false;
+//     WARN(check, std::string("Luu:") + AT);
+//   }
+//   return equal;
+// }
 
 void write_states_controls(const std::vector<Eigen::VectorXd> &xs,
                            const std::vector<Eigen::VectorXd> &us,
@@ -583,8 +1064,6 @@ void __trajectory_optimization(
   size_t ddp_iterations = 0;
   double ddp_time = 0;
 
-  bool check_with_finite_diff = true;
-
   std::string name = problem.robotType;
   size_t _nx = model_robot->nx;
   size_t _nu = model_robot->nu;
@@ -615,8 +1094,10 @@ void __trajectory_optimization(
 
   std::vector<Eigen::VectorXd> xs_init__ = xs_init;
 
-  if (startsWith(problem.robotType, "quad3d") ||
-      model_robot->name == "quad3d") {
+  if (startsWith(problem.robotType, "quad3d") &&
+      !startsWith(problem.robotType, "quad3dpayload")) {
+    DYNO_CHECK_EQ(start.size(), 13, "");
+    DYNO_CHECK_EQ(goal.size(), 13, "");
     fix_problem_quaternion(start, goal, xs_init, us_init);
   }
 
@@ -663,8 +1144,8 @@ void __trajectory_optimization(
   if (solver == SOLVER::mpc || solver == SOLVER::mpcc ||
       solver == SOLVER::mpcc_linear || solver == SOLVER::mpc_adaptative) {
 
-    DYNO_DYNO_CHECK_GEQ(options_trajopt_local.window_optimize,
-                        options_trajopt_local.window_shift, AT);
+    DYNO_CHECK_GEQ(options_trajopt_local.window_optimize,
+                   options_trajopt_local.window_shift, AT);
 
     bool finished = false;
 
@@ -721,7 +1202,7 @@ void __trajectory_optimization(
 
     while (!finished) {
       if (solver == SOLVER::mpc) {
-        DYNO_DYNO_CHECK_GEQ(
+        DYNO_CHECK_GEQ(
             int(N) - int(counter * options_trajopt_local.window_shift), 0, "");
         size_t remaining_steps =
             N - counter * options_trajopt_local.window_shift;
@@ -925,7 +1406,8 @@ void __trajectory_optimization(
       DYNO_CHECK_EQ(xs.size(), window_optimize_i + 1, AT);
       DYNO_CHECK_EQ(us.size(), window_optimize_i, AT);
 
-      if (!options_trajopt_local.use_finite_diff && check_with_finite_diff) {
+      if (!options_trajopt_local.use_finite_diff &&
+          options_trajopt_local.check_with_finite_diff) {
         check_problem_with_finite_diff(options_trajopt_local, gen_args,
                                        problem_croco, xs, us);
       }
@@ -1255,9 +1737,10 @@ void __trajectory_optimization(
       }
 
       solve_for_fixed_penalty(gen_args, options_trajopt_local, xs_init, us_init,
-                              check_with_finite_diff, N, name, ddp_iterations,
-                              ddp_time, _xs_out, _us_out, model_robot, problem,
-                              folder_tmptraj, store_iterations, callback_dyno);
+                              options_trajopt_local.check_with_finite_diff, N,
+                              name, ddp_iterations, ddp_time, _xs_out, _us_out,
+                              model_robot, problem, folder_tmptraj,
+                              store_iterations, callback_dyno);
 
       xs_init_p = _xs_out;
       us_init_p = _us_out;
@@ -1296,6 +1779,10 @@ void __trajectory_optimization(
 
       Trajectory traj_resample = traj.resample(model_robot);
 
+      for (auto &s : traj_resample.states) {
+        model_robot->ensure(s);
+      }
+
       std::cout << "check traj after resample " << std::endl;
       traj_resample.check(model_robot, true);
       traj_resample.update_feasibility(dynobench::Feasibility_thresholds(),
@@ -1307,6 +1794,7 @@ void __trajectory_optimization(
       if (problem.goal_times.size()) {
         auto ptr_derived =
             std::dynamic_pointer_cast<dynobench::Joint_robot>(model_robot);
+        assert(ptr_derived);
 
         std::cout << "warning: fix the terminal times for the subgoals "
                   << std::endl;
@@ -1330,6 +1818,18 @@ void __trajectory_optimization(
           }
         }
         DYNO_CHECK_EQ(max_goal_time, xs_out.size(), AT);
+        // =======
+        //       CSTR_(ts.tail(1)(0))
+        //
+        //       std::cout << "before resample " << std::endl;
+        //       Eigen::VectorXd times;
+        //       resample_trajectory(xs_out, us_out, times, xs, us, ts,
+        //                           model_robot->ref_dt, model_robot->state);
+        //
+        //       for (auto &s : xs_out) {
+        //         model_robot->ensure(s);
+        // >>>>>>> 5a5e37e1549e01c73a2f5264ecd217c4aeabaf40
+        //       }
       }
     } else {
       xs_out = _xs_out;
@@ -1390,7 +1890,7 @@ void __trajectory_optimization(
 
   if (opti_out.success) {
     double traj_tol = 1e-2;
-    double goal_tol = 1e-2;
+    double goal_tol = 3e-2;
     double col_tol = 1e-2;
     double x_bound_tol = 1e-2;
     double u_bound_tol = 1e-2;
@@ -1451,7 +1951,8 @@ void trajectory_optimization(const dynobench::Problem &problem,
   if (problem.robotTypes.size() == 1 && problem.goal_times.size() == 0) {
     // robotType.empty()) {
     model_robot = dynobench::robot_factory(
-        (problem.models_base_path + problem.robotType + ".yaml").c_str());
+        (problem.models_base_path + problem.robotType + ".yaml").c_str(),
+        problem.p_lb, problem.p_ub);
   } else {
     model_robot = dynobench::joint_robot_factory(problem.robotTypes,
                                                  problem.models_base_path,
@@ -1536,11 +2037,12 @@ void trajectory_optimization(const dynobench::Problem &problem,
                         init_guess.actions, init_guess.times,
                         model_robot->ref_dt, model_robot->state);
 
-    for (auto &s : tmp_init_guess.states)
+    for (auto &s : tmp_init_guess.states) {
       model_robot->ensure(s);
+    }
   }
-  CHECK(tmp_init_guess.actions.size(), AT);
-  CHECK(tmp_init_guess.states.size(), AT);
+  DYNO_CHECK(tmp_init_guess.actions.size(), AT);
+  DYNO_CHECK(tmp_init_guess.states.size(), AT);
   DYNO_CHECK_EQ(tmp_init_guess.states.size(), tmp_init_guess.actions.size() + 1,
                 AT);
 
@@ -1811,7 +2313,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
             if (opti_out_local.feasible) {
               std::cout << "if feasible -- COST" << opti_out_local.cost
                         << std::endl;
-              DYNO_DYNO_CHECK_GEQ(best.cost, opti_out_local.cost, AT);
+              DYNO_CHECK_GEQ(best.cost, opti_out_local.cost, AT);
               best_traj = traj_out;
               best = opti_out_local;
             }
@@ -1831,7 +2333,7 @@ void trajectory_optimization(const dynobench::Problem &problem,
             if (opti_out_local.feasible) {
               std::cout << "if feasible -- COST: " << opti_out_local.cost
                         << std::endl;
-              DYNO_DYNO_CHECK_GEQ(best.cost, opti_out_local.cost, AT);
+              DYNO_CHECK_GEQ(best.cost, opti_out_local.cost, AT);
               best_traj = traj_out;
               best = opti_out_local;
             }
