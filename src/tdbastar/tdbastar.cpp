@@ -534,8 +534,8 @@ void tdbastar(
         "motions should be loaded before calling dbastar");
   std::vector<Motion> &motions = *options_tdbastar.motions_ptr;
   // for the reverse search debug
-  // std::ofstream out2("../dynoplan/expanded_trajs_rev.yaml");
-  // out2 << "trajs:" << std::endl;
+  std::ofstream out2("../dynoplan/expanded_trajs.yaml");
+  out2 << "trajs:" << std::endl;
 
   auto check_motions = [&] {
     for (size_t idx = 0; idx < motions.size(); ++idx) {
@@ -562,8 +562,6 @@ void tdbastar(
   // // for the initial heuristics
   if (heuristic_result) {
     *heuristic_result = T_n;
-    // *heuristic_result = nigh_factory2<AStarNode
-    // *>(problem.robotTypes[robot_id], robot);
   }
   if (options_tdbastar.use_nigh_nn) {
     // if (reverse_search){
@@ -599,21 +597,16 @@ void tdbastar(
 
   std::shared_ptr<Heu_fun> h_fun = nullptr;
   std::vector<Heuristic_node> heu_map;
-  // h_fun = std::make_shared<Heu_euclidean>(robot, problem.goals[robot_id]);
 
   if (reverse_search) {
     h_fun = std::make_shared<Heu_blind>();
   } else {
-    // h_fun = std::make_shared<Heu_roadmap_bwd<ompl::NearestNeighbors<AStarNode
-    // *>*, AStarNode>>(robot, heuristic_nn, problem.goals[robot_id]);
     h_fun = std::make_shared<
         Heu_roadmap_bwd<std::shared_ptr<AStarNode>, AStarNode>>(
         robot, heuristic_nn, problem.goals[robot_id]);
   }
   // all_nodes manages the memory.
   // c-pointer don't have onwership.
-  // std::vector<std::unique_ptr<AStarNode>> all_nodes;
-  // all_nodes.push_back(std::make_unique<AStarNode>());
   std::vector<std::shared_ptr<AStarNode>> all_nodes;
   all_nodes.push_back(std::make_shared<AStarNode>());
 
@@ -635,11 +628,9 @@ void tdbastar(
   DYNO_DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
 
-  // auto goal_node = std::make_unique<AStarNode>();
   auto goal_node = std::make_shared<AStarNode>();
   goal_node->state_eig = problem.goals[robot_id];
   open_t open;
-  // start_node->handle = open.push(start_node.get());
   start_node->handle = open.push(start_node);
 
   Motion fakeMotion;
@@ -707,16 +698,13 @@ void tdbastar(
     return false;
   };
 
-  // AStarNode *best_node = nullptr;
   std::shared_ptr<AStarNode> best_node;
-  // std::vector<AStarNode *> closed_list;
   std::vector<std::shared_ptr<AStarNode>> neighbors_n;
 
   const bool debug = false;
 
   const bool check_intermediate_goal = true;
   const size_t num_check_goal = 0;
-  //  4; // Eg, for n = 4 I check: 1/5 , 2/5 , 3/5 , 4/5
 
   std::function<bool(Eigen::Ref<Eigen::VectorXd>)> ff =
       [&](Eigen::Ref<Eigen::VectorXd> state) {
@@ -796,7 +784,6 @@ void tdbastar(
     std::vector<LazyTraj> lazy_trajs;
     time_bench.time_lazy_expand += timed_fun_void(
         [&] { expander.expand_lazy(best_node->state_eig, lazy_trajs); });
-    // lazy_trajs = neighbors_m within R
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
 
@@ -827,7 +814,7 @@ void tdbastar(
       double hScore;
       time_bench.time_hfun +=
           timed_fun_void([&] { hScore = h_fun->h(tmp_node->state_eig); });
-      // assert(hScore >= 0);
+      assert(hScore >= 0);
       double cost_motion = chosen_index != -1
                                ? chosen_index * robot->ref_dt
                                : (traj_wrapper.get_size() - 1) * robot->ref_dt;
@@ -842,9 +829,6 @@ void tdbastar(
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore; // or gScore + hScore ?
       expanded_trajs.push_back(tmp_traj);
-      // for debugging
-      // out2 << "  - " << std::endl;
-      // tmp_traj.to_yaml_format_short(out2, "    ");
       // CHECK if new State is NOVEL
       time_bench.time_nearestNode_search += timed_fun_void([&] {
         T_n->nearestR(tmp_node,
@@ -854,7 +838,6 @@ void tdbastar(
       if (!neighbors_n.size() || chosen_index != -1) {
         // STATE is NOVEL, we add the node
         num_expansion_best_node++;
-        // all_nodes.push_back(std::make_unique<AStarNode>());
         all_nodes.push_back(std::make_shared<AStarNode>());
         auto __node = all_nodes.back();
         __node->state_eig = tmp_node->state_eig;
@@ -875,9 +858,6 @@ void tdbastar(
             timed_fun_void([&] { __node->handle = open.push(__node); });
         time_bench.time_nearestNode_add +=
             timed_fun_void([&] { T_n->add(__node); });
-        // if (reverse_search){
-        //   (*heuristic_result)->add(__node);
-        // }
 
       } else {
         if (options_tdbastar.rewire) {
@@ -946,8 +926,6 @@ void tdbastar(
       time_bench.check_bounds - time_bench.time_hfun;
 
   assert(time_bench.extra_time >= 0);
-  // assert(time_bench.extra_time / time_bench.time_search * 100 <
-  //        20.); // sanity check -- could this fail?
 
   std::cout << "extra time " << time_bench.extra_time << " "
             << time_bench.extra_time / time_bench.time_search * 100 << "%"
@@ -977,6 +955,7 @@ void tdbastar(
   }
 
   if (status == Terminate_status::SOLVED) {
+    // std::ofstream out3("../dynoplan/solution.yaml");
     from_solution_to_yaml_and_traj(*robot, motions, solution, problem,
                                    traj_out);
     traj_out.start = problem.starts[robot_id];
@@ -992,23 +971,20 @@ void tdbastar(
     thresholds.traj_tol = options_tdbastar.delta;
     traj_out.update_feasibility(thresholds, false);
     // CHECK(traj_out.feasible, ""); // should I keep it ?
-
+    out2 << "trajs:" << std::endl;
+    for (auto traj : expanded_trajs){
+      out2 << "  - " << std::endl;
+      traj.to_yaml_format(out2, "    ");
+    }
     // Sanity check here, that verifies that we obey all constraints
     std::cout << "checking constraints for the final solution " << std::endl;
     for (const auto &constraint : constraints) {
-      // std::cout << "constraint t = " << constraint.time << std::endl;
-      // std::cout << constraint.constrained_state.format(dynobench::FMT) <<
-      // std::endl;
       int time_index = std::lround(constraint.time / robot->ref_dt);
       assert(time_index >= 0);
       if (time_index > (int)traj_out.states.size() - 1) {
         continue;
       }
-      // time_index = std::min<int>(time_index, (int)traj_out.states.size()-1);
       assert(time_index < (int)traj_out.states.size());
-      // std::cout << robot->distance(traj_out.states.at(time_index),
-      // constraint.constrained_state) << std::endl; std::cout <<
-      // traj_out.states.at(time_index).format(dynobench::FMT) << std::endl;
       float dist = robot->distance(traj_out.states.at(time_index),
                                    constraint.constrained_state);
       if (dist <= options_tdbastar.delta) {
