@@ -11,7 +11,10 @@ add_executable(
   ./optimization/test_optimization_1.cpp
   ./optimization/test_optimization_cli.cpp
   ./optimization/test_optimization_payload.cpp
+  # ./optimization/test_optimization_mim.cpp
   ./optimization/test_optimization_multirobot.cpp)
+
+# add_subdirectory(mim-solvers)
 
 add_executable(
   test_dbastar dbastar/test_dbastar_base.cpp dbastar/test_dbastar_0.cpp
@@ -43,7 +46,7 @@ target_link_libraries(test_sst idbastar::sst Boost::unit_test_framework)
 target_link_libraries(test_primitives idbastar::motion_primitives
                       Boost::unit_test_framework)
 target_link_libraries(test_optimization idbastar::optimization
-                      Boost::unit_test_framework)
+                      Boost::unit_test_framework mim_solvers::mim_solvers)
 target_link_libraries(test_dbastar idbastar::dbastar Boost::unit_test_framework)
 
 target_link_libraries(test_rrt_to idbastar::rrt_to Boost::unit_test_framework

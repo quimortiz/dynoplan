@@ -1,5 +1,6 @@
 
 #include "dynoplan/motion_primitives/motion_primitives.hpp"
+#include <atomic>
 
 enum class PRIMITIVE_MODE {
   generate = 0,

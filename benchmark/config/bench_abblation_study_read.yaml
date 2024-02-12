@@ -1,0 +1,10 @@
+date: 2023-10-02--13-12-23
+hostname: fourier
+input:
+- ../results_new/unicycle1_v0/bugtrap_0/idbastar_v0_analysis_d1/2023-10-02--13-11-56/run_0_out.yaml
+- ../results_new/unicycle1_v0/bugtrap_0/idbastar_v0_analysis_d2/2023-10-02--13-11-56/run_0_out.yaml
+- ../results_new/unicycle2_v0/bugtrap_0/idbastar_v0_analysis_d1/2023-10-02--13-11-56/run_0_out.yaml
+- ../results_new/unicycle2_v0/bugtrap_0/idbastar_v0_analysis_d2/2023-10-02--13-11-56/run_0_out.yaml
+- ../results_new/quad2d_v0/quad_bugtrap/idbastar_v0_analysis_d1/2023-10-02--13-11-56/run_0_out.yaml
+- ../results_new/quad2d_v0/quad_bugtrap/idbastar_v0_analysis_d2/2023-10-02--13-11-56/run_0_out.yaml
+output: ../results_new_components/2023-10-02--13-12-23.pdf

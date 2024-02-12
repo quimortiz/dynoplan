@@ -1,14 +1,5 @@
 files:
-  # - ../results_new/summary/summary_2023-10-01--12-04-05.csv
-  - ../results_new/summary/summary_2023-10-01--15-16-12.csv
-  # - ./results_new/summary
-  #   summary/summary_2023-07-31--00-26-05.csv
-  # - ../results_new/summary/summary_2023-07-31--00-26-05.csv
-  # - ../results_new/summary/summary_2023-07-31--00-26-05.csv
-  # - ./results_new/summary/
-  #   ../
-  #   ./resu
-# benchmark_problems:  [] # empy list means all
+  - ../results_new/summary/summary_last_merged.csv
 benchmark_problems:
   - acrobot_v0/swing_up_empty
   - acrobot_v0/swing_up_obs_hard

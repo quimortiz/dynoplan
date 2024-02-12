@@ -15,6 +15,10 @@
 #include "dynobench/robot_models.hpp"
 #include "dynoplan/optimization/croco_models.hpp"
 
+#include "mim_solvers/sqp.hpp"
+#include <crocoddyl/core/utils/exception.hpp>
+#include <memory>
+
 using vstr = std::vector<std::string>;
 using V2d = Eigen::Vector2d;
 using V3d = Eigen::Vector3d;
@@ -77,7 +81,6 @@ public:
 //                             "traj_opt_no_bound_bound",
 //                             "traj_opt_free_time_proxi_linear",
 //                             "none"};
-
 
 #if 0
 void read_from_file(File_parser_inout &inout) {
@@ -970,9 +973,22 @@ void solve_for_fixed_penalty(
   }
 
   // solve
-  crocoddyl::SolverBoxFDDP ddp(problem_croco);
-  ddp.set_th_stop(options_trajopt_local.th_stop);
-  ddp.set_th_acceptnegstep(options_trajopt_local.th_acceptnegstep);
+
+  std::shared_ptr<crocoddyl::SolverAbstract> ddp;
+
+  if (options_trajopt_local.use_mim_solvers) {
+
+    std::cout << "using mim solvers" << std::endl;
+    ddp = std::make_shared<mim_solvers::SolverSQP>(problem_croco);
+    std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->setCallbacks(true);
+    // ddp->setCallbacks(true);
+  } else {
+    ddp = std::make_shared<crocoddyl::SolverBoxFDDP>(problem_croco);
+    ddp->set_th_stop(options_trajopt_local.th_stop);
+    // cast
+    std::dynamic_pointer_cast<crocoddyl::SolverBoxFDDP>(ddp)
+        ->set_th_acceptnegstep(options_trajopt_local.th_acceptnegstep);
+  }
 
   if (options_trajopt_local.CALLBACKS) {
     std::vector<ptr<crocoddyl::CallbackAbstract>> cbs;
@@ -980,22 +996,22 @@ void solve_for_fixed_penalty(
     if (store_iterations) {
       cbs.push_back(callback_dyno);
     }
-    ddp.setCallbacks(cbs);
+    // ddp.setCallbacks(cbs);
   }
 
   std::cout << "CROCO optimize" << AT << std::endl;
   crocoddyl::Timer timer;
-  ddp.solve(xs, us, options_trajopt_local.max_iter, false,
-            options_trajopt_local.init_reg);
+  ddp->solve(xs, us, options_trajopt_local.max_iter, false,
+             options_trajopt_local.init_reg);
   std::cout << "time: " << timer.get_duration() << std::endl;
 
   if (store_iterations)
     callback_dyno->store();
   std::cout << "CROCO optimize -- DONE" << std::endl;
-  ddp_iterations += ddp.get_iter();
+  ddp_iterations += ddp->get_iter();
   ddp_time += timer.get_duration();
-  xs_out = ddp.get_xs();
-  us_out = ddp.get_us();
+  xs_out = ddp->get_xs();
+  us_out = ddp->get_us();
 
   // report after
   std::string filename = folder_tmptraj + "opt_" + random_id + ".yaml";
@@ -1416,9 +1432,24 @@ void __trajectory_optimization(
 
       // auto models = problem->get_runningModels();
 
-      crocoddyl::SolverBoxFDDP ddp(problem_croco);
-      ddp.set_th_stop(options_trajopt_local.th_stop);
-      ddp.set_th_acceptnegstep(options_trajopt_local.th_acceptnegstep);
+      // crocoddyl::SolverBoxFDDP ddp(problem_croco);
+      // ddp.set_th_stop(options_trajopt_local.th_stop);
+      // ddp.set_th_acceptnegstep(options_trajopt_local.th_acceptnegstep);
+
+      std::shared_ptr<crocoddyl::SolverAbstract> ddp;
+      if (options_trajopt_local.use_mim_solvers) {
+
+        std::cout << "using mim solvers" << std::endl;
+        ddp = std::make_shared<mim_solvers::SolverSQP>(problem_croco);
+        std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->setCallbacks(
+            true);
+      } else {
+        ddp = std::make_shared<crocoddyl::SolverBoxFDDP>(problem_croco);
+        ddp->set_th_stop(options_trajopt_local.th_stop);
+        // cast
+        std::dynamic_pointer_cast<crocoddyl::SolverBoxFDDP>(ddp)
+            ->set_th_acceptnegstep(options_trajopt_local.th_acceptnegstep);
+      }
 
       if (options_trajopt_local.CALLBACKS) {
         std::vector<ptr<crocoddyl::CallbackAbstract>> cbs;
@@ -1426,7 +1457,7 @@ void __trajectory_optimization(
         if (store_iterations) {
           cbs.push_back(callback_dyno);
         }
-        ddp.setCallbacks(cbs);
+        // ddp.setCallbacks(cbs);
       }
 
       if (options_trajopt_local.noise_level > 1e-8) {
@@ -1445,8 +1476,8 @@ void __trajectory_optimization(
 
       std::cout << "CROCO optimize" << AT << std::endl;
       crocoddyl::Timer timer;
-      ddp.solve(xs, us, options_trajopt_local.max_iter, false,
-                options_trajopt_local.init_reg);
+      ddp->solve(xs, us, options_trajopt_local.max_iter, false,
+                 options_trajopt_local.init_reg);
       std::cout << "CROCO optimize -- DONE" << std::endl;
 
       if (store_iterations) {
@@ -1455,30 +1486,30 @@ void __trajectory_optimization(
 
       {
         std::string filename = folder_tmptraj + "opt_" + random_id + ".yaml";
-        write_states_controls(ddp.get_xs(), ddp.get_us(), model_robot, problem,
-                              filename.c_str());
+        write_states_controls(ddp->get_xs(), ddp->get_us(), model_robot,
+                              problem, filename.c_str());
 
         std::string filename_raw =
             folder_tmptraj + "opt_" + random_id + ".raw.yaml";
         dynobench::Trajectory traj;
-        traj.states = ddp.get_xs();
-        traj.actions = ddp.get_us();
+        traj.states = ddp->get_xs();
+        traj.actions = ddp->get_us();
         traj.to_yaml_format(filename_raw.c_str());
       }
 
       double time_i = timer.get_duration();
-      size_t iterations_i = ddp.get_iter();
-      ddp_iterations += ddp.get_iter();
+      size_t iterations_i = ddp->get_iter();
+      ddp_iterations += ddp->get_iter();
       ddp_time += timer.get_duration();
-      report_problem(problem_croco, ddp.get_xs(), ddp.get_us(),
+      report_problem(problem_croco, ddp->get_xs(), ddp->get_us(),
                      "/tmp/dynoplan/report-1.yaml");
 
       std::cout << "time: " << time_i << std::endl;
       std::cout << "iterations: " << iterations_i << std::endl;
       total_time += time_i;
       total_iterations += iterations_i;
-      std::vector<Vxd> xs_i_sol = ddp.get_xs();
-      std::vector<Vxd> us_i_sol = ddp.get_us();
+      std::vector<Vxd> xs_i_sol = ddp->get_xs();
+      std::vector<Vxd> us_i_sol = ddp->get_us();
 
       previous_state =
           xs_i_sol.at(options_trajopt_local.window_shift).head(_nx);
@@ -1489,11 +1520,11 @@ void __trajectory_optimization(
       if (solver == SOLVER::mpc_adaptative) {
 
         size_t final_index = window_optimize_i;
-        Vxd x_last = ddp.get_xs().at(final_index);
+        Vxd x_last = ddp->get_xs().at(final_index);
         std::cout << "**\n" << std::endl;
         std::cout << "checking as final index: " << final_index << std::endl;
         std::cout << "last state: " << x_last.format(FMT) << std::endl;
-        std::cout << "true last state: " << ddp.get_xs().back().format(FMT)
+        std::cout << "true last state: " << ddp->get_xs().back().format(FMT)
                   << std::endl;
         std::cout << "distance to goal: "
                   << model_robot->distance(x_last.head(_nx), goal) << std::endl;
@@ -1516,15 +1547,15 @@ void __trajectory_optimization(
         size_t final_index = window_optimize_i;
         std::cout << "final index is " << final_index << std::endl;
 
-        double alpha_mpcc = ddp.get_xs().at(final_index)(_nx);
-        Vxd x_last = ddp.get_xs().at(final_index);
-        last_reaches_ = fun_is_goal(ddp.get_xs().back());
+        double alpha_mpcc = ddp->get_xs().at(final_index)(_nx);
+        Vxd x_last = ddp->get_xs().at(final_index);
+        last_reaches_ = fun_is_goal(ddp->get_xs().back());
 
         std::cout << "**\n" << std::endl;
         std::cout << "checking as final index: " << final_index << std::endl;
         std::cout << "alpha_mpcc:" << alpha_mpcc << std::endl;
         std::cout << "last state: " << x_last.format(FMT) << std::endl;
-        std::cout << "true last state: " << ddp.get_xs().back().format(FMT)
+        std::cout << "true last state: " << ddp->get_xs().back().format(FMT)
                   << std::endl;
         std::cout << "distance to goal: "
                   << model_robot->distance(x_last.head(_nx), goal) << std::endl;
@@ -1534,13 +1565,13 @@ void __trajectory_optimization(
 
         if (last_reaches_) {
 
-          auto it = std::find_if(ddp.get_xs().begin(), ddp.get_xs().end(),
+          auto it = std::find_if(ddp->get_xs().begin(), ddp->get_xs().end(),
                                  [&](const auto &x) { return fun_is_goal(x); });
 
-          bool __flag = it != ddp.get_xs().end();
+          bool __flag = it != ddp->get_xs().end();
           CHECK(__flag, AT);
 
-          index_first_goal = std::distance(ddp.get_xs().begin(), it);
+          index_first_goal = std::distance(ddp->get_xs().begin(), it);
           std::cout << "index first goal " << index_first_goal << std::endl;
         }
 
@@ -1552,20 +1583,20 @@ void __trajectory_optimization(
           std::cout << "checking first state that reaches the goal "
                     << std::endl;
 
-          auto it = std::find_if(ddp.get_xs().begin(), ddp.get_xs().end(),
+          auto it = std::find_if(ddp->get_xs().begin(), ddp->get_xs().end(),
                                  [&](const auto &x) { return fun_is_goal(x); });
 
           assert(it != ddp.get_xs().end());
 
-          window_optimize_i = std::distance(ddp.get_xs().begin(), it);
+          window_optimize_i = std::distance(ddp->get_xs().begin(), it);
           std::cout << "changing the number of steps to optimize(copy) to "
                     << window_optimize_i << std::endl;
         }
 
         std::cout << "checking if i am close to the goal " << std::endl;
 
-        for (size_t i = 0; i < ddp.get_xs().size(); i++) {
-          auto &x = ddp.get_xs().at(i);
+        for (size_t i = 0; i < ddp->get_xs().size(); i++) {
+          auto &x = ddp->get_xs().at(i);
           if (model_robot->distance(x.head(_nx), goal) < 1e-1) {
             std::cout << "one state is close to goal! " << std::endl;
             close_to_goal = true;
@@ -1634,7 +1665,7 @@ void __trajectory_optimization(
       if (solver == SOLVER::mpc || solver == SOLVER::mpc_adaptative) {
         debug_file_yaml << "    goal: " << goal_mpc.format(FMT) << std::endl;
       } else if (solver == SOLVER::mpcc || solver == SOLVER::mpcc_linear) {
-        double alpha_mpcc = ddp.get_xs().back()(_nx);
+        double alpha_mpcc = ddp->get_xs().back()(_nx);
         Vxd out(_nx);
         Vxd Jout(_nx);
         path->interpolate(alpha_mpcc, out, Jout);

@@ -1,0 +1,39 @@
+date: 2023-10-02--13-06-23
+hostname: fourier
+input:
+- ../results_new_search/unicycle1_v0/bugtrap_0/dbastar_v0_heu0/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/unicycle1_v0/bugtrap_0/dbastar_v0_heu1/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/unicycle1_v0/bugtrap_0/dbastar_v0_heuNO/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/unicycle2_v0/bugtrap_0/dbastar_v0_heu0/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/unicycle2_v0/bugtrap_0/dbastar_v0_heu1/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/unicycle2_v0/bugtrap_0/dbastar_v0_heuNO/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quad2d_v0/quad_bugtrap/dbastar_v0_heu0/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quad2d_v0/quad_bugtrap/dbastar_v0_heu1/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quad2d_v0/quad_bugtrap/dbastar_v0_heuNO/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/car1_v0/bugtrap_0/dbastar_v0_heu0/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/car1_v0/bugtrap_0/dbastar_v0_heu1/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/car1_v0/bugtrap_0/dbastar_v0_heuNO/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quadrotor_v0/quad_one_obs/dbastar_v0_heu0/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quadrotor_v0/quad_one_obs/dbastar_v0_heu1/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quadrotor_v0/quad_one_obs/dbastar_v0_heuNO/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quadrotor_v1/window/dbastar_v0_heu0/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quadrotor_v1/window/dbastar_v0_heu1/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quadrotor_v1/window/dbastar_v0_heuNO/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quadrotor_v0/recovery_with_obs/dbastar_v0_heu0/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quadrotor_v0/recovery_with_obs/dbastar_v0_heu1/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quadrotor_v0/recovery_with_obs/dbastar_v0_heuNO/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quad2dpole_v0/window/dbastar_v0_heu0/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quad2dpole_v0/window/dbastar_v0_heu1/2023-10-02--13-04-36/report.yaml
+- ../results_new_search/quad2dpole_v0/window/dbastar_v0_heuNO/2023-10-02--13-04-36/report.yaml
+output: ../results_new_search/summary/summary_search_2023-10-02--13-06-23.tex
+
+
+selected_problems:
+# - unicycle1_v0/bugtrap_0
+- unicycle2_v0/bugtrap_0
+- quad2d_v0/quad_bugtrap
+# - car1_v0/bugtrap_0
+- quadrotor_v0/quad_one_obs
+# - quadrotor_v1/window
+- quadrotor_v0/recovery_with_obs
+- quad2dpole_v0/window

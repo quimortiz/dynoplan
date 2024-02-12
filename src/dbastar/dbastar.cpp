@@ -887,7 +887,8 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
         for (auto &n : neighbors_n) {
           if (double tentative_g =
                   gScore +
-                  robot->lower_bound_time(tmp_node.state_eig, n->state_eig);
+                  options_dbastar.cost_delta_factor *
+                      robot->lower_bound_time(tmp_node.state_eig, n->state_eig);
               tentative_g < n->gScore) {
 
             n->gScore = tentative_g;

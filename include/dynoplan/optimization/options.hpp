@@ -53,6 +53,7 @@ struct Options_trajopt {
   bool welf_format = false;
   bool linear_search = false;
   std::string name = "";
+  bool use_mim_solvers = false;
 
   void add_options(po::options_description &desc);
 

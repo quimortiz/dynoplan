@@ -1,0 +1,13 @@
+default:
+  solver_id: 1
+  search_timelimit: 15000 # in ms
+  use_nigh_nn: True
+  cost_delta_factor: 1
+  smooth_traj: true
+
+car1_v0:
+  default:
+    motionsFile: ../dynomotions_full/car1_v0_all.bin.sp.bin.msgpack
+    num_primitives_0: 100
+    delta_0: .4
+    max_motions_primitives: 20000
