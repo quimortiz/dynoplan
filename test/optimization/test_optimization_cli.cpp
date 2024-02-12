@@ -1,6 +1,6 @@
 
 #include <boost/test/unit_test.hpp>
-#define dynobench_base "../../dynobench/dynobench/"
+#define DYNOBENCH_BASE "../../dynobench/"
 
 BOOST_AUTO_TEST_CASE(t_main_optimization) {
 
@@ -9,9 +9,9 @@ BOOST_AUTO_TEST_CASE(t_main_optimization) {
       "--solver_id",
       "0",
       "--env_file",
-      dynobench_base + std::string("envs/unicycle2_v0/parallelpark_0.yaml"),
+      DYNOBENCH_BASE + std::string("envs/unicycle2_v0/parallelpark_0.yaml"),
       "--models_base_path",
-      dynobench_base + std::string("models/"),
+      DYNOBENCH_BASE + std::string("models/"),
       "--init_file",
       "../../dynobench/data/unicycle2_0_parallelark_guess_0.yaml"};
 

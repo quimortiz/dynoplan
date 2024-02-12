@@ -6,7 +6,8 @@
 using namespace dynoplan;
 using namespace dynobench;
 
-#define dynobench_base "../../dynobench/dynobench/"
+// #define DYNOBENCH_BASE "../../dynobench/dynobench/"
+#define DYNOBENCH_BASE "../../dynobench/"
 // // if you are running from coltrans-planning
 // #define dynobench_base "../deps/dynoplan/dynobench/"
 
@@ -20,12 +21,12 @@ BOOST_AUTO_TEST_CASE(t_payload_optimization_easy) {
 
   Options_trajopt options;
   // KHALED: TODO -> modify the start and goal in problem1 and problem2
-  Problem problem1(dynobench_base "envs/quad3d_payload/empty_0.yaml");
-  Problem problem2(dynobench_base "envs/quad3d_payload/empty_1.yaml");
+  Problem problem1(DYNOBENCH_BASE "envs/quad3d_payload/empty_0.yaml");
+  Problem problem2(DYNOBENCH_BASE "envs/quad3d_payload/empty_1.yaml");
 
-  problem1.models_base_path = dynobench_base "models/";
+  problem1.models_base_path = DYNOBENCH_BASE "models/";
 
-  problem2.models_base_path = dynobench_base "models/";
+  problem2.models_base_path = DYNOBENCH_BASE "models/";
 
   Trajectory init_guess1;
   Trajectory init_guess2;
@@ -46,12 +47,12 @@ BOOST_AUTO_TEST_CASE(t_payload_optimization_easy) {
   BOOST_TEST(result2.feasible);
 
   Problem problem3(
-      dynobench_base
+      DYNOBENCH_BASE
       "envs/quad3d_payload/quad3d_payload_one_obs/quad3d_payload_one_obs.yaml");
 
-  problem3.models_base_path = dynobench_base "models/";
+  problem3.models_base_path = DYNOBENCH_BASE "models/";
 
-  Trajectory init_guess3(dynobench_base
+  Trajectory init_guess3(DYNOBENCH_BASE
                          "envs/quad3d_payload/trajectories/"
                          "quad3d_payload_one_obs_init_guess.yaml");
 
@@ -66,16 +67,16 @@ BOOST_AUTO_TEST_CASE(t_payload_optimization_easy) {
 
 BOOST_AUTO_TEST_CASE(t_two_uav) {
 
-  Problem problem(dynobench_base "envs/quad3d_payload/quad3d_payload_one_obs/"
+  Problem problem(DYNOBENCH_BASE "envs/quad3d_payload/quad3d_payload_one_obs/"
                                  "quad3d_payload_one_obs_0_2_pm_hard.yaml");
 
-  problem.models_base_path = dynobench_base "models/";
+  problem.models_base_path = DYNOBENCH_BASE "models/";
 
-  Trajectory init_guess(dynobench_base
+  Trajectory init_guess(DYNOBENCH_BASE
                         "envs/quad3d_payload/trajectories/"
                         "quad3d_payload_2_pm_hard_init_guess.yaml");
 
-  // Trajectory init_guess( dynobench_base
+  // Trajectory init_guess( DYNOBENCH_BASE
   //                       "envs/quad3d_payload/quad3d_payload_one_obs/shorter_traj.yaml");
 
   Result_opti result;
@@ -95,12 +96,12 @@ BOOST_AUTO_TEST_CASE(t_two_uav) {
 BOOST_AUTO_TEST_CASE(t_two_uav_easy) {
   // dynobench/envs/
 
-  Problem problem(dynobench_base "envs/quad3d_payload/empty1_2_pm_easy.yaml");
+  Problem problem(DYNOBENCH_BASE "envs/quad3d_payload/empty1_2_pm_easy.yaml");
   // quad3d_payload_one_obs/" "quad3d_payload_one_obs_0_2_pm_easy.yaml");
 
-  problem.models_base_path = dynobench_base "models/";
+  problem.models_base_path = DYNOBENCH_BASE "models/";
 
-  Trajectory init_guess(dynobench_base
+  Trajectory init_guess(DYNOBENCH_BASE
                         "envs/quad3d_payload/trajectories/"
                         "quad3d_payload_2_pm_hover_initial_guess.yaml");
 
@@ -128,12 +129,12 @@ BOOST_AUTO_TEST_CASE(t_two_uav_easy) {
 
 BOOST_AUTO_TEST_CASE(t_three_uav) {
 
-  Problem problem(dynobench_base "envs/quad3d_payload/quad3d_payload_one_obs/"
+  Problem problem(DYNOBENCH_BASE "envs/quad3d_payload/quad3d_payload_one_obs/"
                                  "quad3d_payload_one_obs_3_pm_hard.yaml");
 
-  problem.models_base_path = dynobench_base "models/";
+  problem.models_base_path = DYNOBENCH_BASE "models/";
 
-  Trajectory init_guess(dynobench_base
+  Trajectory init_guess(DYNOBENCH_BASE
                         "envs/quad3d_payload/trajectories/"
                         "quad3d_payload_one_obs_3_pm_hard_initial_guess.yaml");
 
