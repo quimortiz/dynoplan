@@ -151,8 +151,7 @@ void modify_u_bound_for_free_time(const Vxd &__u_lb, const Vxd &__u_ub,
       GetWithDef(params, std::string("min_time_rate"), .4);
   const double max_time_rate =
       GetWithDef(params, std::string("max_time_rate"), 2.);
-  const double ref_time_rate =
-      GetWithDef(params, std::string("time_ref"), .5);
+  const double ref_time_rate = GetWithDef(params, std::string("time_ref"), .5);
   const double time_weight = GetWithDef(params, std::string("time_weight"), .7);
 
   u_lb << __u_lb, min_time_rate;

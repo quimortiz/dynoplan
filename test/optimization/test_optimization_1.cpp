@@ -122,7 +122,6 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
 BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
   // do the same on bugtrap
 
-
   srand(0);
 
   Options_trajopt options_mpcc, options_mpc, options_search, options_dt;
@@ -198,8 +197,7 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
       } else {
         BOOST_TEST_CHECK(result.feasible, experiment_id);
         std::cout << "cost is " << result.cost << std::endl;
-        if (!result.feasible)
-        {
+        if (!result.feasible) {
           throw -1;
         }
       }
