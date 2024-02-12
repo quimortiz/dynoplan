@@ -78,7 +78,6 @@ public:
 //                             "traj_opt_free_time_proxi_linear",
 //                             "none"};
 
-
 #if 0
 void read_from_file(File_parser_inout &inout) {
 

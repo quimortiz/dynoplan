@@ -74,14 +74,11 @@ void modify_u_bound_for_contour(const Eigen::VectorXd &__u_lb,
                                 Eigen::VectorXd &u_weight,
                                 Eigen::VectorXd &u_ref);
 
-void modify_u_bound_for_free_time(const Eigen::VectorXd &__u_lb,
-                                  const Eigen::VectorXd &__u_ub,
-                                  const Eigen::VectorXd &__u__weight,
-                                  const Eigen::VectorXd &__u__ref,
-                                  Eigen::VectorXd &u_lb, Eigen::VectorXd &u_ub,
-                                  Eigen::VectorXd &u_weight,
-                                  Eigen::VectorXd &u_ref, 
-                                  const std::map<std::string, double> &params);
+void modify_u_bound_for_free_time(
+    const Eigen::VectorXd &__u_lb, const Eigen::VectorXd &__u_ub,
+    const Eigen::VectorXd &__u__weight, const Eigen::VectorXd &__u__ref,
+    Eigen::VectorXd &u_lb, Eigen::VectorXd &u_ub, Eigen::VectorXd &u_weight,
+    Eigen::VectorXd &u_ref, const std::map<std::string, double> &params);
 
 void modify_x_bound_for_contour(const Eigen::VectorXd &__x_lb,
                                 const Eigen::VectorXd &__x_ub,
@@ -397,12 +394,12 @@ struct Dynamics_free_time {
   boost::shared_ptr<StateCrocoDyno> state_croco;
   Eigen::VectorXd __v; // data
 
-    std::map<std::string, double> params ;
+  std::map<std::string, double> params;
 
   Dynamics_free_time(
       std::shared_ptr<dynobench::Model_robot> robot_model = nullptr,
-      const Control_Mode &control_mode = Control_Mode::default_mode ,
-    const std::map<std::string, double> &params = {});
+      const Control_Mode &control_mode = Control_Mode::default_mode,
+      const std::map<std::string, double> &params = {});
 
   std::shared_ptr<crocoddyl::StateAbstractTpl<double>> state;
 
