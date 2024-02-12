@@ -310,6 +310,8 @@ BOOST_AUTO_TEST_CASE(t_multirotor_pole) {
     options_trajopt.smooth_traj = true;
     options_trajopt.weight_goal = 200;
     options_trajopt.max_iter = 100;
+    options_trajopt.soft_control_bounds = true;
+    options_trajopt.use_mim_solvers = true;
 
     Result_opti opti_out;
 
@@ -331,6 +333,8 @@ BOOST_AUTO_TEST_CASE(t_multirotor_pole) {
     Options_trajopt options;
     options.solver_id = 0;
     options.weight_goal = 200;
+    options.use_mim_solvers = true;
+    options.soft_control_bounds = true;
     Result_opti opti_out;
     BOOST_CHECK_NO_THROW(
         trajectory_optimization(problem, traj_in, options, traj_out, opti_out));
