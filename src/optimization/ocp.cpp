@@ -981,28 +981,35 @@ void solve_for_fixed_penalty(
     std::cout << "using mim solvers" << std::endl;
     ddp = std::make_shared<mim_solvers::SolverSQP>(problem_croco);
     std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->setCallbacks(true);
-    // ddp->setCallbacks(true);
+    std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)
+        ->set_use_filter_line_search(false);
+    std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->set_mu(100.);
   } else {
     ddp = std::make_shared<crocoddyl::SolverBoxFDDP>(problem_croco);
     ddp->set_th_stop(options_trajopt_local.th_stop);
     // cast
     std::dynamic_pointer_cast<crocoddyl::SolverBoxFDDP>(ddp)
         ->set_th_acceptnegstep(options_trajopt_local.th_acceptnegstep);
+
+    // ddp->setCallbacks(true);
   }
 
-  if (options_trajopt_local.CALLBACKS) {
+  if (true || options_trajopt_local.CALLBACKS) {
     std::vector<ptr<crocoddyl::CallbackAbstract>> cbs;
     cbs.push_back(mk<crocoddyl::CallbackVerbose>());
     if (store_iterations) {
       cbs.push_back(callback_dyno);
     }
-    // ddp.setCallbacks(cbs);
+    ddp->setCallbacks(cbs);
   }
 
   std::cout << "CROCO optimize" << AT << std::endl;
   crocoddyl::Timer timer;
-  ddp->solve(xs, us, options_trajopt_local.max_iter, false,
-             options_trajopt_local.init_reg);
+
+  ddp->solve(xs, us, options_trajopt_local.max_iter, false, 1000);
+
+  // ddp->solve(xs, us, options_trajopt_local.max_iter, false);
+
   std::cout << "time: " << timer.get_duration() << std::endl;
 
   if (store_iterations)
@@ -1443,6 +1450,10 @@ void __trajectory_optimization(
         ddp = std::make_shared<mim_solvers::SolverSQP>(problem_croco);
         std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->setCallbacks(
             true);
+        std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)
+            ->set_use_filter_line_search(false);
+        std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->set_mu(100.);
+        // std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->set_mu(10000.);
       } else {
         ddp = std::make_shared<crocoddyl::SolverBoxFDDP>(problem_croco);
         ddp->set_th_stop(options_trajopt_local.th_stop);
@@ -1451,13 +1462,13 @@ void __trajectory_optimization(
             ->set_th_acceptnegstep(options_trajopt_local.th_acceptnegstep);
       }
 
-      if (options_trajopt_local.CALLBACKS) {
+      if (true || options_trajopt_local.CALLBACKS) {
         std::vector<ptr<crocoddyl::CallbackAbstract>> cbs;
         cbs.push_back(mk<crocoddyl::CallbackVerbose>());
         if (store_iterations) {
           cbs.push_back(callback_dyno);
         }
-        // ddp.setCallbacks(cbs);
+        ddp->setCallbacks(cbs);
       }
 
       if (options_trajopt_local.noise_level > 1e-8) {
@@ -1476,8 +1487,14 @@ void __trajectory_optimization(
 
       std::cout << "CROCO optimize" << AT << std::endl;
       crocoddyl::Timer timer;
-      ddp->solve(xs, us, options_trajopt_local.max_iter, false,
-                 options_trajopt_local.init_reg);
+      // ddp->solve(xs, us, options_trajopt_local.max_iter, false,
+      //            options_trajopt_local.init_reg);
+
+      ddp->solve(xs, us, options_trajopt_local.max_iter, false, 1000);
+      // options_trajopt_local.init_reg);
+
+      // ddp->solve(xs, us, options_trajopt_local.max_iter, false);
+
       std::cout << "CROCO optimize -- DONE" << std::endl;
 
       if (store_iterations) {

@@ -30,7 +30,7 @@
 using namespace dynoplan;
 using namespace dynobench;
 
-BOOST_AUTO_TEST_CASE(second_order_park_traj_opt) {
+BOOST_AUTO_TEST_CASE(second_order_park_traj_opt_mim) {
 
   Options_trajopt options_trajopt;
   Problem problem(DYNOBENCH_BASE +

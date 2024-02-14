@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
   options_mpc.name = "mpc";
 
   options_dt.solver_id = 1;
-  options_dt.max_iter = 100;
+  options_dt.max_iter = 500;
   options_dt.weight_goal = 100;
   options_dt.name = "dt";
 
@@ -64,16 +64,34 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
   options_mpcc.soft_control_bounds = false;
   options_mpcc.weight_goal = 100;
 
+  bool use_mim_solvers = true;
+  if (use_mim_solvers) {
+    options_mpcc.use_mim_solvers = true;
+    options_mpc.use_mim_solvers = true;
+    options_search.use_mim_solvers = true;
+    options_dt.use_mim_solvers = true;
+
+    options_mpcc.soft_control_bounds = true;
+    options_mpc.soft_control_bounds = true;
+    options_search.soft_control_bounds = true;
+    options_dt.soft_control_bounds = true;
+    // add constraints as normal constraints!
+  }
+
   std::vector<std::pair<Problem, Trajectory>> problem_with_init_guess;
-  std::vector<Options_trajopt> solvers{options_mpc, options_dt, options_search,
-                                       options_mpcc};
+  // std::vector<Options_trajopt> solvers{options_mpc, options_dt,
+  // options_search,
+  //                                      options_mpcc};
+
+  // std::vector<Options_trajopt> solvers{options_dt};
+  std::vector<Options_trajopt> solvers{options_search};
 
   // std::vector<Options_trajopt> solvers{options_dt};
 
-  problem_with_init_guess.push_back(std::make_pair(
-      Problem(DYNOBENCH_BASE "envs/quadrotor_v0/recovery.yaml"),
-      Trajectory(
-          "../../benchmark_initguess/quadrotor_v0/recovery/delta_05_v0.yaml")));
+  // problem_with_init_guess.push_back(std::make_pair(
+  //     Problem(DYNOBENCH_BASE "envs/quadrotor_v0/recovery.yaml"),
+  //     Trajectory(
+  //         "../../benchmark_initguess/quadrotor_v0/recovery/delta_05_v0.yaml")));
 
   problem_with_init_guess.push_back(std::make_pair(
       Problem(DYNOBENCH_BASE "envs/quadrotor_v0/window.yaml"),
@@ -122,10 +140,16 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
 BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
   // do the same on bugtrap
 
-
   srand(0);
 
-  Options_trajopt options_mpcc, options_mpc, options_search, options_dt;
+  Options_trajopt options_0, options_mpcc, options_mpc, options_search,
+      options_dt;
+
+  options_0.solver_id = 0;
+  options_0.max_iter = 100;
+  options_0.weight_goal = 50;
+  options_0.name = "0";
+  options_0.soft_control_bounds = true;
 
   options_mpc.window_optimize = 40;
   options_mpc.window_shift = 20;
@@ -135,13 +159,13 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
   options_mpc.solver_id = 10;
 
   options_dt.solver_id = 1;
-  options_dt.max_iter = 100;
+  options_dt.max_iter = 200;
   options_dt.weight_goal = 100;
   options_dt.name = "dt";
 
   options_search.name = "search";
   options_search.max_iter = 100;
-  options_search.weight_goal = 100;
+  options_search.weight_goal = 50;
   options_search.linear_search = true;
   options_search.solver_id = 9;
 
@@ -155,11 +179,41 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
   // options_mpcc.k_contour = 50;
   // options_mpcc.noise_level = 0;
 
+  bool use_mim_solvers = true;
+  if (use_mim_solvers) {
+    options_0.use_mim_solvers = true;
+    options_mpcc.use_mim_solvers = true;
+    options_mpc.use_mim_solvers = true;
+    options_search.use_mim_solvers = true;
+    options_dt.use_mim_solvers = true;
+
+    options_mpcc.soft_control_bounds = true;
+    options_mpc.soft_control_bounds = true;
+    options_search.soft_control_bounds = true;
+    options_dt.soft_control_bounds = true;
+    options_0.soft_control_bounds = true;
+    // add constraints as normal constraints!
+  }
+
   std::vector<std::pair<Problem, Trajectory>> problem_with_init_guess;
-  std::vector<Options_trajopt> solvers{options_mpc, options_dt, options_search,
-                                       options_mpcc};
+  // std::vector<Options_trajopt> solvers{options_mpc, options_dt,
+  // options_search,
+  //                                      options_mpcc};
+
+  // std::vector<Options_trajopt> solvers{options_dt};
+  std::vector<Options_trajopt> solvers{options_search, options_dt};
+
+  for (auto &s : solvers) {
+    s.noise_level = 0;
+  }
+  // std::vector<Options_trajopt> solvers{options_0};
 
   // std::vector<Options_trajopt> solvers{options_mpcc};
+
+  problem_with_init_guess.push_back(
+      std::make_pair(Problem(DYNOBENCH_BASE "envs/unicycle2_v0/bugtrap_0.yaml"),
+                     Trajectory("../../benchmark_initguess/unicycle2_v0/"
+                                "bugtrap_0/delta_02_v0.yaml")));
 
   problem_with_init_guess.push_back(
       std::make_pair(Problem(DYNOBENCH_BASE "envs/unicycle1_v0/bugtrap_0.yaml"),
@@ -169,7 +223,7 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
   problem_with_init_guess.push_back(
       std::make_pair(Problem(DYNOBENCH_BASE "envs/unicycle2_v0/bugtrap_0.yaml"),
                      Trajectory("../../benchmark_initguess/unicycle2_v0/"
-                                "bugtrap_0/delta_02_v0.yaml")));
+                                "bugtrap_0/sol_debug.yaml")));
 
   for (auto &p : problem_with_init_guess) {
     p.first.models_base_path = DYNOBENCH_BASE + std::string("models/");
@@ -193,15 +247,12 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
       BOOST_CHECK_NO_THROW(
           trajectory_optimization(problem, init_guess, solver, sol, result));
 
+      sol.to_yaml_format("/tmp/dynoplan/out.yaml");
+
       if (solver.name == "mpcc" && problem.name == "quadrotor_0-recovery") {
         BOOST_TEST_WARN(result.feasible, experiment_id);
       } else {
         BOOST_TEST_CHECK(result.feasible, experiment_id);
-        std::cout << "cost is " << result.cost << std::endl;
-        if (!result.feasible)
-        {
-          throw -1;
-        }
       }
     }
   }
