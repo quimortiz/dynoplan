@@ -139,6 +139,8 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     const auto &arrival = n->arrivals[arrival_idx];
     n = arrival.came_from;
     arrival_idx = arrival.arrival_idx;
+    // std::cout << "node state: " << n->state_eig.format(FMT)  << std::endl;
+    // std::cout << "arrival_idx: " << arrival_idx << std::endl;
   }
 
   std::reverse(result.begin(), result.end());
@@ -534,8 +536,8 @@ void tdbastar(
         "motions should be loaded before calling dbastar");
   std::vector<Motion> &motions = *options_tdbastar.motions_ptr;
   // for the reverse search debug
-  std::ofstream out2("../dynoplan/expanded_trajs.yaml");
-  out2 << "trajs:" << std::endl;
+  // std::ofstream out2("../dynoplan/expanded_trajs.yaml");
+  // out2 << "trajs:" << std::endl;
 
   auto check_motions = [&] {
     for (size_t idx = 0; idx < motions.size(); ++idx) {
@@ -624,6 +626,7 @@ void tdbastar(
                                   .came_from = nullptr,
                                   .used_motion = (size_t)-1,
                                   .arrival_idx = (size_t)-1});
+  start_node->current_arrival_idx = 0;
 
   DYNO_DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
@@ -827,8 +830,11 @@ void tdbastar(
                                                   traj_wrapper.get_state(0));
 
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
-      tmp_traj.cost = best_node->gScore; // or gScore + hScore ?
+      tmp_traj.cost = best_node->gScore; 
       expanded_trajs.push_back(tmp_traj);
+      // for debug
+      // out2 << "  - " << std::endl;
+      // tmp_traj.to_yaml_format(out2, "    ");
       // CHECK if new State is NOVEL
       time_bench.time_nearestNode_search += timed_fun_void([&] {
         T_n->nearestR(tmp_node,
@@ -955,7 +961,6 @@ void tdbastar(
   }
 
   if (status == Terminate_status::SOLVED) {
-    // std::ofstream out3("../dynoplan/solution.yaml");
     from_solution_to_yaml_and_traj(*robot, motions, solution, problem,
                                    traj_out);
     traj_out.start = problem.starts[robot_id];
@@ -971,11 +976,7 @@ void tdbastar(
     thresholds.traj_tol = options_tdbastar.delta;
     traj_out.update_feasibility(thresholds, false);
     // CHECK(traj_out.feasible, ""); // should I keep it ?
-    out2 << "trajs:" << std::endl;
-    for (auto traj : expanded_trajs){
-      out2 << "  - " << std::endl;
-      traj.to_yaml_format(out2, "    ");
-    }
+
     // Sanity check here, that verifies that we obey all constraints
     std::cout << "checking constraints for the final solution " << std::endl;
     for (const auto &constraint : constraints) {

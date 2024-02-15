@@ -52,9 +52,9 @@ struct AStarNode {
   const ob::State *state;
   Eigen::VectorXd state_eig;
 
-  float fScore;
-  float gScore;
-  float hScore;
+  double fScore;
+  double gScore;
+  double hScore;
   std::vector<int> motions{}; // list of applicable motions
 
   double get_cost() const { return gScore; }
