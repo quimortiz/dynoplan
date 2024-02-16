@@ -26,6 +26,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 
+// #define DYNOBENCH_BASE "../../dynobench/dynobench/"
 #define DYNOBENCH_BASE "../../dynobench/"
 
 using namespace dynoplan;

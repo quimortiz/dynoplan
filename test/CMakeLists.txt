@@ -10,6 +10,7 @@ add_executable(
   ./optimization/test_optimization_0.cpp
   ./optimization/test_optimization_1.cpp
   ./optimization/test_optimization_cli.cpp
+  ./optimization/test_optimization_payload.cpp
   ./optimization/test_optimization_multirobot.cpp)
 
 add_executable(
@@ -64,4 +65,5 @@ add_test(NAME test_optimization COMMAND test_optimization)
 add_test(NAME test_dbastar COMMAND test_dbastar)
 add_test(NAME test_idbastar COMMAND test_idbastar)
 add_test(NAME test_dbrrt COMMAND test_dbrrt)
+add_test(NAME test_primitives COMMAND test_primitives)
 add_test(NAME test_tdbastar COMMAND test_tdbastar)

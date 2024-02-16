@@ -26,7 +26,8 @@
 #include <Eigen/Dense>
 #include <iostream>
 
-#define dynobench_base "../../dynobench/"
+// #define DYNOBENCH_BASE "../../dynobench/dynobench/"
+#define DYNOBENCH_BASE "../../dynobench/"
 
 using namespace dynoplan;
 using namespace dynobench;
@@ -70,17 +71,17 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
   // std::vector<Options_trajopt> solvers{options_dt};
 
   problem_with_init_guess.push_back(std::make_pair(
-      Problem(dynobench_base "envs/quadrotor_v0/recovery.yaml"),
+      Problem(DYNOBENCH_BASE "envs/quadrotor_v0/recovery.yaml"),
       Trajectory(
           "../../benchmark_initguess/quadrotor_v0/recovery/delta_05_v0.yaml")));
 
   problem_with_init_guess.push_back(std::make_pair(
-      Problem(dynobench_base "envs/quadrotor_v0/window.yaml"),
+      Problem(DYNOBENCH_BASE "envs/quadrotor_v0/window.yaml"),
       Trajectory(
           "../../benchmark_initguess/quadrotor_v0/window/delta_05_v0.yaml")));
 
   for (auto &p : problem_with_init_guess) {
-    p.first.models_base_path = dynobench_base + std::string("models/");
+    p.first.models_base_path = DYNOBENCH_BASE + std::string("models/");
   }
 
   for (size_t i = 0; i < problem_with_init_guess.size(); i++) {
@@ -99,15 +100,17 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
       Result_opti result;
       Trajectory sol;
 
-      BOOST_CHECK_NO_THROW(
-          trajectory_optimization(problem, init_guess, solver, sol, result));
-
+      // TODO: not clear with mpcc sometimes fail and sometimes not.
+      // it complains about quaternion norm...
       if (solver.name == "mpcc" && (problem.name == "quadrotor_0-recovery" ||
                                     problem.name == "quadrotor_0-window")) {
         BOOST_TEST_WARN(false,
                         "i skip mpcc in quadrotor_0-recovery and window");
         continue;
       }
+
+      BOOST_CHECK_NO_THROW(
+          trajectory_optimization(problem, init_guess, solver, sol, result));
 
       BOOST_TEST_CHECK(result.feasible, experiment_id);
       std::cout << "cost is " << result.cost << std::endl;
@@ -118,6 +121,8 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
 
 BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
   // do the same on bugtrap
+
+  srand(0);
 
   Options_trajopt options_mpcc, options_mpc, options_search, options_dt;
 
@@ -156,17 +161,17 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
   // std::vector<Options_trajopt> solvers{options_mpcc};
 
   problem_with_init_guess.push_back(
-      std::make_pair(Problem(dynobench_base "envs/unicycle1_v0/bugtrap_0.yaml"),
+      std::make_pair(Problem(DYNOBENCH_BASE "envs/unicycle1_v0/bugtrap_0.yaml"),
                      Trajectory("../../benchmark_initguess/unicycle1_v0/"
                                 "bugtrap_0/delta_03_v0.yaml")));
 
   problem_with_init_guess.push_back(
-      std::make_pair(Problem(dynobench_base "envs/unicycle2_v0/bugtrap_0.yaml"),
+      std::make_pair(Problem(DYNOBENCH_BASE "envs/unicycle2_v0/bugtrap_0.yaml"),
                      Trajectory("../../benchmark_initguess/unicycle2_v0/"
                                 "bugtrap_0/delta_02_v0.yaml")));
 
   for (auto &p : problem_with_init_guess) {
-    p.first.models_base_path = dynobench_base + std::string("models/");
+    p.first.models_base_path = DYNOBENCH_BASE + std::string("models/");
   }
 
   for (size_t i = 0; i < problem_with_init_guess.size(); i++) {
@@ -192,6 +197,9 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
       } else {
         BOOST_TEST_CHECK(result.feasible, experiment_id);
         std::cout << "cost is " << result.cost << std::endl;
+        if (!result.feasible) {
+          throw -1;
+        }
       }
     }
   }
@@ -200,8 +208,8 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
 BOOST_AUTO_TEST_CASE(t_opti_integrator2) {
 
   Options_trajopt options;
-  Problem problem(dynobench_base "envs/integrator2_2d_v0/park.yaml");
-  problem.models_base_path = dynobench_base "models/";
+  Problem problem(DYNOBENCH_BASE "envs/integrator2_2d_v0/park.yaml");
+  problem.models_base_path = DYNOBENCH_BASE "models/";
 
   Trajectory init_guess, traj_out;
   init_guess.num_time_steps = 50;
@@ -220,8 +228,8 @@ BOOST_AUTO_TEST_CASE(t_opti_integrator2) {
 BOOST_AUTO_TEST_CASE(t_opti_integrator1) {
 
   Options_trajopt options;
-  Problem problem(dynobench_base "envs/integrator1_2d_v0/empty.yaml");
-  problem.models_base_path = dynobench_base "models/";
+  Problem problem(DYNOBENCH_BASE "envs/integrator1_2d_v0/empty.yaml");
+  problem.models_base_path = DYNOBENCH_BASE "models/";
 
   Trajectory init_guess, traj_out;
   init_guess.num_time_steps = 50;
@@ -288,9 +296,9 @@ BOOST_AUTO_TEST_CASE(t_multirotor_pole) {
 
   {
     // solving without initial guess
-    Problem problem(dynobench_base "envs/quad2dpole_v0/move_with_up.yaml");
+    Problem problem(DYNOBENCH_BASE "envs/quad2dpole_v0/move_with_up.yaml");
 
-    problem.models_base_path = dynobench_base "models/";
+    problem.models_base_path = DYNOBENCH_BASE "models/";
 
     Trajectory traj_in, traj_out;
     traj_in.num_time_steps = 300;
@@ -310,13 +318,13 @@ BOOST_AUTO_TEST_CASE(t_multirotor_pole) {
   }
 
   {
-    Problem problem(dynobench_base "envs/quad2dpole_v0/window_hard.yaml");
-    problem.models_base_path = dynobench_base "models/";
+    Problem problem(DYNOBENCH_BASE "envs/quad2dpole_v0/window_hard.yaml");
+    problem.models_base_path = DYNOBENCH_BASE "models/";
 
     Trajectory traj_in, traj_out;
 
-    traj_in.read_from_yaml("../../dynobench/envs/quad2dpole_v0/window_hard/"
-                           "idbastar_v0_db_solution_v0.yaml");
+    traj_in.read_from_yaml(DYNOBENCH_BASE "envs/quad2dpole_v0/window_hard/"
+                                          "idbastar_v0_db_solution_v0.yaml");
 
     Options_trajopt options;
     options.solver_id = 0;

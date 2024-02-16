@@ -74,13 +74,11 @@ void modify_u_bound_for_contour(const Eigen::VectorXd &__u_lb,
                                 Eigen::VectorXd &u_weight,
                                 Eigen::VectorXd &u_ref);
 
-void modify_u_bound_for_free_time(const Eigen::VectorXd &__u_lb,
-                                  const Eigen::VectorXd &__u_ub,
-                                  const Eigen::VectorXd &__u__weight,
-                                  const Eigen::VectorXd &__u__ref,
-                                  Eigen::VectorXd &u_lb, Eigen::VectorXd &u_ub,
-                                  Eigen::VectorXd &u_weight,
-                                  Eigen::VectorXd &u_ref);
+void modify_u_bound_for_free_time(
+    const Eigen::VectorXd &__u_lb, const Eigen::VectorXd &__u_ub,
+    const Eigen::VectorXd &__u__weight, const Eigen::VectorXd &__u__ref,
+    Eigen::VectorXd &u_lb, Eigen::VectorXd &u_ub, Eigen::VectorXd &u_weight,
+    Eigen::VectorXd &u_ref, const std::map<std::string, double> &params);
 
 void modify_x_bound_for_contour(const Eigen::VectorXd &__x_lb,
                                 const Eigen::VectorXd &__x_ub,
@@ -194,9 +192,11 @@ struct Dynamics {
   Control_Mode control_mode;
   boost::shared_ptr<StateCrocoDyno> state_croco;
   Eigen::VectorXd __v; // data
+  std::map<std::string, double> params;
 
   Dynamics(std::shared_ptr<dynobench::Model_robot> robot_model = nullptr,
-           const Control_Mode &control_mode = Control_Mode::default_mode);
+           const Control_Mode &control_mode = Control_Mode::default_mode,
+           const std::map<std::string, double> &params = {});
 
   std::shared_ptr<crocoddyl::StateAbstractTpl<double>> state;
 
@@ -230,7 +230,7 @@ struct Dynamics {
       Eigen::VectorXd __u_lb(u_lb), __u_ub(u_ub), __u_weight(u_weight),
           __u_ref(u_ref);
       modify_u_bound_for_free_time(__u_lb, __u_ub, __u_weight, __u_ref, u_lb,
-                                   u_ub, u_weight, u_ref);
+                                   u_ub, u_weight, u_ref, params);
     } else if (control_mode == Control_Mode::free_time_linear) {
 
       Eigen::VectorXd __u_lb(u_lb), __u_ub(u_ub), __u_weight(u_weight),
@@ -394,9 +394,12 @@ struct Dynamics_free_time {
   boost::shared_ptr<StateCrocoDyno> state_croco;
   Eigen::VectorXd __v; // data
 
+  std::map<std::string, double> params;
+
   Dynamics_free_time(
       std::shared_ptr<dynobench::Model_robot> robot_model = nullptr,
-      const Control_Mode &control_mode = Control_Mode::default_mode);
+      const Control_Mode &control_mode = Control_Mode::default_mode,
+      const std::map<std::string, double> &params = {});
 
   std::shared_ptr<crocoddyl::StateAbstractTpl<double>> state;
 
@@ -430,7 +433,7 @@ struct Dynamics_free_time {
       Eigen::VectorXd __u_lb(u_lb), __u_ub(u_ub), __u_weight(u_weight),
           __u_ref(u_ref);
       modify_u_bound_for_free_time(__u_lb, __u_ub, __u_weight, __u_ref, u_lb,
-                                   u_ub, u_weight, u_ref);
+                                   u_ub, u_weight, u_ref, params);
     } else if (control_mode == Control_Mode::free_time_linear) {
 
       Eigen::VectorXd __u_lb(u_lb), __u_ub(u_ub), __u_weight(u_weight),
@@ -539,6 +542,41 @@ struct Diff_angle_cost : Cost {
                         Eigen::Ref<Eigen::MatrixXd> Lxu,
                         const Eigen::Ref<const Eigen::VectorXd> &x,
                         const Eigen::Ref<const Eigen::VectorXd> &u) override;
+};
+
+struct Payload_n_acceleration_cost : Cost {
+
+  // TODO: KHALED, we want this generic
+  // You just have to modify the selector vector -- see constructor
+
+  std::shared_ptr<dynobench::Model_robot> model;
+
+  double k_acc = 1;
+
+  Eigen::VectorXd selector;
+  Eigen::VectorXd f;
+  Eigen::MatrixXd acc_u;
+  Eigen::MatrixXd acc_x;
+
+  Eigen::MatrixXd Jv_x;
+  Eigen::MatrixXd Jv_u;
+
+  Payload_n_acceleration_cost(
+      const std::shared_ptr<dynobench::Model_robot> &model_robot, double k_acc);
+
+  virtual void calc(Eigen::Ref<Eigen::VectorXd> r,
+                    const Eigen::Ref<const Eigen::VectorXd> &x,
+                    const Eigen::Ref<const Eigen::VectorXd> &u) override;
+
+  virtual void calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
+                        Eigen::Ref<Eigen::VectorXd> Lu,
+                        Eigen::Ref<Eigen::MatrixXd> Lxx,
+                        Eigen::Ref<Eigen::MatrixXd> Luu,
+                        Eigen::Ref<Eigen::MatrixXd> Lxu,
+                        const Eigen::Ref<const Eigen::VectorXd> &x,
+                        const Eigen::Ref<const Eigen::VectorXd> &u) override;
+
+  virtual ~Payload_n_acceleration_cost() = default;
 };
 
 struct Quad3d_acceleration_cost : Cost {
@@ -1193,7 +1231,8 @@ void check_dyn(boost::shared_ptr<Dynamics> dyn, double eps,
 
 ptr<Dynamics>
 create_dynamics(std::shared_ptr<dynobench::Model_robot> model_robot,
-                const Control_Mode &control_mode = Control_Mode::default_mode);
+                const Control_Mode &control_mode = Control_Mode::default_mode,
+                const std::map<std::string, double> &params = {});
 
 std::vector<ReportCost>
 get_report(ptr<ActionModelDyno> p,

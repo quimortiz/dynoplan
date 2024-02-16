@@ -9,6 +9,10 @@ namespace po = boost::program_options;
 
 struct Options_trajopt {
 
+  double time_ref = .5;
+  double time_weight = .7;
+  bool check_with_finite_diff = false;
+
   bool soft_control_bounds = false;
   bool CALLBACKS = true;
   std::string solver_name;

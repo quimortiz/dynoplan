@@ -126,7 +126,7 @@ void sort_motion_primitives_rand_config(
     default:
       NOT_IMPLEMENTED;
     }
-    DYNO_DYNO_CHECK_GEQ(best_index, 0, AT);
+    DYNO_CHECK_GEQ(best_index, 0, AT);
     DYNO_CHECK_LEQ(best_index, trajs.data.size() - 1, AT);
     // assert(best_index < traj.data.size());
 
@@ -413,6 +413,7 @@ void improve_motion_primitives(const Options_trajopt &options_trajopt,
     problem.start = traj.states.front();
     problem.robotType = dynamics;
     problem.models_base_path = options_primitives.models_base_path;
+    problem.robotTypes.resize(1);
 
     Result_opti opti_out;
 
@@ -628,9 +629,7 @@ void generate_primitives(const Options_trajopt &options_trajopt,
       CSTR_V(d);
 
       goal = start + d;
-      Eigen::VectorXd tmp_goal;
-      robot_model->ensure(goal, tmp_goal);
-      goal = tmp_goal;
+      robot_model->ensure(goal);
 
       // check that it is in the limits!
       if (robot_model->is_state_valid(goal)) {
@@ -656,7 +655,7 @@ void generate_primitives(const Options_trajopt &options_trajopt,
     problem.goal = goal;
     problem.start = start;
     problem.robotType = options_primitives.dynamics;
-
+    problem.robotTypes.resize(1);
     // double try
 
     std::vector<double> try_rates{.5, 1., 2.};

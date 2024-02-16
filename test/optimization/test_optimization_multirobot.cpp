@@ -29,16 +29,19 @@
 using namespace dynoplan;
 using namespace dynobench;
 
+// #define DYNOBENCH_BASE "../../dynobench/dynobench/"
+#define DYNOBENCH_BASE "../../dynobench/"
+
 BOOST_AUTO_TEST_CASE(t_multi_robot_cli) {
 
   std::vector<std::string> run_cmd_new = {
       "../main_multirobot_optimization",
       "--env",
-      "../../dynobench/envs/multirobot/straight.yaml",
+      DYNOBENCH_BASE "envs/multirobot/straight.yaml",
       "--init",
-      "../../dynobench/envs/multirobot/guess_indiv_straight.yaml",
+      DYNOBENCH_BASE "envs/multirobot/guess_indiv_straight.yaml",
       "--base",
-      "../../dynobench/",
+      DYNOBENCH_BASE,
       "--out",
       "buu.yaml",
       "--s",
@@ -68,10 +71,9 @@ BOOST_AUTO_TEST_CASE(t_multi_robot) {
   // 0: optimize the Max time of arrival.
   // 1: optimize the sum of the time of arrival of all robots.
   bool sum_robots_cost = 1;
-  std::string dynobench_base = "../../dynobench/";
-  std::string env_file = dynobench_base + "envs/multirobot/straight.yaml";
+  std::string env_file = DYNOBENCH_BASE "envs/multirobot/straight.yaml";
   std::string initial_guess_file =
-      dynobench_base + "envs/multirobot/guess_indiv_straight.yaml";
+      DYNOBENCH_BASE "envs/multirobot/guess_indiv_straight.yaml";
 
   Problem problem(env_file);
   MultiRobotTrajectory init_guess_multi_robot;
@@ -108,7 +110,7 @@ BOOST_AUTO_TEST_CASE(t_multi_robot) {
   options_trajopt.use_warmstart = 1;
   options_trajopt.weight_goal = 100;
   options_trajopt.max_iter = 50;
-  problem.models_base_path = dynobench_base + std::string("models/");
+  problem.models_base_path = DYNOBENCH_BASE "models/";
 
   Result_opti result;
   Trajectory sol;
@@ -142,11 +144,10 @@ BOOST_AUTO_TEST_CASE(t_multi_robot) {
 BOOST_AUTO_TEST_CASE(t_multi_robot_swap2_trailer) {
 
   bool sum_robots_cost = 1;
-  std::string dynobench_base = "../../dynobench/";
   std::string env_file =
-      dynobench_base + "envs/multirobot/example/swap2_trailer.yaml";
+      DYNOBENCH_BASE "envs/multirobot/example/swap2_trailer.yaml";
   std::string initial_guess_file =
-      dynobench_base + "envs/multirobot/results/swap2_trailer_db.yaml";
+      DYNOBENCH_BASE "envs/multirobot/results/swap2_trailer_db.yaml";
 
   Problem problem(env_file);
   MultiRobotTrajectory init_guess_multi_robot;
@@ -183,7 +184,7 @@ BOOST_AUTO_TEST_CASE(t_multi_robot_swap2_trailer) {
   options_trajopt.use_warmstart = 1;
   options_trajopt.weight_goal = 100;
   options_trajopt.max_iter = 50;
-  problem.models_base_path = dynobench_base + std::string("models/");
+  problem.models_base_path = DYNOBENCH_BASE "models/";
 
   Result_opti result;
   Trajectory sol;
@@ -217,11 +218,10 @@ BOOST_AUTO_TEST_CASE(t_multi_robot_swap2_trailer) {
 BOOST_AUTO_TEST_CASE(t_multi_robot_swap4_unicycle) {
 
   bool sum_robots_cost = 1;
-  std::string dynobench_base = "../../dynobench/";
   std::string env_file =
-      dynobench_base + "envs/multirobot/example/swap4_unicycle.yaml";
+      DYNOBENCH_BASE "envs/multirobot/example/swap4_unicycle.yaml";
   std::string initial_guess_file =
-      dynobench_base + "envs/multirobot/results/swap4_unicycle_db.yaml";
+      DYNOBENCH_BASE "envs/multirobot/results/swap4_unicycle_db.yaml";
 
   Problem problem(env_file);
   MultiRobotTrajectory init_guess_multi_robot;
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE(t_multi_robot_swap4_unicycle) {
   options_trajopt.use_warmstart = 1;
   options_trajopt.weight_goal = 100;
   options_trajopt.max_iter = 50;
-  problem.models_base_path = dynobench_base + std::string("models/");
+  problem.models_base_path = DYNOBENCH_BASE "models/";
 
   Result_opti result;
   Trajectory sol;
@@ -293,10 +293,9 @@ BOOST_AUTO_TEST_CASE(t_multi_robot_swap4_unicycle) {
 BOOST_AUTO_TEST_CASE(t_multi_but_only_one) {
 
   bool sum_robots_cost = 1;
-  std::string dynobench_base = "../../dynobench/";
-  std::string env_file = dynobench_base + "envs/multirobot/swap1_trailer.yaml";
+  std::string env_file = DYNOBENCH_BASE "envs/multirobot/swap1_trailer.yaml";
   std::string initial_guess_file =
-      dynobench_base + "envs/multirobot/swap1_trailer_db.yaml";
+      DYNOBENCH_BASE "envs/multirobot/swap1_trailer_db.yaml";
 
   Problem problem(env_file);
   MultiRobotTrajectory init_guess_multi_robot;
@@ -333,7 +332,7 @@ BOOST_AUTO_TEST_CASE(t_multi_but_only_one) {
   options_trajopt.use_warmstart = 1;
   options_trajopt.weight_goal = 100;
   options_trajopt.max_iter = 50;
-  problem.models_base_path = dynobench_base + std::string("models/");
+  problem.models_base_path = DYNOBENCH_BASE "models/";
 
   Result_opti result;
   Trajectory sol;
@@ -367,11 +366,10 @@ BOOST_AUTO_TEST_CASE(t_multi_but_only_one) {
 BOOST_AUTO_TEST_CASE(t_hetero_random_2) {
 
   bool sum_robots_cost = 1;
-  std::string dynobench_base = "../../dynobench/";
   std::string env_file =
-      dynobench_base + "envs/multirobot/example/gen_p10_n2_1_hetero.yaml";
+      DYNOBENCH_BASE "envs/multirobot/example/gen_p10_n2_1_hetero.yaml";
   std::string initial_guess_file =
-      dynobench_base + "envs/multirobot/results/gen_p10_n2_1_hetero_db.yaml";
+      DYNOBENCH_BASE "envs/multirobot/results/gen_p10_n2_1_hetero_db.yaml";
 
   Problem problem(env_file);
   MultiRobotTrajectory init_guess_multi_robot;
@@ -408,7 +406,7 @@ BOOST_AUTO_TEST_CASE(t_hetero_random_2) {
   options_trajopt.use_warmstart = 1;
   options_trajopt.weight_goal = 100;
   options_trajopt.max_iter = 50;
-  problem.models_base_path = dynobench_base + std::string("models/");
+  problem.models_base_path = DYNOBENCH_BASE "models/";
 
   Result_opti result;
   Trajectory sol;
