@@ -817,7 +817,7 @@ void tdbastar(
                                                   traj_wrapper.get_state(0));
 
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
-      tmp_traj.cost = best_node->gScore; 
+      tmp_traj.cost = best_node->gScore;
       expanded_trajs.push_back(tmp_traj);
       // CHECK if new State is NOVEL
       time_bench.time_nearestNode_search += timed_fun_void([&] {

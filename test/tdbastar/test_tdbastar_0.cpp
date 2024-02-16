@@ -1,17 +1,15 @@
 
-#include "dynoplan/tdbastar/tdbastar.hpp"
-#include <boost/test/unit_test.hpp>
 #include "Eigen/Core"
+#include "dynobench/motions.hpp"
+#include "dynoplan/tdbastar/tdbastar.hpp"
+#include <Eigen/Dense>
 #include <boost/program_options.hpp>
+#include <boost/test/unit_test.hpp>
 #include <filesystem>
+#include <iostream>
 #include <random>
 #include <regex>
 #include <type_traits>
-#include <filesystem>
-#include <regex>
-#include "dynobench/motions.hpp"
-#include <Eigen/Dense>
-#include <iostream>
 
 #define DYNOBENCH_BASE "../dynobench/"
 #define BASE_PATH_MOTIONS "../../new_format_motions/"
@@ -37,13 +35,11 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
 
   o_uni1.max_motions = 100;
   o_uni1.delta = .5;
-  o_uni1.motionsFile =
-      BASE_PATH_MOTIONS "unicycle1_v0/unicycle1_v0.msgpack";
+  o_uni1.motionsFile = BASE_PATH_MOTIONS "unicycle1_v0/unicycle1_v0.msgpack";
 
   o_uni2.max_motions = 100;
   o_uni2.delta = .5;
-  o_uni2.motionsFile =
-      BASE_PATH_MOTIONS "unicycle2_v0/unicycle2_v0.msgpack";
+  o_uni2.motionsFile = BASE_PATH_MOTIONS "unicycle2_v0/unicycle2_v0.msgpack";
 
   o_integrator2.max_motions = 100;
   o_integrator2.delta = .5;
@@ -52,12 +48,9 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
 
   o_car.max_motions = 400;
   o_car.delta = .75;
-  o_car.motionsFile =
-      BASE_PATH_MOTIONS "car1_v0/car1_v0.msgpack";
+  o_car.motionsFile = BASE_PATH_MOTIONS "car1_v0/car1_v0.msgpack";
 
-
-  std::vector<Options_tdbastar> options{
-      o_uni1, o_uni2, o_integrator2, o_car};
+  std::vector<Options_tdbastar> options{o_uni1, o_uni2, o_integrator2, o_car};
 
   for (auto &o : options) {
     o.search_timelimit = 40 * 10e3;
@@ -92,10 +85,10 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
 
     option.motions_ptr = &motions;
     expanded_trajs_tmp.clear();
-    BOOST_REQUIRE_NO_THROW(tdbastar(problem, option, traj_out, /*constraints*/{}, 
-                info_out, robot_id, /*reverse_search*/false, expanded_trajs_tmp, nullptr, nullptr));
+    BOOST_REQUIRE_NO_THROW(tdbastar(
+        problem, option, traj_out, /*constraints*/ {}, info_out, robot_id,
+        /*reverse_search*/ false, expanded_trajs_tmp, nullptr, nullptr));
 
     BOOST_TEST(info_out.solved, msg);
   }
-
 }
