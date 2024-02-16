@@ -102,8 +102,6 @@ void disable_motions(std::shared_ptr<dynobench::Model_robot> &robot,
         }
       }
     }
-    // std::cout << "There are " << num_duplicates << " duplicate motions!" <<
-    // std::endl;
   }
   // limit to num_max_motions
   size_t num_enabled_motions = 0;
@@ -126,12 +124,10 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     const dynobench::Problem &problem,
                                     dynobench::Trajectory &traj_out,
                                     std::ofstream *out) {
-  // std::vector<std::pair<AStarNode *, size_t>> result;
   std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>> result;
   CHECK(solution, AT);
   // TODO: check what happens if a solution is a single state?
 
-  // AStarNode *n = solution;
   std::shared_ptr<AStarNode> n = solution;
   size_t arrival_idx = n->current_arrival_idx;
   while (n != nullptr) {
@@ -139,8 +135,6 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     const auto &arrival = n->arrivals[arrival_idx];
     n = arrival.came_from;
     arrival_idx = arrival.arrival_idx;
-    // std::cout << "node state: " << n->state_eig.format(FMT)  << std::endl;
-    // std::cout << "arrival_idx: " << arrival_idx << std::endl;
   }
 
   std::reverse(result.begin(), result.end());
@@ -228,7 +222,6 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     DYNO_CHECK_LEQ(take_num_states, xs.size(), AT);
     for (size_t k = 0; k < take_num_states; ++k) {
       if (k < take_num_states - 1) {
-        // print the state
 
         if (out) {
           *out << space6 << "- ";
@@ -238,9 +231,7 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
         if (out) {
           *out << space6 << "- ";
         }
-        // traj_out.states.push_back(result.at(i + 1)->state_eig);
         traj_out.states.push_back(result[i + 1].first->state_eig);
-        // traj_out.states.push_back(xs.at(k)); This was before, fails if I have
         // change the parent of the last node before it goes out of the queue.
       } else {
         if (out) {
@@ -427,7 +418,6 @@ bool check_lazy_trajectory(
     // tentative_gScore]
     float time_offset = constraint.time - best_node_gScore;
     int time_index = std::lround(time_offset / robot.ref_dt);
-    // std::cout << "Time index: " << time_index << std::endl;
     Eigen::VectorXd state_to_check;
     if (reachesGoal && time_index >= (int)tmp_traj.get_size() - 1) {
       state_to_check = tmp_traj.get_state(tmp_traj.get_size() - 1);
@@ -660,9 +650,6 @@ void tdbastar(
 
   time_bench.time_nearestNode_add +=
       timed_fun_void([&] { T_n->add(start_node); });
-  // if (reverse_search){
-  //   (*heuristic_result)->add(start_node);
-  // }
   const size_t print_every = 1000;
 
   double last_f_score = start_node->fScore;
@@ -832,9 +819,6 @@ void tdbastar(
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore; 
       expanded_trajs.push_back(tmp_traj);
-      // for debug
-      // out2 << "  - " << std::endl;
-      // tmp_traj.to_yaml_format(out2, "    ");
       // CHECK if new State is NOVEL
       time_bench.time_nearestNode_search += timed_fun_void([&] {
         T_n->nearestR(tmp_node,

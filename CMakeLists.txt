@@ -61,7 +61,7 @@ add_executable(main_multirobot_optimization
                ./src/optimization/main_multirobot_optimization.cpp)
 
 add_executable(main_dbastar ./src/dbastar/main_dbastar.cpp)
-# add_executable(main_tdbastar ./src/tdbastar/main_tdbastar.cpp)
+add_executable(main_tdbastar ./src/tdbastar/main_tdbastar.cpp)
 add_executable(main_idbastar ./src/idbastar/main_idbastar.cpp)
 add_executable(main_dbrrt ./src/dbrrt/main_dbrrt.cpp)
 
@@ -261,6 +261,13 @@ target_link_libraries(
           yaml-cpp
           Boost::program_options
           Boost::serialization)
+
+target_link_libraries(
+  main_tdbastar
+  PUBLIC Eigen3::Eigen tdbastar
+  PRIVATE fcl dynobench::dynobench ${OMPL_LIBRARIES} Boost::program_options
+          Boost::serialization ${LZ4_LIBRARIES})
+
 # for tdb-A*
 add_library(idbastar::tdbastar ALIAS tdbastar) # for use in test folder
 
