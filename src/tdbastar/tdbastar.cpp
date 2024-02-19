@@ -497,12 +497,12 @@ void export_constraints(const std::vector<Constraint> &constrained_states,
 };
 
 void export_node_expansion(std::vector<dynobench::Trajectory> &expanded_trajs,
-                           std::ostream *out){
-    *out << "trajs:" << std::endl;
-    for (auto traj : expanded_trajs){
-      *out << "  - " << std::endl;
-      traj.to_yaml_format(*out, "    ");
-    }
+                           std::ostream *out) {
+  *out << "trajs:" << std::endl;
+  for (auto traj : expanded_trajs) {
+    *out << "  - " << std::endl;
+    traj.to_yaml_format(*out, "    ");
+  }
 };
 
 void tdbastar(
