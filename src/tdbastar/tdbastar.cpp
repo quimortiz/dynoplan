@@ -496,6 +496,15 @@ void export_constraints(const std::vector<Constraint> &constrained_states,
   }
 };
 
+void export_node_expansion(std::vector<dynobench::Trajectory> &expanded_trajs,
+                           std::ostream *out){
+    *out << "trajs:" << std::endl;
+    for (auto traj : expanded_trajs){
+      *out << "  - " << std::endl;
+      traj.to_yaml_format(*out, "    ");
+    }
+};
+
 void tdbastar(
     dynobench::Problem &problem, Options_tdbastar options_tdbastar,
     Trajectory &traj_out, const std::vector<Constraint> &constraints,
@@ -618,7 +627,7 @@ void tdbastar(
                                   .arrival_idx = (size_t)-1});
   start_node->current_arrival_idx = 0;
 
-  DYNO_DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
+  DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
 
   auto goal_node = std::make_shared<AStarNode>();
