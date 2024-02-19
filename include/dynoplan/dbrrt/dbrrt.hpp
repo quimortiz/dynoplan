@@ -20,7 +20,6 @@ struct Options_dbrrt {
   bool ao_rrt = false;
   bool ao_rrt_rebuild_tree = true;
   double max_step_size = 3;
-  bool choose_first_motion_valid = true;
   double goal_region = .3;
   double cost_bound = 200;
   double goal_bias = .1;
@@ -36,6 +35,15 @@ struct Options_dbrrt {
   bool cut_actions = false;
   bool check_cols = true;
   bool use_collision_shape = false;
+  int max_valid_expansions_to_rand = 1;
+  int max_valid_expansions_to_goal = 10;
+  bool use_connect_orig = false;
+
+
+
+  // if 1, i take the first primitive that is valid.
+  // if > 1 i wait until max_valid_expansions are valid and then i take the
+  // best one.
 
 #define INOUTARGS_dbrrt                                                        \
   do_optimization, cost_jump, best_cost_prune_factor, cost_weight, cost_bound, \
@@ -59,7 +67,6 @@ struct Options_dbrrt {
     loader.set(VAR_WITH_NAME(add_to_search_tree));
     loader.set(VAR_WITH_NAME(extract_primitives));
     loader.set(VAR_WITH_NAME(max_step_size));
-    loader.set(VAR_WITH_NAME(choose_first_motion_valid));
     loader.set(VAR_WITH_NAME(goal_region));
     loader.set(VAR_WITH_NAME(debug));
     loader.set(VAR_WITH_NAME(new_invariance));
@@ -74,6 +81,10 @@ struct Options_dbrrt {
     loader.set(VAR_WITH_NAME(cut_actions));
     loader.set(VAR_WITH_NAME(check_cols));
     loader.set(VAR_WITH_NAME(use_collision_shape));
+    loader.set(VAR_WITH_NAME(max_valid_expansions_to_rand));
+    loader.set(VAR_WITH_NAME(max_valid_expansions_to_goal));
+    loader.set(VAR_WITH_NAME(use_connect_orig));
+
   }
 
   void add_options(po::options_description &desc) { __load_data(&desc, true); }
@@ -122,5 +133,12 @@ void idbrrt(const dynobench::Problem &problem,
             const Options_dbrrt &options_dbrrt,
             const Options_trajopt &options_trajopt,
             dynobench::Trajectory &traj_out, dynobench::Info_out &info_out);
+
+void dbrrtConnectOrig(const dynobench::Problem &problem,
+                      std::shared_ptr<dynobench::Model_robot> robot,
+                      const Options_dbrrt &options_dbrrt,
+                      const Options_trajopt &options_trajopt,
+                      dynobench::Trajectory &traj_out,
+                      dynobench::Info_out &info_out);
 
 } // namespace dynoplan

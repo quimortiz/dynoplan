@@ -1,46 +1,46 @@
-trials:  20
-timelimit: 120
-n_cores: -1 # -1=auto
+trials:  4
+timelimit: 60
+n_cores: 1 # -1=auto
 
 problems:
   # # # # # #
-  - unicycle1_v0/parallelpark_0
-  - unicycle1_v0/bugtrap_0
-  - unicycle1_v0/kink_0
+  # - unicycle1_v0/parallelpark_0
+  # - unicycle1_v0/bugtrap_0
+  # - unicycle1_v0/kink_0
   # # # # # #
-  - unicycle1_v1/kink_0
-  - unicycle1_v2/wall_0
+  # - unicycle1_v1/kink_0
+  # - unicycle1_v2/wall_0
   # # # # # # # # #
-  - unicycle2_v0/kink_0
-  - unicycle2_v0/parallelpark_0
-  - unicycle2_v0/bugtrap_0
+  # - unicycle2_v0/kink_0
+  # - unicycle2_v0/parallelpark_0
+  # - unicycle2_v0/bugtrap_0
   # # # # # # # # # #
-  - car1_v0/kink_0
-  - car1_v0/bugtrap_0
-  - car1_v0/parallelpark_0
+  # - car1_v0/kink_0
+  # - car1_v0/bugtrap_0
+  # - car1_v0/parallelpark_0
   # # # # # # # #
-  - quad2d_v0/empty_0
-  - quad2d_v0/empty_1
-  - quad2d_v0/quad_obs_column
-  - quad2d_v0/quad_bugtrap
-  - quad2d_v0/quad2d_recovery_wo_obs
-  - quad2d_v0/quad2d_recovery_obs
-  - quad2d_v0/fall_through
+  # - quad2d_v0/empty_0
+  # - quad2d_v0/empty_1
+  # - quad2d_v0/quad_obs_column
+  # - quad2d_v0/quad_bugtrap
+  # - quad2d_v0/quad2d_recovery_wo_obs
+  # - quad2d_v0/quad2d_recovery_obs
+  # - quad2d_v0/fall_through
   # # # # # # # # #
-  - quad2dpole_v0/move_with_down
-  - quad2dpole_v0/move_with_up
-  - quad2dpole_v0/up
-  - quad2dpole_v0/down
-  - quad2dpole_v0/up_obs
-  - quad2dpole_v0/window_easy
-  - quad2dpole_v0/window
-  - quad2dpole_v0/window_hard
+  # - quad2dpole_v0/move_with_down
+  # - quad2dpole_v0/move_with_up
+  # - quad2dpole_v0/up
+  # - quad2dpole_v0/down
+  # - quad2dpole_v0/up_obs
+  # - quad2dpole_v0/window_easy
+  # - quad2dpole_v0/window
+  # - quad2dpole_v0/window_hard
   # # # # # # # # #
-  - acrobot_v0/swing_up_empty
-  - acrobot_v0/swing_up_obs
-  - acrobot_v0/swing_up_obs_hard
-  - acrobot_v0/swing_down_easy
-  - acrobot_v0/swing_down
+  # - acrobot_v0/swing_up_empty
+  # - acrobot_v0/swing_up_obs
+  # - acrobot_v0/swing_up_obs_hard
+  # - acrobot_v0/swing_down_easy
+  # - acrobot_v0/swing_down
   # # # # # # # # #
   # - quadrotor_v0/empty_0_easy
   # - quadrotor_v0/empty_1_easy
@@ -48,6 +48,9 @@ problems:
   # - quadrotor_v0/recovery
   # - quadrotor_v0/recovery_with_obs
   # - quadrotor_v0/quad_one_obs
+  # - quadrotor_v0/window_double
+  # - quadrotor_v0/bugtrap
+  - quadrotor_v0/bugtrap2
   # # # # # # # # # #
   # - quadrotor_v1/empty_0_easy
   # - quadrotor_v1/empty_1_easy
@@ -59,12 +62,14 @@ problems:
 algs:
 
   # Idbastar
-  - idbastar_v0
-  - geo_v0
-  - sst_v0
-  # - dbrrt_v0
+  # - idbastar_v0
+  - idbastar_iros
+  # - geo_v0
+  # - sst_v0
+  - dbrrt_v0
   # - dbrrt_v0DEV
-  # - dbrrt_v1
+  - dbrrt_v1
+  - dbrrt_v2
   # - dbaorrt_v0
   # - dbaorrt_v1
 

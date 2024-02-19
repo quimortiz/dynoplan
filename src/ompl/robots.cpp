@@ -3103,6 +3103,7 @@ void load_motion_primitives_new(const std::string &motionsFile,
 
   if (max_motions < trajs.data.size())
     trajs.data.resize(max_motions);
+  // trajs.save_file_msgpack("/tmp/primitives_small.msgpack");
 
   std::cout << "trajs " << std::endl;
   std::cout << "first state is " << std::endl;

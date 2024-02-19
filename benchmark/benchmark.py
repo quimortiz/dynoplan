@@ -15,24 +15,17 @@ import csv
 import pandas
 
 import argparse
-import os
-import shutil
 from scipy.interpolate import interp1d
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import matplotlib
 
 from datetime import datetime
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
 
 import random
 
 import math
 
-
-import matplotlib.pyplot as plt
 import sys
 
 
@@ -2573,7 +2566,8 @@ def compare(
                 "unicycle1_v0/bugtrap_0": [15, 70],
             }
 
-            if problem == "unicycle1_v0/bugtrap_0":
+            add_sbpl = False
+            if problem == "unicycle1_v0/bugtrap_0" and add_sbpl:
                 print("adding sbpl results")
                 sbpl_data = (
                     "./../results_sbpl/tmp_stats_unicycle_first_order_0_bugtrap_0.yaml"
@@ -2617,7 +2611,7 @@ def compare(
             ax[0].set_title(Dproblem2title.get(problem, problem))
 
             # Used for the paper
-            if counter == 3:
+            if (not paper_plot) or (paper_plot and counter == 3):
                 ax[1].legend(loc="lower right")
 
             ax[1].set_xlabel("time [s]")

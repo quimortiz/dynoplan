@@ -7,3 +7,6 @@
 [submodule "dynomotions"]
 	path = dynomotions
 	url = git@github.com:quimortiz/dynomotions.git
+[submodule "dynotree"]
+	path = dynotree
+	url = https://github.com/quimortiz/dynotree/

@@ -35,6 +35,7 @@ find_package(crocoddyl REQUIRED)
 # "/home/quim/miniconda3/pkgs/mim-solvers-0.0.2-py312hfb10629_1/lib/cmake/mim_solvers/")
 
 find_package(mim_solvers REQUIRED)
+add_subdirectory(dynotree)
 
 message(STATUS "CROCO_VERSION: ${CROCODDYL_VERSION}")
 
@@ -129,31 +130,34 @@ target_include_directories(
   sst
   PUBLIC $<INSTALL_INTERFACE:include> ${OMPL_INCLUDE_DIRS}
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
-          ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src)
+         ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 target_include_directories(
   rrt_to
   PUBLIC $<INSTALL_INTERFACE:include> ${OMPL_INCLUDE_DIRS}
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
-          ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src)
+          )
 
 target_include_directories(
   motion_primitives
   PUBLIC $<INSTALL_INTERFACE:include>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
          ${OMPL_INCLUDE_DIRS} ${CROCODDYL_INCLUDE_DIRS}
+          ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
-          ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src)
+          )
 
 target_include_directories(
   dbastar
   PUBLIC $<INSTALL_INTERFACE:include>
          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
          ${OMPL_INCLUDE_DIRS}
+          ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src
   PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
-          ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src)
+          )
 
 target_include_directories(
   dbrrt
@@ -185,7 +189,7 @@ target_link_libraries(
 
 target_link_libraries(
   dbastar
-  PUBLIC Eigen3::Eigen dynobench::dynobench
+  PUBLIC Eigen3::Eigen dynobench::dynobench dynotree::dynotree
   PRIVATE fcl ${OMPL_LIBRARIES} ${LZ4_LIBRARIES})
 
 target_link_libraries(

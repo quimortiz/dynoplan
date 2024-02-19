@@ -24,11 +24,8 @@
 #include "dynobench/motions.hpp"
 #include "dynoplan/dbastar/dbastar.hpp"
 // #include "ocp.hpp"
-#include "dynobench/robot_models.hpp"
 #include "dynoplan/ompl/robots.h"
 #include "dynoplan/optimization/ocp.hpp"
-#include "ompl/base/Path.h"
-#include "ompl/base/ScopedState.h"
 
 // boost stuff for the graph
 #include <boost/graph/adjacency_list.hpp>
@@ -531,6 +528,7 @@ void dbrrtConnect(const dynobench::Problem &problem,
   Eigen::VectorXd aux_last_state(robot->nx);
 
   dynobench::Trajectory traj_out_fwd, traj_out_bwd;
+  bool expand_to_rand = true;
   while (!stop_search()) {
     if (time_bench.expands % print_every == 0)
       print_search_status();
@@ -545,13 +543,16 @@ void dbrrtConnect(const dynobench::Problem &problem,
         std::uniform_int_distribution<> distr(0, T_nrev->size() - 1);
         int idx = distr(g);
         x_rand = nodes_in_Tnrev.at(idx)->state_eig;
+        expand_to_rand = false;
       } else {
         std::uniform_int_distribution<> distr(0, T_n->size() - 1);
         int idx = distr(g);
         x_rand = nodes_in_Tn.at(idx)->state_eig;
+        expand_to_rand = false;
       }
     } else {
       robot->sample_uniform(x_rand);
+      expand_to_rand = true;
     }
 
     rand_node->state_eig = x_rand;
@@ -614,6 +615,13 @@ void dbrrtConnect(const dynobench::Problem &problem,
     int best_index = -1;
     dynobench::Trajectory chosen_traj_debug;
     LazyTraj chosen_lazy_traj;
+    int valid_expansions = 0;
+    int max_valid_expansions;
+
+    if (expand_to_rand)
+      max_valid_expansions = options_dbrrt.max_valid_expansions_to_rand;
+    else
+      max_valid_expansions = options_dbrrt.max_valid_expansions_to_goal;
 
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
@@ -631,6 +639,8 @@ void dbrrtConnect(const dynobench::Problem &problem,
       if (!motion_valid)
         continue;
 
+      valid_expansions++;
+
       double d = robot->distance(
           traj_wrapper.get_state(traj_wrapper.get_size() - 1), x_target);
 
@@ -645,10 +655,10 @@ void dbrrtConnect(const dynobench::Problem &problem,
         if (options_dbrrt.debug) {
           chosen_traj_debug = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
         }
-
-        if (options_dbrrt.choose_first_motion_valid)
-          break;
       }
+
+      if (valid_expansions >= max_valid_expansions)
+        break;
     }
 
     if (best_index != -1) {
@@ -724,6 +734,659 @@ void dbrrtConnect(const dynobench::Problem &problem,
         // TODO: dont write to much to file!!
       }
     } else {
+      // std::cout << "Warning: all expansions failed "
+      //              "in state "
+      //           << near_node->state_eig.format(FMT) << std::endl;
+    }
+  }
+
+  time_bench.time_search = watch.elapsed_ms();
+  time_bench.time_nearestMotion +=
+      expander.time_in_nn + expander_rev.time_in_nn;
+  std::cout << "expander.time_in_nn: " << expander.time_in_nn << std::endl;
+  std::cout << "expander_rev.time_in_nn: " << expander_rev.time_in_nn
+            << std::endl;
+
+  std::cout << "Terminate status: " << static_cast<int>(status) << " "
+            << terminate_status_str[static_cast<int>(status)] << std::endl;
+  std::cout << "solved_raw: " << (solution_bwd && solution_fwd != nullptr)
+            << std::endl;
+  std::cout << "solved_opt:" << bool(info_out.trajs_opt.size()) << std::endl;
+  std::cout << "TIME in search:" << time_bench.time_search << std::endl;
+  std::cout << "sizeTN: " << T_n->size() << std::endl;
+  std::cout << "sizeTN_rev: " << T_nrev->size() << std::endl;
+
+  std::cout << "time_bench:" << std::endl;
+  time_bench.write(std::cout);
+
+  if (solution_bwd && solution_fwd) {
+    std::cout << "SOLVED: cost: " << solution_fwd->gScore + solution_bwd->gScore
+              << std::endl;
+
+    std::unique_ptr<std::ofstream> file_debug_ptr = nullptr;
+
+    if (options_dbrrt.debug) {
+      file_debug_ptr = std::make_unique<std::ofstream>(
+          "/tmp/dynoplan/db_rrt_debug_" +
+          std::to_string(info_out.trajs_raw.size()) + ".yaml");
+    }
+
+    from_fwd_bwd_solution_to_yaml_and_traj(
+        *robot, motions, motions_rev, solution_fwd, solution_bwd, problem,
+        traj_out, traj_out_fwd, traj_out_bwd,
+        file_debug_ptr ? file_debug_ptr.get() : nullptr);
+
+  } else {
+    std::cout << "NOT SOLVED" << std::endl;
+    nearest_state_timed(goal_node, tmp, T_n, time_bench);
+
+    std::cout << "Close distance T_n to goal: "
+              << robot->distance(goal_node->getStateEig(), tmp->getStateEig())
+              << std::endl;
+
+    nearest_state_timed(start_node, tmp, T_nrev, time_bench);
+
+    std::cout << "Close distance T_nrev to start: "
+              << robot->distance(start_node->getStateEig(), tmp->getStateEig())
+              << std::endl;
+
+    // tree vs tree
+    DYNO_CHECK_EQ(nodes_in_Tn.size(), T_n->size(), AT);
+
+    std::vector<double> distances(nodes_in_Tn.size());
+    std::vector<AStarNode *> nn(nodes_in_Tn.size());
+
+    double min_dist = std::numeric_limits<double>::max();
+    int best_index = -1;
+    for (size_t i = 0; i < nodes_in_Tn.size(); ++i) {
+      nearest_state_timed(nodes_in_Tn.at(i), tmp, T_nrev, time_bench);
+      nn.at(i) = tmp;
+      double di =
+          robot->distance(nodes_in_Tn.at(i)->getStateEig(), tmp->getStateEig());
+      distances[i] = di;
+      if (di < min_dist) {
+        min_dist = di;
+        best_index = i;
+      }
+    }
+    assert(best_index >= 0);
+    std::cout << "nearest pair is " << std::endl;
+
+    std::cout << "FWD" << std::endl;
+    nodes_in_Tn.at(best_index)->write(std::cout);
+
+    std::cout << "BWD" << std::endl;
+    nn.at(best_index)->write(std::cout);
+
+    std::cout << "distance: " << min_dist << std::endl;
+  }
+
+  if (options_dbrrt.debug) {
+    std::vector<AStarNode *> active_nodes_fwd;
+    T_n->list(active_nodes_fwd);
+    plot_search_tree(active_nodes_fwd, motions, *robot,
+                     ("/tmp/dynoplan/db_rrt_tree_fwd_" +
+                      std::to_string(info_out.trajs_raw.size()) + ".yaml")
+                         .c_str());
+    std::vector<AStarNode *> active_nodes_bwd;
+    T_nrev->list(active_nodes_bwd);
+    plot_search_tree(active_nodes_bwd, motions_rev, *robot,
+                     ("/tmp/dynoplan/db_rrt_tree_bwd_" +
+                      std::to_string(info_out.trajs_raw.size()) + ".yaml")
+                         .c_str());
+
+    if (info_out.solved_raw) {
+      traj_out.to_yaml_format("/tmp/dynoplan/db_rrt_traj_" +
+                              std::to_string(info_out.trajs_raw.size()) +
+                              ".yaml");
+
+      traj_out_fwd.to_yaml_format("/tmp/dynoplan/db_rrt_traj_fwd_" +
+                                  std::to_string(info_out.trajs_raw.size()) +
+                                  ".yaml");
+
+      traj_out_bwd.to_yaml_format("/tmp/dynoplan/db_rrt_traj_bwd_" +
+                                  std::to_string(info_out.trajs_raw.size()) +
+                                  ".yaml");
+    }
+  }
+
+  info_out.trajs_raw.push_back(traj_out);
+
+  info_out.data.insert(
+      std::make_pair("time_search", std::to_string(time_bench.time_search)));
+
+  if (debug_extra && options_dbrrt.debug) {
+    std::ofstream debug_file("/tmp/dynoplan/debug.yaml");
+    std::ofstream debug_file2("/tmp/dynoplan/debug2.yaml");
+    debug_file << "rand_nodes:" << std::endl;
+    for (auto &q : rand_nodes) {
+      debug_file << "  - " << q.format(FMT) << std::endl;
+    }
+
+    debug_file << "near_nodes:" << std::endl;
+    for (auto &q : near_nodes) {
+      debug_file << "  - " << q.format(FMT) << std::endl;
+    }
+
+    debug_file << "discovered_nodes:" << std::endl;
+    for (auto &q : discovered_nodes) {
+      debug_file << "  - " << q->state_eig.format(FMT) << std::endl;
+    }
+
+    debug_file << "chosen_trajs:" << std::endl;
+    for (auto &traj : chosen_trajs) {
+      debug_file << "  - " << std::endl;
+      traj.to_yaml_format(debug_file, "    ");
+    }
+
+    debug_file2 << "trajs:" << std::endl;
+    for (auto &traj : trajs) {
+      debug_file2 << "  - " << std::endl;
+      traj.to_yaml_format(debug_file2, "    ");
+    }
+  }
+
+  std::string filename_out = "/tmp/dynoplan/out_dbrrt.yaml";
+  create_dir_if_necessary(filename_out);
+  std::ofstream out(filename_out);
+
+  out << "solved: " << bool(solution_fwd && solution_bwd) << std::endl;
+  out << "status: " << static_cast<int>(status) << std::endl;
+  out << "status_str: " << terminate_status_str[static_cast<int>(status)]
+      << std::endl;
+  out << "sizeTN: " << T_n->size() << std::endl;
+  time_bench.write(out);
+
+  if (info_out.solved_raw) {
+    std::cout << "WARNING: for feasibility check, I use the MAX of goal_region "
+                 "and delta:"
+              << std::max(options_dbrrt.goal_region, options_dbrrt.delta)
+              << std::endl;
+    dynobench::Feasibility_thresholds thresholds;
+    thresholds.col_tol =
+        5 * 1e-2; // NOTE: for the systems with 0.01 s integration step,
+    // I check collisions only at 0.05s . Thus, an intermediate state
+    // could be slightly in collision.
+    thresholds.goal_tol =
+        std::max(options_dbrrt.goal_region, options_dbrrt.delta);
+    thresholds.traj_tol =
+        std::max(options_dbrrt.goal_region, options_dbrrt.delta);
+    traj_out.update_feasibility(thresholds, true);
+    // Sanity check that trajectory is actually feasible!!
+    CHECK(traj_out.feasible, "");
+  }
+
+  std::cout << "warning: update the trajecotries cost" << std::endl;
+  std::for_each(
+      info_out.trajs_raw.begin(), info_out.trajs_raw.end(),
+      [&](auto &traj) { traj.cost = robot->ref_dt * traj.actions.size(); });
+}
+
+// the Original rrt connect implementation
+void dbrrtConnectOrig(const dynobench::Problem &problem,
+                      std::shared_ptr<dynobench::Model_robot> robot,
+                      const Options_dbrrt &options_dbrrt,
+                      const Options_trajopt &options_trajopt,
+                      dynobench::Trajectory &traj_out,
+                      dynobench::Info_out &info_out) {
+
+  const bool debug_extra = false; // set to true for extra debug output
+
+  std::cout << "options dbrrt" << std::endl;
+  options_dbrrt.print(std::cout);
+  std::cout << "***" << std::endl;
+
+  const int nx = robot->nx;
+
+  std::vector<Motion> &motions = *options_dbrrt.motions_ptr;
+  std::vector<Motion> motions_rev;
+
+  CHECK(options_dbrrt.motions_ptr, AT);
+  DYNO_CHECK_EQ(motions.at(0).traj.states.front().size(), nx, AT);
+
+  reverse_motions(motions_rev, *robot, motions);
+
+  DYNO_CHECK_EQ(motions.at(0).traj.states.front().size(), nx, AT);
+
+  std::cout << "example motions " << std::endl;
+  assert(motions.size());
+  assert(motions_rev.size());
+  motions.front().traj.to_yaml_format(std::cout);
+  motions_rev.front().traj.to_yaml_format(std::cout);
+  std::cout << "DONE " << std::endl;
+
+  Time_benchmark time_bench;
+  ompl::NearestNeighbors<Motion *> *T_m = nullptr;
+  ompl::NearestNeighbors<Motion *> *T_mrev = nullptr;
+  if (options_dbrrt.use_nigh_nn) {
+    T_m = nigh_factory2<Motion *>(problem.robotType, robot);
+    T_mrev = nigh_factory2<Motion *>(problem.robotType, robot);
+  } else {
+    NOT_IMPLEMENTED;
+  }
+  assert(T_mrev);
+  assert(T_m);
+
+  time_bench.time_nearestMotion += timed_fun_void([&] {
+    for (size_t j = 0; j < std::min(options_dbrrt.max_motions, motions.size());
+         j++)
+      T_m->add(&motions[j]);
+  });
+
+  time_bench.time_nearestMotion += timed_fun_void([&] {
+    for (size_t j = 0;
+         j < std::min(options_dbrrt.max_motions, motions_rev.size()); j++)
+      T_mrev->add(&motions_rev[j]);
+  });
+
+  ompl::NearestNeighbors<AStarNode *> *T_n = nullptr;
+  ompl::NearestNeighbors<AStarNode *> *T_nrev = nullptr;
+
+  std::vector<AStarNode *> nodes_in_Tn;
+  std::vector<AStarNode *> nodes_in_Tnrev;
+
+  if (options_dbrrt.use_nigh_nn) {
+    T_n = nigh_factory2<AStarNode *>(problem.robotType, robot);
+    T_nrev = nigh_factory2<AStarNode *>(problem.robotType, robot);
+  } else {
+    NOT_IMPLEMENTED;
+  }
+
+  Terminate_status status = Terminate_status::UNKNOWN;
+
+  Expander expander(robot.get(), T_m, options_dbrrt.delta);
+  Expander expander_rev(robot.get(), T_mrev, options_dbrrt.delta);
+
+  auto start_node = new AStarNode;
+  start_node->gScore = 0;
+  start_node->state_eig = problem.start;
+  start_node->hScore =
+      robot->lower_bound_time(start_node->state_eig, problem.goal);
+  start_node->fScore = start_node->gScore + start_node->hScore;
+  start_node->came_from = nullptr;
+
+  auto goal_node = new AStarNode;
+  goal_node->gScore = 0;
+  goal_node->state_eig = problem.goal;
+  goal_node->hScore = 0;
+  goal_node->fScore = 0;
+  goal_node->came_from = nullptr;
+
+  Eigen::VectorXd x(nx);
+
+  CSTR_V(robot->x_lb);
+  CSTR_V(robot->x_ub);
+
+  Motion fakeMotion;
+  fakeMotion.idx = -1;
+  fakeMotion.traj.states.push_back(Eigen::VectorXd::Zero(robot->nx));
+
+  double best_distance_to_goal =
+      robot->distance(start_node->state_eig, problem.goal);
+
+  std::vector<Eigen::VectorXd> rand_nodes;
+  std::vector<Eigen::VectorXd> near_nodes;
+  std::vector<dynobench::Trajectory> trajs;
+  std::vector<dynobench::Trajectory> chosen_trajs;
+
+  std::mt19937 g = std::mt19937{std::random_device()()};
+
+  if (options_dbrrt.seed >= 0) {
+    expander.seed(options_dbrrt.seed);
+    expander_rev.seed(options_dbrrt.seed);
+    g = std::mt19937{static_cast<size_t>(options_dbrrt.seed)};
+    srand(options_dbrrt.seed);
+  } else {
+    srand(time(0));
+  }
+
+  Eigen::VectorXd x_rand(robot->nx), x_target(robot->nx);
+  AStarNode *rand_node = new AStarNode;
+
+  AStarNode *near_node = nullptr;
+  AStarNode *tmp = nullptr;
+  AStarNode *solution_fwd = nullptr;
+  AStarNode *solution_bwd = nullptr;
+
+  std::vector<AStarNode *> discovered_nodes_fwd, discovered_nodes_bwd;
+
+  double cost_bound =
+      options_dbrrt.cost_bound; //  std::numeric_limits<double>::infinity();
+
+  double best_cost_opt = std::numeric_limits<double>::infinity();
+  dynobench::Trajectory best_traj_opt;
+
+  // SEARCH STARTS HERE
+  add_state_timed(start_node, T_n, time_bench);
+  nodes_in_Tn.push_back(start_node);
+  add_state_timed(goal_node, T_nrev, time_bench);
+  nodes_in_Tnrev.push_back(goal_node);
+
+  std::vector<AStarNode *> discovered_nodes;
+
+  bool expand_forward = true;
+
+  std::vector<dynobench::Trajectory> chosen_trajs_fwd, chosen_trajs_bwd;
+
+  const size_t print_every = 1000;
+
+  auto print_search_status = [&] {
+    std::cout << "expands: " << time_bench.expands
+              << " best distance: " << best_distance_to_goal
+              << " cost bound: " << cost_bound << std::endl;
+  };
+
+  Stopwatch watch;
+
+  auto stop_search = [&] {
+    if (static_cast<size_t>(time_bench.expands) >= options_dbrrt.max_expands) {
+      status = Terminate_status::MAX_EXPANDS;
+      std::cout << "BREAK search:"
+                << "MAX_EXPANDS" << std::endl;
+
+      return true;
+    }
+
+    if (watch.elapsed_ms() > options_dbrrt.timelimit) {
+      status = Terminate_status::MAX_TIME;
+      std::cout << "BREAK search:"
+                << "MAX_TIME" << std::endl;
+      return true;
+    }
+    return false;
+  };
+
+  dynobench::TrajWrapper traj_wrapper;
+  {
+    std::vector<Motion *> motions;
+    T_m->list(motions);
+    size_t max_traj_size = (*std::max_element(motions.begin(), motions.end(),
+                                              [](Motion *a, Motion *b) {
+                                                return a->traj.states.size() <
+                                                       b->traj.states.size();
+                                              }))
+                               ->traj.states.size();
+
+    traj_wrapper.allocate_size(max_traj_size, robot->nx, robot->nu);
+  }
+
+  Eigen::VectorXd __expand_start(robot->nx);
+  Eigen::VectorXd __expand_end(robot->nx);
+  Eigen::VectorXd aux_last_state(robot->nx);
+
+  dynobench::Trajectory traj_out_fwd, traj_out_bwd;
+
+  expand_forward = true;
+
+  int max_num_trials_col_free = 1000;
+
+  enum EXPANSION_MODE { fwd_to_rand, bwd_to_rand, bwd_to_fwd, fwd_to_bwd };
+
+  const char *expansion_mode_str[] = {"fwd_to_rand", "bwd_to_rand",
+                                      "bwd_to_fwd", "fwd_to_bwd"};
+
+  EXPANSION_MODE mode = fwd_to_rand;
+
+  while (!stop_search()) {
+    if (time_bench.expands % print_every == 0)
+      print_search_status();
+
+    // std::cout << "expand_mode: " << expansion_mode_str[mode] << std::endl;
+
+    time_bench.expands++;
+
+    if (mode == fwd_to_rand || mode == fwd_to_bwd) {
+      expand_forward = true;
+    } else {
+      expand_forward = false;
+    }
+
+    if (mode == fwd_to_rand || mode == bwd_to_rand) {
+
+      bool is_collision_free = false;
+      int num_tries = 0;
+      while (!is_collision_free && num_tries < max_num_trials_col_free) {
+        robot->sample_uniform(x_rand);
+        is_collision_free = robot->collision_check(x_rand);
+        num_tries++;
+      }
+      DYNO_CHECK(is_collision_free, "cannot generate a valid xrand");
+
+      rand_node->state_eig = x_rand;
+
+      if (expand_forward) {
+        nearest_state_timed(rand_node, near_node, T_n, time_bench);
+      } else
+        nearest_state_timed(rand_node, near_node, T_nrev, time_bench);
+
+      assert(near_node);
+
+      if (options_dbrrt.debug) {
+        rand_nodes.push_back(x_rand);
+        near_nodes.push_back(near_node->state_eig);
+      }
+
+      double distance_to_rand = robot->distance(x_rand, near_node->state_eig);
+
+      if (distance_to_rand > options_dbrrt.max_step_size) {
+        robot->interpolate(x_target, near_node->state_eig, x_rand,
+                           options_dbrrt.max_step_size / distance_to_rand);
+      } else {
+        x_target = x_rand;
+      }
+    } else {
+      // x_target and near_node are set at the end of the previous iteration
+    }
+
+    std::vector<LazyTraj> lazy_trajs;
+
+    Eigen::VectorXd offset(robot->get_offset_dim());
+
+    if (!near_node->motions.size()) {
+      if (expand_forward)
+        time_bench.time_lazy_expand += timed_fun_void(
+            [&] { expander.expand_lazy(near_node->state_eig, lazy_trajs); });
+      else
+        time_bench.time_lazy_expand += timed_fun_void([&] {
+          expander_rev.expand_lazy(near_node->state_eig, lazy_trajs);
+        });
+
+      near_node->motions.reserve(lazy_trajs.size());
+
+      std::transform(lazy_trajs.begin(), lazy_trajs.end(),
+                     std::back_inserter(near_node->motions),
+                     [](LazyTraj &lazy_traj) { return lazy_traj.motion->idx; });
+    } else {
+      lazy_trajs.reserve(near_node->motions.size());
+      robot->offset(near_node->state_eig, offset);
+
+      std::vector<Motion> *motions_ptr =
+          expand_forward ? &motions : &motions_rev;
+
+      std::transform(near_node->motions.begin(), near_node->motions.end(),
+                     std::back_inserter(lazy_trajs), [&](int idx) {
+                       return LazyTraj{.offset = &offset,
+                                       .robot = robot.get(),
+                                       .motion = &(motions_ptr->at(idx))};
+                     });
+      std::shuffle(lazy_trajs.begin(), lazy_trajs.end(), g);
+    }
+
+    double min_distance = std::numeric_limits<double>::max();
+    int best_index = -1;
+    dynobench::Trajectory chosen_traj_debug;
+    LazyTraj chosen_lazy_traj;
+    int valid_expansions = 0;
+
+    // If I go to random points i only expands once.
+    // if i try to reach the other tree, i expand some
+    // and pick the one that brings me closer.
+
+    int max_valid_expansions;
+
+    if (mode == fwd_to_rand || mode == bwd_to_rand)
+      max_valid_expansions = options_dbrrt.max_valid_expansions_to_rand;
+    else
+      max_valid_expansions = options_dbrrt.max_valid_expansions_to_goal;
+
+    for (size_t i = 0; i < lazy_trajs.size(); i++) {
+      auto &lazy_traj = lazy_trajs[i];
+      traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
+      // TODO: check the bounds while expanding!!
+      // OR at least, check bounds of last state!
+      bool motion_valid = check_lazy_trajectory(
+          lazy_traj, *robot, time_bench, traj_wrapper, aux_last_state, nullptr,
+          nullptr, expand_forward);
+
+      if (options_dbrrt.debug) {
+        trajs.push_back(dynobench::trajWrapper_2_Trajectory(traj_wrapper));
+      }
+
+      if (!motion_valid)
+        continue;
+
+      valid_expansions++;
+
+      double d = robot->distance(
+          traj_wrapper.get_state(traj_wrapper.get_size() - 1), x_target);
+
+      if (d < min_distance) {
+        min_distance = d;
+        best_index = i;
+        chosen_lazy_traj = lazy_traj;
+
+        __expand_start = traj_wrapper.get_state(0);
+        __expand_end = traj_wrapper.get_state(traj_wrapper.get_size() - 1);
+
+        if (options_dbrrt.debug) {
+          chosen_traj_debug = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
+        }
+      }
+
+      if (max_valid_expansions)
+        break;
+    }
+
+    if (best_index != -1) {
+      AStarNode *new_node = new AStarNode();
+      new_node->state_eig = __expand_end;
+      // THIS has no meaning in RRT Connect!
+      new_node->hScore =
+          robot->lower_bound_time(new_node->state_eig, problem.goal);
+      new_node->came_from = near_node;
+      new_node->used_motion = chosen_lazy_traj.motion->idx;
+
+      new_node->gScore =
+          near_node->gScore + chosen_lazy_traj.motion->cost +
+          options_dbrrt.cost_jump *
+              robot->lower_bound_time(near_node->state_eig, __expand_start);
+
+      new_node->fScore = new_node->gScore + new_node->hScore;
+
+      if (expand_forward)
+        nearest_state_timed(new_node, tmp, T_n, time_bench);
+      else
+        nearest_state_timed(new_node, tmp, T_nrev, time_bench);
+
+      // TODO: move this where I check the if
+      if (robot->distance(tmp->state_eig, new_node->state_eig) <
+          options_dbrrt.delta / 2.) {
+        delete new_node; // TODO: use unique ptrs
+
+        if (mode == fwd_to_rand) {
+          mode = bwd_to_rand;
+        } else if (mode == bwd_to_rand) {
+          mode = fwd_to_rand;
+        } else if (mode == fwd_to_bwd) {
+          mode = fwd_to_rand;
+        } else if (mode == bwd_to_fwd) {
+          mode = bwd_to_rand;
+        }
+
+        continue;
+      }
+
+      if (expand_forward) {
+        add_state_timed(new_node, T_n, time_bench);
+        nodes_in_Tn.push_back(new_node);
+        discovered_nodes.push_back(new_node);
+        nearest_state_timed(new_node, tmp, T_nrev, time_bench);
+      } else {
+        add_state_timed(new_node, T_nrev, time_bench);
+        nodes_in_Tnrev.push_back(new_node);
+        discovered_nodes.push_back(new_node);
+        nearest_state_timed(new_node, tmp, T_n, time_bench);
+      }
+
+      if (options_dbrrt.debug) {
+        if (expand_forward)
+          chosen_trajs_fwd.push_back(chosen_traj_debug);
+        else
+          chosen_trajs_bwd.push_back(chosen_traj_debug);
+      }
+
+      double di = robot->distance(tmp->state_eig, new_node->state_eig);
+
+      if (di < options_dbrrt.goal_region) {
+        std::cout << "we have connected the trees!" << std::endl;
+
+        if (expand_forward) {
+          solution_fwd = new_node;
+          solution_bwd = tmp;
+        } else {
+          solution_fwd = tmp;
+          solution_bwd = new_node;
+        }
+
+        status = Terminate_status::SOLVED_RAW;
+
+        info_out.solved_raw = true;
+        std::cout << "success! GOAL_REACHED" << std::endl;
+        std::cout << "node fwd " << solution_fwd->state_eig.format(FMT)
+                  << std::endl;
+        std::cout << "node bwd " << solution_bwd->state_eig.format(FMT)
+                  << std::endl;
+        status = Terminate_status::SOLVED_RAW;
+        std::cout << "breaking search" << std::endl;
+        break;
+        // TODO: dont write to much to file!!
+      }
+
+      // if i was expanding toward random, then i will expand the other tree
+
+      // std::cout << "change from mode " << expansion_mode_str[mode] <<
+      // std::endl;
+
+      if (mode == fwd_to_rand) {
+        mode = bwd_to_fwd;
+        x_target = new_node->state_eig;
+        near_node = tmp;
+      } else if (mode == bwd_to_rand) {
+        mode = fwd_to_bwd;
+        x_target = new_node->state_eig;
+        near_node = tmp;
+      } else if (mode == fwd_to_bwd) {
+        mode = fwd_to_rand;
+      } else if (mode == bwd_to_fwd) {
+        mode = bwd_to_rand;
+      }
+
+    } else {
+
+      // std::cout << "change from mode " << expansion_mode_str[mode] <<
+      // std::endl; expansion has failed,
+      if (mode == fwd_to_rand) {
+        mode = bwd_to_rand;
+      } else if (mode == bwd_to_rand) {
+        mode = fwd_to_rand;
+      } else if (mode == fwd_to_bwd) {
+        mode = fwd_to_rand;
+      } else if (mode == bwd_to_fwd) {
+        mode = bwd_to_rand;
+      }
+
+      // std::cout << "to " << expansion_mode_str[mode] << std::endl;
+
       // std::cout << "Warning: all expansions failed "
       //              "in state "
       //           << near_node->state_eig.format(FMT) << std::endl;
@@ -1146,10 +1809,18 @@ void dbrrt(const dynobench::Problem &problem,
 
     double min_distance = std::numeric_limits<double>::max();
     int best_index = -1;
+    int chosen_index; // when i reach goal with an intermediate state
     dynobench::Trajectory chosen_traj_debug;
     LazyTraj chosen_lazy_traj;
 
-    int chosen_index = -1;
+    int max_valid_expansions;
+    if (expand_near_goal)
+      max_valid_expansions = options_dbrrt.max_valid_expansions_to_goal;
+    else
+      max_valid_expansions = options_dbrrt.max_valid_expansions_to_rand;
+
+    int valid_expansions = 0;
+
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
 
       auto &lazy_traj = lazy_trajs[i];
@@ -1160,6 +1831,7 @@ void dbrrt(const dynobench::Problem &problem,
 
       if (!motion_valid)
         continue;
+      valid_expansions++;
 
       double d = robot->distance(
           traj_wrapper.get_state(traj_wrapper.get_size() - 1), x_target);
@@ -1190,9 +1862,12 @@ void dbrrt(const dynobench::Problem &problem,
           chosen_traj_debug = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
         }
 
-        if (options_dbrrt.choose_first_motion_valid || chosen_index != -1)
+        if (chosen_index != -1)
           break;
       }
+
+      if (valid_expansions >= max_valid_expansions)
+        break;
     }
 
     if (best_index != -1) {
@@ -1674,7 +2349,12 @@ void idbrrt(const dynobench::Problem &problem,
   Stopwatch watch;
   double accumulated_time_filtered = 0.0;
 
-  while (!finished) {
+  int max_it = 1;
+
+  double time_search = 0;
+  double time_opt = 0;
+
+  while (!finished && it < max_it) {
     if (it > 0) {
       options_dbrrt_local.delta *= delta_factor;
       options_dbrrt_local.goal_region *= delta_factor;
@@ -1686,10 +2366,17 @@ void idbrrt(const dynobench::Problem &problem,
     if (options_dbrrt_local.use_connect) {
       dbrrtConnect(problem, robot, options_dbrrt_local, options_trajopt,
                    traj_dbrrt, info_out_local);
+
+    } else if (options_dbrrt_local.use_connect_orig) {
+      dbrrtConnectOrig(problem, robot, options_dbrrt_local, options_trajopt,
+                       traj_dbrrt, info_out_local);
     } else {
       dbrrt(problem, robot, options_dbrrt_local, options_trajopt, traj_dbrrt,
             info_out_local);
     }
+
+    time_search += std::stof(info_out_local.data.at("time_search"));
+    // search_times.push_back(std::stof(info_out_local.data.at("time_search")));
 
     accumulated_time_filtered +=
         std::stof(info_out_local.data.at("time_search"));
@@ -1706,6 +2393,8 @@ void idbrrt(const dynobench::Problem &problem,
         accumulated_time_filtered +=
             std::stof(result.data.at("time_ddp_total"));
 
+        time_opt += std::stof(result.data.at("time_ddp_total"));
+
         traj_out_opti.time_stamp = accumulated_time_filtered;
 
         if (result.feasible) {
@@ -1720,6 +2409,10 @@ void idbrrt(const dynobench::Problem &problem,
 
     it++;
   }
+
+  info_out.data.insert(
+      std::make_pair("time_search", std::to_string(time_search)));
+  info_out.data.insert(std::make_pair("time_opt", std::to_string(time_opt)));
 }
 
 } // namespace dynoplan

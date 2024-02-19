@@ -69,6 +69,7 @@ struct Options_idbAStar {
     set_from_boostop(desc, VAR_WITH_NAME(new_schedule));
     set_from_boostop(desc, VAR_WITH_NAME(max_motions_primitives));
     set_from_boostop(desc, VAR_WITH_NAME(add_primitives_opt));
+    set_from_boostop(desc, VAR_WITH_NAME(max_num_sol));
   }
   void print(std::ostream &out, const std::string be = "",
              const std::string af = ": ") const {
@@ -82,6 +83,7 @@ struct Options_idbAStar {
     out << be << STR(new_schedule, af) << std::endl;
     out << be << STR(max_motions_primitives, af) << std::endl;
     out << be << STR(add_primitives_opt, af) << std::endl;
+    out << be << STR(max_num_sol, af) << std::endl;
   }
 
   void __read_from_node(const YAML::Node &node) {
@@ -95,6 +97,7 @@ struct Options_idbAStar {
     set_from_yaml(node, VAR_WITH_NAME(new_schedule));
     set_from_yaml(node, VAR_WITH_NAME(max_motions_primitives));
     set_from_yaml(node, VAR_WITH_NAME(add_primitives_opt));
+    set_from_yaml(node, VAR_WITH_NAME(max_num_sol));
   }
 
   void read_from_yaml(YAML::Node &node) {

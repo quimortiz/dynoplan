@@ -2,6 +2,7 @@
 #include "dynobench/dyno_macros.hpp"
 #include "dynobench/math_utils.hpp"
 #include <Eigen/src/Core/Matrix.h>
+#include <boost/histogram/axis/traits.hpp>
 #include <filesystem>
 
 #include "crocoddyl/core/numdiff/action.hpp"
@@ -982,7 +983,7 @@ void solve_for_fixed_penalty(
     ddp = std::make_shared<mim_solvers::SolverSQP>(problem_croco);
     std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->setCallbacks(true);
     std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)
-        ->set_use_filter_line_search(false);
+        ->set_use_filter_line_search(options_trajopt_local.use_mim_filter);
     std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->set_mu(100.);
   } else {
     ddp = std::make_shared<crocoddyl::SolverBoxFDDP>(problem_croco);
@@ -1451,7 +1452,7 @@ void __trajectory_optimization(
         std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->setCallbacks(
             true);
         std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)
-            ->set_use_filter_line_search(false);
+            ->set_use_filter_line_search(options_trajopt_local.use_mim_filter);
         std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->set_mu(100.);
         // std::dynamic_pointer_cast<mim_solvers::SolverSQP>(ddp)->set_mu(10000.);
       } else {

@@ -6,6 +6,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "Eigen/Core"
+#include "dynotree/KDTree.h"
 #include <boost/program_options.hpp>
 
 // #include "collision_checker.hpp"
@@ -21,6 +22,9 @@
 #include <regex>
 
 #include "dynobench/motions.hpp"
+#include "dynoplan/nigh_custom_spaces.hpp"
+#include "dynoplan/ompl/robots.h"
+#include "dynotree/KDTree.h"
 #include <Eigen/Dense>
 #include <iostream>
 
@@ -30,6 +34,179 @@
 
 using namespace dynoplan;
 using namespace dynobench;
+
+BOOST_AUTO_TEST_CASE(check_nn) {
+
+  // compare nn of dynobench vs dynotree
+  const char *system = "quad2d_v0";
+
+  const char *motions_file =
+      "../../dynomotions/quad2d_v0_all_im.bin.sp.bin.ca.bin.small5000.msgpack";
+
+  Eigen::VectorXd p_lb(2);
+  Eigen::VectorXd p_ub(2);
+
+  const char *models_base_path = DYNOBENCH_BASE "models/";
+  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+      (models_base_path + std::string(system) + ".yaml").c_str(), p_lb, p_ub);
+
+  ompl::NearestNeighbors<AStarNode *> *T_n = nullptr;
+  T_n = nigh_factory2<AStarNode *>(system, robot);
+  ompl::NearestNeighbors<Motion *> *T_m = nullptr;
+  T_m = nigh_factory2<Motion *>(system, robot);
+
+  std::vector<Motion> motions;
+
+  load_motion_primitives_new(motions_file, *robot, motions, 1e6, false, false,
+                             false);
+
+  for (size_t i = 0; i < motions.size(); ++i)
+    T_m->add(&motions.at(i));
+
+  Eigen::VectorXd x(6);
+
+  double delta = .4;
+  std::vector<Motion *> neighbors_m;
+
+  T_m->nearestR(&motions.at(0), delta, neighbors_m);
+
+  std::cout << "using nigh " << std::endl;
+  for (auto &m : neighbors_m) {
+    std::cout << "id " << m->idx << "nn " << m->getStateEig().transpose()
+              << std::endl;
+  }
+
+  {
+
+    size_t total_neighs = 0;
+    auto tic = std::chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < motions.size(); ++i) {
+      neighbors_m.clear();
+      T_m->nearestR(&motions.at(i), delta, neighbors_m);
+      total_neighs += neighbors_m.size();
+      // T_m->nearestK(&motions.at(i), 10, neighbors_m);
+      // (&motions.at(i), delta, neighbors_m);
+    }
+    auto toc = std::chrono::high_resolution_clock::now();
+    std::cout << "nigh time "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(toc -
+                                                                       tic)
+                     .count()
+              << " ms" << std::endl;
+    std::cout << "total_neighs " << total_neighs << std::endl;
+  }
+
+  std::cout << "done " << std::endl;
+  using tree_t = dynotree::KDTree<int, 2>;
+  using point_t = Eigen::Vector2d;
+
+  using TreeX =
+      dynotree::KDTree<int, -1, 32, double, dynotree::Combined<double>>;
+  using Space = dynotree::Combined<double>::Space;
+
+  std::vector<Space> spaces;
+  Space space;
+  spaces.push_back(dynotree::Rn<double, -1>());
+  spaces.push_back(dynotree::SO2<double>());
+  spaces.push_back(dynotree::Rn<double, -1>());
+
+  dynotree::Combined<double> combi_space(spaces, {2, 1, 3});
+  Eigen::VectorXd weights(6);
+  weights << 1, 1, .5, .2, .2, .2;
+  combi_space.set_weights(weights);
+
+  combi_space.print(std::cout);
+
+  TreeX tree;
+  tree.init_tree(6, combi_space);
+
+  for (size_t i = 0; i < motions.size(); ++i) {
+    auto &m = motions.at(i);
+    tree.addPoint(m.getStateEig(), i);
+  }
+
+  auto out = tree.search(motions.at(0).getStateEig());
+
+  std::cout << "nearest is " << out.id << std::endl;
+  std::cout << "distance is " << out.distance << std::endl;
+
+  auto out2 = tree.searchBall(motions.at(0).getStateEig(), delta);
+
+  for (size_t i = 0; i < out2.size(); ++i) {
+    std::cout << "id " << out2[i].id;
+    std::cout << "id " << out2[i].id << "nn "
+              << motions.at(out2[i].id).getStateEig().transpose() << std::endl;
+  }
+
+  {
+    int total_neighs = 0;
+    auto tic = std::chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < motions.size(); ++i) {
+      auto out = tree.searchBall(motions.at(i).getStateEig(), delta);
+      total_neighs += out.size();
+      // tree.searchKnn(motions.at(i).getStateEig(), 10);
+      // (motions.at(i).getStateEig(), delta);
+    }
+    std::cout << "total_neighs " << total_neighs << std::endl;
+    auto toc = std::chrono::high_resolution_clock::now();
+    std::cout << "dynotree time "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(toc -
+                                                                       tic)
+                     .count()
+              << " ms" << std::endl;
+  }
+
+  // repeat the same but using the euclidean space
+
+  {
+    using TreeX = dynotree::KDTree<int, 6, 32, double, dynotree::Rn<double, 6>>;
+
+    TreeX tree;
+    tree.init_tree();
+    Eigen::VectorXd weights(6);
+    weights << 1, 1, .5, .2, .2, .2;
+    tree.getStateSpace().set_weights(weights);
+
+    for (size_t i = 0; i < motions.size(); ++i) {
+      auto &m = motions.at(i);
+      tree.addPoint(m.getStateEig(), i);
+    }
+
+    auto out = tree.search(motions.at(0).getStateEig());
+
+    std::cout << "nearest is " << out.id << std::endl;
+    std::cout << "distance is " << out.distance << std::endl;
+
+    auto out2 = tree.searchBall(motions.at(0).getStateEig(), delta);
+
+    for (size_t i = 0; i < out2.size(); ++i) {
+      std::cout << "id " << out2[i].id;
+      std::cout << "id " << out2[i].id << "nn "
+                << motions.at(out2[i].id).getStateEig().transpose()
+                << std::endl;
+    }
+
+    {
+      auto tic = std::chrono::high_resolution_clock::now();
+      int total_neighs = 0;
+      for (size_t i = 0; i < motions.size(); ++i) {
+        auto out = tree.searchBall(motions.at(i).getStateEig(), delta);
+        // tree.searchKnn(motions.at(i).getStateEig(), 10);
+        // (motions.at(i).getStateEig(), delta);
+      
+            total_neighs += out.size();
+            }
+
+            std::cout << "total_neighs " << total_neighs << std::endl;
+      auto toc = std::chrono::high_resolution_clock::now();
+      std::cout << "dynotree time "
+                << std::chrono::duration_cast<std::chrono::milliseconds>(toc -
+                                                                         tic)
+                       .count()
+                << " ms" << std::endl;
+    }
+  }
+}
 
 BOOST_AUTO_TEST_CASE(extra_time) {
 

@@ -65,38 +65,34 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti) {
   options_mpcc.weight_goal = 100;
 
   bool use_mim_solvers = true;
-  if (use_mim_solvers) {
-    options_mpcc.use_mim_solvers = true;
-    options_mpc.use_mim_solvers = true;
-    options_search.use_mim_solvers = true;
-    options_dt.use_mim_solvers = true;
-
-    options_mpcc.soft_control_bounds = true;
-    options_mpc.soft_control_bounds = true;
-    options_search.soft_control_bounds = true;
-    options_dt.soft_control_bounds = true;
-    // add constraints as normal constraints!
-  }
 
   std::vector<std::pair<Problem, Trajectory>> problem_with_init_guess;
   // std::vector<Options_trajopt> solvers{options_mpc, options_dt,
   // options_search,
   //                                      options_mpcc};
 
-  // std::vector<Options_trajopt> solvers{options_dt};
-  std::vector<Options_trajopt> solvers{options_search};
+  std::vector<Options_trajopt> solvers{options_dt};
+
+  if (use_mim_solvers)
+    for (auto &s : solvers) {
+      s.use_mim_solvers = true;
+      s.soft_control_bounds = true;
+      s.use_mim_filter = false;
+    }
+
+  // std::vector<Options_trajopt> solvers{options_search};
 
   // std::vector<Options_trajopt> solvers{options_dt};
-
-  // problem_with_init_guess.push_back(std::make_pair(
-  //     Problem(DYNOBENCH_BASE "envs/quadrotor_v0/recovery.yaml"),
-  //     Trajectory(
-  //         "../../benchmark_initguess/quadrotor_v0/recovery/delta_05_v0.yaml")));
 
   problem_with_init_guess.push_back(std::make_pair(
-      Problem(DYNOBENCH_BASE "envs/quadrotor_v0/window.yaml"),
+      Problem(DYNOBENCH_BASE "envs/quadrotor_v0/recovery.yaml"),
       Trajectory(
-          "../../benchmark_initguess/quadrotor_v0/window/delta_05_v0.yaml")));
+          "../../benchmark_initguess/quadrotor_v0/recovery/delta_05_v0.yaml")));
+
+  // problem_with_init_guess.push_back(std::make_pair(
+  //     Problem(DYNOBENCH_BASE "envs/quadrotor_v0/window.yaml"),
+  //     Trajectory(
+  //         "../../benchmark_initguess/quadrotor_v0/window/delta_05_v0.yaml")));
 
   for (auto &p : problem_with_init_guess) {
     p.first.models_base_path = DYNOBENCH_BASE + std::string("models/");
@@ -180,28 +176,23 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
   // options_mpcc.noise_level = 0;
 
   bool use_mim_solvers = true;
-  if (use_mim_solvers) {
-    options_0.use_mim_solvers = true;
-    options_mpcc.use_mim_solvers = true;
-    options_mpc.use_mim_solvers = true;
-    options_search.use_mim_solvers = true;
-    options_dt.use_mim_solvers = true;
 
-    options_mpcc.soft_control_bounds = true;
-    options_mpc.soft_control_bounds = true;
-    options_search.soft_control_bounds = true;
-    options_dt.soft_control_bounds = true;
-    options_0.soft_control_bounds = true;
-    // add constraints as normal constraints!
-  }
+  std::vector<Options_trajopt> solvers{options_dt};
+
+  if (use_mim_solvers)
+    for (auto &s : solvers) {
+      s.use_mim_solvers = true;
+      s.soft_control_bounds = true;
+      s.use_mim_filter = false;
+    }
 
   std::vector<std::pair<Problem, Trajectory>> problem_with_init_guess;
   // std::vector<Options_trajopt> solvers{options_mpc, options_dt,
   // options_search,
   //                                      options_mpcc};
 
-  // std::vector<Options_trajopt> solvers{options_dt};
-  std::vector<Options_trajopt> solvers{options_search, options_dt};
+  // std::vector<Options_trajopt> solvers{options_search};
+  // options_dt};
 
   for (auto &s : solvers) {
     s.noise_level = 0;
@@ -219,7 +210,7 @@ BOOST_AUTO_TEST_CASE(t_method_time_opti2) {
       std::make_pair(Problem(DYNOBENCH_BASE "envs/unicycle1_v0/bugtrap_0.yaml"),
                      Trajectory("../../benchmark_initguess/unicycle1_v0/"
                                 "bugtrap_0/delta_03_v0.yaml")));
-
+  //
   problem_with_init_guess.push_back(
       std::make_pair(Problem(DYNOBENCH_BASE "envs/unicycle2_v0/bugtrap_0.yaml"),
                      Trajectory("../../benchmark_initguess/unicycle2_v0/"
