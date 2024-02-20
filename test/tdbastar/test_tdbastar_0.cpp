@@ -11,8 +11,8 @@
 #include <regex>
 #include <type_traits>
 
-#define DYNOBENCH_BASE "../dynobench/"
-#define BASE_PATH_MOTIONS "../dynomotions/"
+#define DYNOBENCH_BASE "../../dynobench/"
+#define BASE_PATH_MOTIONS "../../dynomotions/"
 
 using namespace dynoplan;
 using namespace dynobench;

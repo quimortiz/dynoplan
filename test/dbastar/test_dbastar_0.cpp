@@ -125,9 +125,8 @@ BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {
   Options_dbastar options_dbastar;
   options_dbastar.search_timelimit = 1e5; // in ms
   options_dbastar.max_motions = 100;
-  options_dbastar.motionsFile =
-      "../../data/motion_primitives/unicycle1_v0/"
-      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin";
+  options_dbastar.motionsFile = BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin.small5000.msgpack";
+
 
   // DEBUG THIS!! -- add tools for debugging :)
 

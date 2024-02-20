@@ -1009,41 +1009,6 @@ void tdbastar(
       std::make_pair("num_primitives", std::to_string(motions.size())));
 }
 
-void write_heu_map(const std::vector<Heuristic_node> &heu_map, const char *file,
-                   const char *header) {
-  std::ofstream out(file);
 
-  if (header) {
-    out << header << std::endl;
-  }
-  const char *four_space = "    ";
-  out << "heu_map:" << std::endl;
-  for (auto &v : heu_map) {
-    out << "  -" << std::endl;
-    out << four_space << "x: " << v.x.format(FMT) << std::endl;
-    out << four_space << "d: " << v.d << std::endl;
-    out << four_space << "p: " << v.p << std::endl;
-  }
-}
-
-void load_heu_map(const char *file, std::vector<Heuristic_node> &heu_map) {
-  std::cout << "loading heu map -- file: " << file << std::endl;
-  std::ifstream in(file);
-  CHECK(in.is_open(), AT);
-  YAML::Node node = YAML::LoadFile(file);
-
-  if (node["heu_map"]) {
-
-    for (const auto &state : node["heu_map"]) {
-      std::vector<double> x = state["x"].as<std::vector<double>>();
-      Eigen::VectorXd xe = Eigen::VectorXd::Map(x.data(), x.size());
-      double d = state["d"].as<double>();
-      int p = state["p"].as<double>();
-      heu_map.push_back({xe, d, p});
-    }
-  } else {
-    ERROR_WITH_INFO("missing map key");
-  }
-}
 
 } // namespace dynoplan

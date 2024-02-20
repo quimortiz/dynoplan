@@ -3,6 +3,7 @@
 
 // #define DYNOBENCH_BASE "../../dynobench/dynobench/"
 #define DYNOBENCH_BASE "../../dynobench/"
+#define BASE_PATH_MOTIONS "../../dynomotions/"
 
 BOOST_AUTO_TEST_CASE(t_cli) {
 
@@ -13,8 +14,8 @@ BOOST_AUTO_TEST_CASE(t_cli) {
       "--max_motions",
       "30",
       "--motionsFile",
-      "../../data/motion_primitives/unicycle1_v0/"
-      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin",
+      BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin."
+                        "im.bin.small5000.msgpack",
       "--models_base_path",
       DYNOBENCH_BASE + std::string("models/")};
 
