@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
 // for reverse search
 BOOST_AUTO_TEST_CASE(test_eval_reverse) {
 
-  Problem problem (DYNOBENCH_BASE "envs/unicycle1_v0/swap/swap1_unicycle.yaml");
+  Problem problem(DYNOBENCH_BASE "envs/unicycle1_v0/swap/swap1_unicycle.yaml");
   problem.models_base_path = DYNOBENCH_BASE "models/";
   std::string msg = problem.name;
   Options_tdbastar o_uni1;
@@ -103,7 +103,8 @@ BOOST_AUTO_TEST_CASE(test_eval_reverse) {
   // save expanded nodes
   // std::string output_folder = "../reverse_expansion_vis";
   // create_folder_if_necessary(output_folder);
-  std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>>*> all_heuristics(robot_num, nullptr);
+  std::vector<ompl::NearestNeighbors<std::shared_ptr<AStarNode>> *>
+      all_heuristics(robot_num, nullptr);
   Trajectory traj_out;
   Out_info_tdb info_out;
   std::vector<Motion> motions;
@@ -112,18 +113,23 @@ BOOST_AUTO_TEST_CASE(test_eval_reverse) {
       problem.p_lb, problem.p_ub);
 
   load_motion_primitives_new(o_uni1.motionsFile, *robot, motions,
-                            o_uni1.max_motions, o_uni1.cut_actions, false,
-                            o_uni1.check_cols);
+                             o_uni1.max_motions, o_uni1.cut_actions, false,
+                             o_uni1.check_cols);
 
   o_uni1.motions_ptr = &motions;
-  BOOST_REQUIRE_NO_THROW(tdbastar(problem, o_uni1, traj_out, /*constraints*/{}, 
-              info_out, robot_id, /*reverse_search*/true, expanded_trajs_tmp, nullptr, &all_heuristics[robot_id]));
+  BOOST_REQUIRE_NO_THROW(tdbastar(problem, o_uni1, traj_out, /*constraints*/ {},
+                                  info_out, robot_id, /*reverse_search*/ true,
+                                  expanded_trajs_tmp, nullptr,
+                                  &all_heuristics[robot_id]));
 
   // save and visualize expanded nodes
-  // std::ofstream out2(output_folder + "/exp_trajs_reverse_" + problem.robotType + ".yaml"); // assumes different robot types
+  // std::ofstream out2(output_folder + "/exp_trajs_reverse_" +
+  // problem.robotType + ".yaml"); // assumes different robot types
   // export_node_expansion(expanded_trajs_tmp, &out2);
-  BOOST_REQUIRE_NO_THROW(tdbastar(problem, o_uni1, traj_out, /*constraints*/{}, 
-              info_out, robot_id, /*reverse_search*/false, expanded_trajs_tmp, all_heuristics[robot_id], nullptr));
+  BOOST_REQUIRE_NO_THROW(tdbastar(problem, o_uni1, traj_out, /*constraints*/ {},
+                                  info_out, robot_id, /*reverse_search*/ false,
+                                  expanded_trajs_tmp, all_heuristics[robot_id],
+                                  nullptr));
   BOOST_TEST(info_out.solved, msg);
 }
 
