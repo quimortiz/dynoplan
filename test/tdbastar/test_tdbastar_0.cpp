@@ -12,7 +12,7 @@
 #include <type_traits>
 
 #define DYNOBENCH_BASE "../dynobench/"
-#define BASE_PATH_MOTIONS "../dynomotions/" 
+#define BASE_PATH_MOTIONS "../dynomotions/"
 
 using namespace dynoplan;
 using namespace dynobench;
@@ -32,15 +32,20 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
 
   o_uni1.max_motions = 100;
   o_uni1.delta = .5;
-  o_uni1.motionsFile = BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin.small5000.msgpack";
+  o_uni1.motionsFile =
+      BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin."
+                        "im.bin.small5000.msgpack";
 
   o_uni2.max_motions = 100;
   o_uni2.delta = .5;
-  o_uni2.motionsFile = BASE_PATH_MOTIONS "unicycle2_v0__ispso__2023_04_03__15_36_01.bin.im.bin.im.bin.small5000.msgpack";
+  o_uni2.motionsFile =
+      BASE_PATH_MOTIONS "unicycle2_v0__ispso__2023_04_03__15_36_01.bin.im.bin."
+                        "im.bin.small5000.msgpack";
 
   o_car.max_motions = 400;
   o_car.delta = .75;
-  o_car.motionsFile = BASE_PATH_MOTIONS "car1_v0_all.bin.sp.bin.small5000.msgpack";
+  o_car.motionsFile =
+      BASE_PATH_MOTIONS "car1_v0_all.bin.sp.bin.small5000.msgpack";
 
   std::vector<Options_tdbastar> options{o_uni1, o_uni2, o_car};
 
@@ -94,7 +99,9 @@ BOOST_AUTO_TEST_CASE(test_eval_reverse) {
 
   o_uni1.max_motions = 100;
   o_uni1.delta = .5;
-  o_uni1.motionsFile = BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin.small5000.msgpack";
+  o_uni1.motionsFile =
+      BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin."
+                        "im.bin.small5000.msgpack";
   o_uni1.search_timelimit = 40 * 10e3;
 
   size_t robot_id = 0;
@@ -152,16 +159,20 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple_with_constraints) {
 
   o_uni1.max_motions = 100;
   o_uni1.delta = .5;
-  o_uni1.motionsFile = BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin.small5000.msgpack";
+  o_uni1.motionsFile =
+      BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin."
+                        "im.bin.small5000.msgpack";
 
   o_uni2.max_motions = 100;
   o_uni2.delta = .5;
-  o_uni2.motionsFile = BASE_PATH_MOTIONS "unicycle2_v0__ispso__2023_04_03__15_36_01"
-                                          ".bin.im.bin.im.bin.small5000.msgpack";
+  o_uni2.motionsFile =
+      BASE_PATH_MOTIONS "unicycle2_v0__ispso__2023_04_03__15_36_01"
+                        ".bin.im.bin.im.bin.small5000.msgpack";
 
   o_car.max_motions = 400;
   o_car.delta = .75;
-  o_car.motionsFile = BASE_PATH_MOTIONS "car1_v0_all.bin.sp.bin.small5000.msgpack";
+  o_car.motionsFile =
+      BASE_PATH_MOTIONS "car1_v0_all.bin.sp.bin.small5000.msgpack";
 
   std::vector<Options_tdbastar> options{o_uni1, o_uni2, o_car};
 
