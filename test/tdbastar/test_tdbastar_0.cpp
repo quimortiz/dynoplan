@@ -12,7 +12,7 @@
 #include <type_traits>
 
 #define DYNOBENCH_BASE "../dynobench/"
-#define BASE_PATH_MOTIONS "../../new_format_motions/"
+#define BASE_PATH_MOTIONS "../dynomotions/" 
 
 using namespace dynoplan;
 using namespace dynobench;
@@ -22,35 +22,27 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
   std::vector<Problem> problems{
       DYNOBENCH_BASE "envs/unicycle1_v0/swap/swap1_unicycle.yaml",
       DYNOBENCH_BASE "envs/unicycle2_v0/swap/swap1_unicycle2.yaml",
-      DYNOBENCH_BASE "envs/integrator2_2d_v0/swap/swap1_double_integrator.yaml",
       DYNOBENCH_BASE "envs/car1_v0/swap/swap1_trailer.yaml"};
 
   for (auto &p : problems) {
     p.models_base_path = DYNOBENCH_BASE "models/";
   }
 
-  Options_tdbastar o_uni1, o_uni2, o_integrator2, o_car;
-
-  // TODO: use less primitive so that the test runs faster!!
+  Options_tdbastar o_uni1, o_uni2, o_car;
 
   o_uni1.max_motions = 100;
   o_uni1.delta = .5;
-  o_uni1.motionsFile = BASE_PATH_MOTIONS "unicycle1_v0/unicycle1_v0.msgpack";
+  o_uni1.motionsFile = BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin.small5000.msgpack";
 
   o_uni2.max_motions = 100;
   o_uni2.delta = .5;
-  o_uni2.motionsFile = BASE_PATH_MOTIONS "unicycle2_v0/unicycle2_v0.msgpack";
-
-  o_integrator2.max_motions = 100;
-  o_integrator2.delta = .5;
-  o_integrator2.motionsFile =
-      BASE_PATH_MOTIONS "integrator2_2d_v0/integrator2_2d_v0.msgpack";
+  o_uni2.motionsFile = BASE_PATH_MOTIONS "unicycle2_v0__ispso__2023_04_03__15_36_01.bin.im.bin.im.bin.small5000.msgpack";
 
   o_car.max_motions = 400;
   o_car.delta = .75;
-  o_car.motionsFile = BASE_PATH_MOTIONS "car1_v0/car1_v0.msgpack";
+  o_car.motionsFile = BASE_PATH_MOTIONS "car1_v0_all.bin.sp.bin.small5000.msgpack";
 
-  std::vector<Options_tdbastar> options{o_uni1, o_uni2, o_integrator2, o_car};
+  std::vector<Options_tdbastar> options{o_uni1, o_uni2, o_car};
 
   for (auto &o : options) {
     o.search_timelimit = 40 * 10e3;
@@ -93,7 +85,7 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple) {
   }
 }
 // for reverse search
-BOOST_AUTO_TEST_CASE(test_eval_multiple_reverse) {
+BOOST_AUTO_TEST_CASE(test_eval_reverse) {
 
   Problem problem (DYNOBENCH_BASE "envs/unicycle1_v0/swap/swap1_unicycle.yaml");
   problem.models_base_path = DYNOBENCH_BASE "models/";
@@ -102,8 +94,7 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple_reverse) {
 
   o_uni1.max_motions = 100;
   o_uni1.delta = .5;
-  o_uni1.motionsFile =
-      BASE_PATH_MOTIONS "unicycle1_v0/unicycle1_v0.msgpack";
+  o_uni1.motionsFile = BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin.small5000.msgpack";
   o_uni1.search_timelimit = 40 * 10e3;
 
   size_t robot_id = 0;
@@ -141,7 +132,6 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple_with_constraints) {
   std::vector<Problem> problems{
       DYNOBENCH_BASE "envs/unicycle1_v0/swap/swap1_unicycle.yaml",
       DYNOBENCH_BASE "envs/unicycle2_v0/swap/swap1_unicycle2.yaml",
-      DYNOBENCH_BASE "envs/integrator2_2d_v0/swap/swap1_double_integrator.yaml",
       DYNOBENCH_BASE "envs/car1_v0/swap/swap1_trailer.yaml"};
 
   for (auto &p : problems) {
@@ -150,30 +140,24 @@ BOOST_AUTO_TEST_CASE(test_eval_multiple_with_constraints) {
   std::vector<std::string> all_constraints{
       DYNOBENCH_BASE "envs/unicycle1_v0/constraints/constraints_unicycle.yaml",
       DYNOBENCH_BASE "envs/unicycle2_v0/constraints/constraints_unicycle2.yaml",
-      DYNOBENCH_BASE
-      "envs/integrator2_2d_v0/constraints/constraints_double_integrator.yaml",
       DYNOBENCH_BASE "envs/car1_v0/constraints/constraints_trailer.yaml"};
 
   Options_tdbastar o_uni1, o_uni2, o_integrator2, o_car;
 
   o_uni1.max_motions = 100;
   o_uni1.delta = .5;
-  o_uni1.motionsFile = BASE_PATH_MOTIONS "unicycle1_v0/unicycle1_v0.msgpack";
+  o_uni1.motionsFile = BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin.small5000.msgpack";
 
   o_uni2.max_motions = 100;
   o_uni2.delta = .5;
-  o_uni2.motionsFile = BASE_PATH_MOTIONS "unicycle2_v0/unicycle2_v0.msgpack";
-
-  o_integrator2.max_motions = 100;
-  o_integrator2.delta = .5;
-  o_integrator2.motionsFile =
-      BASE_PATH_MOTIONS "integrator2_2d_v0/integrator2_2d_v0.msgpack";
+  o_uni2.motionsFile = BASE_PATH_MOTIONS "unicycle2_v0__ispso__2023_04_03__15_36_01"
+                                          ".bin.im.bin.im.bin.small5000.msgpack";
 
   o_car.max_motions = 400;
   o_car.delta = .75;
-  o_car.motionsFile = BASE_PATH_MOTIONS "car1_v0/car1_v0.msgpack";
+  o_car.motionsFile = BASE_PATH_MOTIONS "car1_v0_all.bin.sp.bin.small5000.msgpack";
 
-  std::vector<Options_tdbastar> options{o_uni1, o_uni2, o_integrator2, o_car};
+  std::vector<Options_tdbastar> options{o_uni1, o_uni2, o_car};
 
   for (auto &o : options) {
     o.search_timelimit = 40 * 10e3;
