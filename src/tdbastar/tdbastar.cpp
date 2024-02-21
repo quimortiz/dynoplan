@@ -1009,6 +1009,4 @@ void tdbastar(
       std::make_pair("num_primitives", std::to_string(motions.size())));
 }
 
-
-
 } // namespace dynoplan
