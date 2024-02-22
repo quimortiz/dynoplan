@@ -1,0 +1,30 @@
+trials:  5
+timelimit: 60
+n_cores: 8 # -1=auto
+
+
+problems:
+  - acrobot/swing_up_empty
+  - acrobot/swing_up_obs_hard
+  - car_first_order_with_1_trailers_0/kink_0
+  - car_first_order_with_1_trailers_0/parallelpark_0
+  - quad2d/fall_through
+  - quad2d/quad_bugtrap
+  - quad2dpole/up_obs
+  - quad2dpole/window_hard
+  - quadrotor_0/recovery
+  - quadrotor_0/recovery_with_obs
+  - quadrotor_ompl/quad_one_obs
+  - quadrotor_ompl/window
+  - unicycle_first_order_0/bugtrap_0
+  - unicycle_first_order_2/wall_0
+  - unicycle_second_order_0/bugtrap_0
+  - unicycle_second_order_0/parallelpark_0
+
+algs:
+  - idbastar_iros
+  - dbrrt_v0
+  - dbrrt_v1
+  - dbrrt_v2
+
+

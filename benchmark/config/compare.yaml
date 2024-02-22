@@ -1,6 +1,11 @@
-trials:  5
+trials:  8
 timelimit: 60
-n_cores: 3 # -1=auto
+n_cores: 8 # -1=auto
+
+
+
+
+
 
 problems:
   # # # # # #
@@ -50,7 +55,7 @@ problems:
   # - quad2dpole_v0/window_hard2
   # # # # # # # # #
   # - acrobot_v0/swing_up_empty
-  - acrobot_v0/swing_up_obs
+  # - acrobot_v0/swing_up_obs
   # - acrobot_v0/swing_up_obs_hard
   # - acrobot_v0/swing_down_easy
   # - acrobot_v0/swing_down
@@ -61,11 +66,14 @@ problems:
   # - quadrotor_v0/recovery
   # - quadrotor_v0/recovery_with_obs
   # - quadrotor_v0/recovery_with_obs2
+  # - quadrotor_v0/recovery_with_obs3
+  # - quadrotor_v0/recovery_with_obs4
   # - quadrotor_v0/quad_one_obs
   # - quadrotor_v0/window_double
   # - quadrotor_v0/bugtrap
   # - quadrotor_v0/bugtrap2
   # - quadrotor_v0/bugtrap3
+  # - quadrotor_v0/narrow_recovery # NOT working
   # # # # # # # # # #
   # - quadrotor_v1/empty_0_easy
   # - quadrotor_v1/empty_1_easy
@@ -73,18 +81,22 @@ problems:
   # - quadrotor_v1/recovery
   # - quadrotor_v1/quad_one_obs
   # - quadrotor_v1/recovery_with_obs
+  # - quadrotor_v1/recovery_with_obs4
+  # - quadrotor_v1/window_double
+  - quadrotor_v1/window_double2
+  # - quadrotor_v1/bugtrap3
 
 algs:
 
   # Idbastar
   # - idbastar_v0
-  # - idbastar_iros
-  # - geo_v0
-  # - sst_v0
-  # - dbrrt_v0
-  # - dbrrt_v0DEV
+  - idbastar_iros
+  # # - geo_v0
+  # # - sst_v0
+  - dbrrt_v0
+  # # - dbrrt_v0DEV
   - dbrrt_v1
-  # - dbrrt_v2
+  - dbrrt_v2
   # - dbaorrt_v0
   # - dbaorrt_v1
 

@@ -19,9 +19,18 @@ car1_v0:
 quad2d_v0:
   default:
     motionsFile: ../dynomotions/quad2d_v0_all_im.bin.sp.bin.ca.bin.small5000.msgpack
+
 quad3d_v0:
   default:
     motionsFile: ../dynomotions/quad3d_v0_all3.bin.im.bin.sp1.bin.ca.bin.small5000.msgpack
+
+quad3d_omplapp:
+  default:
+    motionsFile: ../dynomotions/quad3dompl_all.bin.im.bin.sp1.bin.ca.bin.small5000.msgpack
+    delta_0: 0.65
+    num_primitives_0: 1000
+
+
 quad2dpole_v0:
   default:
     motionsFile: ../dynomotions/quad2dpole_all.bin.im.bin.sp1.bin.ca.bin.small5000.msgpack
