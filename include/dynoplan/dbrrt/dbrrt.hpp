@@ -38,8 +38,7 @@ struct Options_dbrrt {
   int max_valid_expansions_to_rand = 1;
   int max_valid_expansions_to_goal = 10;
   bool use_connect_orig = false;
-
-
+  bool shortcut = false;
 
   // if 1, i take the first primitive that is valid.
   // if > 1 i wait until max_valid_expansions are valid and then i take the
@@ -84,7 +83,7 @@ struct Options_dbrrt {
     loader.set(VAR_WITH_NAME(max_valid_expansions_to_rand));
     loader.set(VAR_WITH_NAME(max_valid_expansions_to_goal));
     loader.set(VAR_WITH_NAME(use_connect_orig));
-
+    loader.set(VAR_WITH_NAME(shortcut));
   }
 
   void add_options(po::options_description &desc) { __load_data(&desc, true); }
@@ -140,5 +139,17 @@ void dbrrtConnectOrig(const dynobench::Problem &problem,
                       const Options_trajopt &options_trajopt,
                       dynobench::Trajectory &traj_out,
                       dynobench::Info_out &info_out);
+
+void shortcut_v0(const dynobench::Problem &problem,
+                 std::shared_ptr<dynobench::Model_robot> robot,
+                 const Options_dbrrt &options_dbrrt,
+                 const dynobench::Trajectory &traj_in,
+                 dynobench::Trajectory &traj_out);
+
+void shortcut_v0_iterative(const dynobench::Problem &problem,
+                           std::shared_ptr<dynobench::Model_robot> robot,
+                           const Options_dbrrt &options_dbrrt,
+                           const dynobench::Trajectory &traj_in,
+                           dynobench::Trajectory &traj_out);
 
 } // namespace dynoplan

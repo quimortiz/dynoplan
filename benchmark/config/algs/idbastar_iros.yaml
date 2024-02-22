@@ -1,10 +1,28 @@
 reference: "idbastar_v0"
-
 default:
   max_num_sol: 1
+
+unicycle1_v0:
+  default:
+    motionsFile: ../dynomotions/unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin.im.bin.small5000.msgpack
+
+unicycle2_v0:
+  default:
+    motionsFile: ../dynomotions/unicycle2_v0__ispso__2023_04_03__15_36_01.bin.im.bin.im.bin.small5000.msgpack
+
+car1_v0:
+  default:
+    motionsFile: ../dynomotions/car1_v0_all.bin.sp.bin.small5000.msgpack
+    num_primitives_0: 250
+    # delta_0: .3
+
 quad2d_v0:
   default:
     motionsFile: ../dynomotions/quad2d_v0_all_im.bin.sp.bin.ca.bin.small5000.msgpack
 quad3d_v0:
+  default:
     motionsFile: ../dynomotions/quad3d_v0_all3.bin.im.bin.sp1.bin.ca.bin.small5000.msgpack
-
+quad2dpole_v0:
+  default:
+    motionsFile: ../dynomotions/quad2dpole_all.bin.im.bin.sp1.bin.ca.bin.small5000.msgpack
+      # ../dynomotions/quad3d_v0_all3.bin.im.bin.sp1.bin.ca.bin.small5000.msgpack

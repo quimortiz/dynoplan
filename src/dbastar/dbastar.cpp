@@ -1033,7 +1033,7 @@ void dbastar(const dynobench::Problem &problem, Options_dbastar options_dbastar,
   }
 
   // Update the feasibility informatino of the trajectory
-  traj_out.update_feasibility(dynobench::Feasibility_thresholds(), true);
+  // traj_out.update_feasibility(dynobench::Feasibility_thresholds(), true);
 
   {
     std::string filename_id =

@@ -28,6 +28,7 @@
 //
 // #include "fclHelper.hpp"
 #include "dynobench/dyno_macros.hpp"
+#include "dynobench/general_utils.hpp"
 #include "dynobench/motions.hpp"
 #include "dynoplan/ompl/robots.h"
 #include "ompl/base/ScopedState.h"
@@ -35,6 +36,7 @@
 
 #include "dynobench/planar_rotor.hpp"
 #include "dynobench/quadrotor.hpp"
+#include "dynobench/planar_rotor_pole.hpp"
 #include "dynoplan/dbastar/heuristics.hpp"
 #include "dynoplan/dbastar/options.hpp"
 
@@ -75,6 +77,7 @@ struct AStarNode {
   open_t::handle_type handle;
   bool is_in_open = false;
   bool valid = true;
+  int id; // optional use
 
   const ob::State *getState() { return state; }
   const Eigen::VectorXd &getStateEig() { return state_eig; }
@@ -183,34 +186,9 @@ struct LazyTraj {
     } else {
       // throw std::runtime_error(
       //     "bacward still needs a little bit testing -- don't use");
-
-      if (startsWith(robot->name, "quad2d")) {
-        // std::cout << "transforming primitive" << std::endl;
-
-        auto ptr = dynamic_cast<dynobench::Model_quad2d *>(robot);
-        assert(ptr);
-        ptr->transform_primitiveDirectReverse(*offset, motion->traj.states,
+        robot->transform_primitiveDirectReverse(*offset, motion->traj.states,
                                               motion->traj.actions, tmp,
                                               check_state, num_valid_states);
-
-      } else if (startsWith(robot->name, "quad3d")) {
-        auto ptr = dynamic_cast<dynobench::Model_quad3d *>(robot);
-        assert(ptr);
-        ptr->transform_primitiveDirectReverse(*offset, motion->traj.states,
-                                              motion->traj.actions, tmp,
-                                              check_state, num_valid_states);
-      }
-
-      else if (startsWith(robot->name, "unicycle")) {
-        robot->transform_primitive(*offset, motion->traj.states,
-                                   motion->traj.actions, tmp, check_state,
-                                   num_valid_states);
-      }
-
-      else {
-        std::string msg = "backward not implemented for " + robot->name;
-        ERROR_WITH_INFO(msg);
-      }
     }
   }
 

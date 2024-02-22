@@ -106,24 +106,9 @@ void from_solution_to_yaml_and_traj_bwd(dynobench::Model_robot &robot,
     // robot.transform_primitive(__offset, motion.traj.states,
     // motion.traj.actions,
     //                           traj_wrapper);
-    if (startsWith(robot.name, "quad2d")) {
-      static_cast<dynobench::Model_quad2d *>(&robot)
-          ->transform_primitiveDirectReverse(__offset, motion.traj.states,
-                                             motion.traj.actions, traj_wrapper,
-                                             nullptr, nullptr);
-    } else if (startsWith(robot.name, "quad3d")) {
-      static_cast<dynobench::Model_quad3d *>(&robot)
-          ->transform_primitiveDirectReverse(__offset, motion.traj.states,
-                                             motion.traj.actions, traj_wrapper,
-                                             nullptr, nullptr);
-    } else if (startsWith(robot.name, "unicycle")) {
-      robot.transform_primitive(__offset, motion.traj.states,
-                                motion.traj.actions, traj_wrapper);
-
-    } else {
-      std::string msg = "not implemented for this robot: " + robot.name;
-      ERROR_WITH_INFO(msg);
-    }
+    robot.transform_primitiveDirectReverse(__offset, motion.traj.states,
+                                           motion.traj.actions, traj_wrapper,
+                                           nullptr, nullptr);
 
     traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
 
@@ -251,10 +236,6 @@ void reverse_motions(std::vector<Motion> &motions_rev,
                      const std::vector<Motion> &motions) {
   DYNO_CHECK_EQ(motions_rev.size(), 0, AT);
   motions_rev.reserve(motions.size());
-  std::cout << "warning:"
-            << "reverse of motion primitives only working for translation "
-               "invariant systems "
-            << std::endl;
   Eigen::VectorXd xf_canonical(robot.nx);
   Eigen::VectorXd offset(robot.get_offset_dim());
   for (auto &m : motions) {
@@ -270,9 +251,10 @@ void reverse_motions(std::vector<Motion> &motions_rev,
     // std::cout << "original trajectory" << std::endl;
     // m.traj.to_yaml_format(std::cout);
 
-    if (startsWith(robot.name, "unicycle")) {
+    if (startsWith(robot.name, "unicycle") || startsWith(robot.name, "car")) {
       robot.offset(m.traj.states.back(), offset);
-    } else if (startsWith(robot.name, "quad2d")) {
+    } else if (startsWith(robot.name, "quad2d") &&
+               !startsWith(robot.name, "quad2dpole")) {
       DYNO_CHECK_EQ(offset.size(), 4, "should be 4");
       offset.tail<2>() = m.traj.states.back().segment<2>(3);
       offset.head<2>() = m.traj.states.back().head<2>() -
@@ -285,8 +267,17 @@ void reverse_motions(std::vector<Motion> &motions_rev,
                          m.traj.actions.size() * robot.ref_dt *
                              m.traj.states.back().segment<3>(7);
 
-    }
+    } else if (startsWith(robot.name, "quad2dpole")) {
+      // 0:x, 1:y , 2:yaw, 3:theta , 4:vx , 5:vy , 6:w
+      offset.tail<2>() = m.traj.states.back().segment<2>(4);
+      // tail<3>() = m.traj.states.back().segment<3>(7);
+      offset.head<2>() = m.traj.states.back().head<2>() -
+                         m.traj.actions.size() * robot.ref_dt *
+                             m.traj.states.back().segment<2>(4);
+    } else if (startsWith(robot.name, "acrobot")) {
+      // Don't do anything for the acrobot
 
+    }
     else {
       std::string msg = "robot name " + robot.name + "not supported";
       ERROR_WITH_INFO(msg);
@@ -916,6 +907,7 @@ void dbrrtConnect(const dynobench::Problem &problem,
     CHECK(traj_out.feasible, "");
   }
 
+  traj_out.cost = robot->ref_dt * traj_out.actions.size();
   std::cout << "warning: update the trajecotries cost" << std::endl;
   std::for_each(
       info_out.trajs_raw.begin(), info_out.trajs_raw.end(),
@@ -1197,6 +1189,7 @@ void dbrrtConnectOrig(const dynobench::Problem &problem,
                      std::back_inserter(near_node->motions),
                      [](LazyTraj &lazy_traj) { return lazy_traj.motion->idx; });
     } else {
+      // std::cout << "reusing nn" << std::endl;
       lazy_trajs.reserve(near_node->motions.size());
       robot->offset(near_node->state_eig, offset);
 
@@ -1570,6 +1563,7 @@ void dbrrtConnectOrig(const dynobench::Problem &problem,
   }
 
   std::cout << "warning: update the trajecotries cost" << std::endl;
+  traj_out.cost = robot->ref_dt * traj_out.actions.size();
   std::for_each(
       info_out.trajs_raw.begin(), info_out.trajs_raw.end(),
       [&](auto &traj) { traj.cost = robot->ref_dt * traj.actions.size(); });
@@ -1756,13 +1750,13 @@ void dbrrt(const dynobench::Problem &problem,
       rand_node->gScore = static_cast<double>(rand()) / RAND_MAX * cost_bound;
     }
 
-    const bool expand_near_node_region = false;
-    const double goal_radius_for_expansion = 1.5; // what to put here?
+    const bool expand_near_node_region = true;
+    const int top_k_goal_expansion = 100; // what to put here?
     // Another option is to use TOP K
 
     if (expand_near_node_region && expand_near_goal) {
       time_bench.time_nearestNode_search += timed_fun_void([&] {
-        T_n->nearestR(goal_node.get(), goal_radius_for_expansion, neighbors_n);
+        T_n->nearestK(goal_node.get(), top_k_goal_expansion, neighbors_n);
       });
 
       if (!neighbors_n.size()) {
@@ -2306,6 +2300,11 @@ void dbrrt(const dynobench::Problem &problem,
   }
 
   std::cout << "warning: update the trajecotries cost" << std::endl;
+  traj_out.cost = robot->ref_dt * traj_out.actions.size();
+  if (info_out.solved_raw) {
+    // TODO : use a double check, as i do in other planners
+    traj_out.feasible = true;
+  }
   std::for_each(
       info_out.trajs_raw.begin(), info_out.trajs_raw.end(),
       [&](auto &traj) { traj.cost = robot->ref_dt * traj.actions.size(); });
@@ -2376,6 +2375,7 @@ void idbrrt(const dynobench::Problem &problem,
     }
 
     time_search += std::stof(info_out_local.data.at("time_search"));
+
     // search_times.push_back(std::stof(info_out_local.data.at("time_search")));
 
     accumulated_time_filtered +=
@@ -2383,27 +2383,48 @@ void idbrrt(const dynobench::Problem &problem,
 
     if (info_out_local.solved_raw) {
       traj_dbrrt.time_stamp = accumulated_time_filtered;
+
+      std::cout << "traj dbrrt feas " << traj_dbrrt.feasible << std::endl;
+      // throw -1;
       info_out.trajs_raw.push_back(traj_dbrrt);
       info_out.solved_raw = true;
-      if (info_out_local.solved_raw) {
-        Result_opti result;
-        dynobench::Trajectory traj_out_opti;
-        trajectory_optimization(problem, traj_dbrrt, options_trajopt,
-                                traj_out_opti, result);
-        accumulated_time_filtered +=
-            std::stof(result.data.at("time_ddp_total"));
 
-        time_opt += std::stof(result.data.at("time_ddp_total"));
+      if (options_dbrrt.shortcut) {
+        std::cout << "doing shortcuting" << std::endl;
+        auto tic = std::chrono::high_resolution_clock::now();
 
-        traj_out_opti.time_stamp = accumulated_time_filtered;
+        dynobench::Trajectory traj_cut;
+        shortcut_v0_iterative(problem, robot, options_dbrrt_local, traj_dbrrt,
+                              traj_cut);
+        auto toc = std::chrono::high_resolution_clock::now();
 
-        if (result.feasible) {
-          traj_out = traj_out_opti;
-          info_out.solved = true;
-          info_out.trajs_opt.push_back(traj_out_opti);
-          info_out.cost = traj_out_opti.cost;
-          finished = true;
-        }
+        double ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic)
+                .count();
+
+        accumulated_time_filtered += ms;
+
+        traj_dbrrt = traj_cut;
+
+        // TODO: decide if i want to include shortcuting into the search time.
+      }
+
+      Result_opti result;
+      dynobench::Trajectory traj_out_opti;
+      trajectory_optimization(problem, traj_dbrrt, options_trajopt,
+                              traj_out_opti, result);
+      accumulated_time_filtered += std::stof(result.data.at("time_ddp_total"));
+
+      time_opt += std::stof(result.data.at("time_ddp_total"));
+
+      traj_out_opti.time_stamp = accumulated_time_filtered;
+
+      if (result.feasible) {
+        traj_out = traj_out_opti;
+        info_out.solved = true;
+        info_out.trajs_opt.push_back(traj_out_opti);
+        info_out.cost = traj_out_opti.cost;
+        finished = true;
       }
     }
 
@@ -2415,7 +2436,271 @@ void idbrrt(const dynobench::Problem &problem,
   info_out.data.insert(std::make_pair("time_opt", std::to_string(time_opt)));
 }
 
+// shortcuting
+
+struct Shortcut {
+
+  int start;     // where to start
+  int motion_id; // which motion to use
+  int end;       // end should be replaced
+                 //
+                 //
+                 //
+                 //
+  friend std::ostream &operator<<(std::ostream &os, const Shortcut &obj) {
+    os << "start: " << obj.start;
+    os << " motion_id: " << obj.motion_id;
+    os << " end: " << obj.end;
+    return os;
+  }
+};
+
+void shortcut_v0(const dynobench::Problem &problem,
+                 std::shared_ptr<dynobench::Model_robot> robot,
+                 const Options_dbrrt &options_dbrrt,
+                 const dynobench::Trajectory &traj_in,
+                 dynobench::Trajectory &traj_out) {
+
+  dynobench::Trajectory traj_in_tmp = traj_in;
+  traj_in_tmp.check(robot, true);
+  double max_jump = traj_in_tmp.max_jump;
+  // DYNO_CHECK_LEQ(traj_out.max_jump, delta, "");
+
+  // create a KD tree with states
+
+  // double delta = .5;
+  int original_size = traj_in.states.size();
+  double rate_early_terminate = .1;
+
+  // If i find a shortcut that improves 20%, i stop early
+
+  double delta = options_dbrrt.delta;
+
+  ompl::NearestNeighbors<AStarNode *> *T_n =
+      nigh_factory2<AStarNode *>(problem.robotType, robot);
+
+  std::vector<AStarNode *> states;
+
+  for (size_t i = 0; i < traj_in.states.size(); i++) {
+    auto state = new AStarNode;
+    state->id = i;
+    state->state_eig = traj_in.states.at(i);
+    states.push_back(state);
+  }
+
+  for (auto &s : states)
+    T_n->add(s);
+
+  std::vector<Motion> &motions = *options_dbrrt.motions_ptr;
+
+  ompl::NearestNeighbors<Motion *> *T_m =
+      nigh_factory2<Motion *>(problem.robotType, robot);
+
+  for (size_t j = 0; j < motions.size(); j++) {
+    T_m->add(&motions.at(j));
+  }
+
+  Expander expander(robot.get(), T_m, options_dbrrt.delta);
+
+  Time_benchmark time_bench;
+  Eigen::VectorXd aux_last_state(robot->nx);
+  int valid_expansions = 0;
+  dynobench::TrajWrapper traj_wrapper;
+  {
+    std::vector<Motion *> motions;
+    T_m->list(motions);
+    size_t max_traj_size = (*std::max_element(motions.begin(), motions.end(),
+                                              [](Motion *a, Motion *b) {
+                                                return a->traj.states.size() <
+                                                       b->traj.states.size();
+                                              }))
+                               ->traj.states.size();
+
+    traj_wrapper.allocate_size(max_traj_size, robot->nx, robot->nu);
+  }
+  int max_shortcut = 0;
+
+  Shortcut best_shortcut;
+
+  Eigen::VectorXd state_to_expand(robot->nx);
+  for (size_t k = 0; k < 100; k++) {
+    int rand_ind = rand() % traj_in.states.size();
+
+    // std::cout << "trying to cut from k " << k << std::endl;
+
+    std::vector<LazyTraj> lazy_trajs;
+    state_to_expand = traj_in.states.at(rand_ind);
+    expander.expand_lazy(state_to_expand, lazy_trajs);
+
+    // check how many candidates
+    // std::cout << "applicable trajs " << lazy_trajs.size() << std::endl;
+
+    auto tmp_state = new AStarNode;
+    // std::cout << "from " << state_to_expand.format(FMT) << std::endl;
+
+    bool early_terminate = false;
+    for (size_t i = 0; i < lazy_trajs.size(); i++) {
+
+      auto &lazy_traj = lazy_trajs[i];
+      traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
+      bool motion_valid =
+          check_lazy_trajectory(lazy_traj, *robot, time_bench, traj_wrapper,
+                                aux_last_state, nullptr, nullptr);
+
+      if (!motion_valid)
+        continue;
+      valid_expansions++;
+
+      // check if this motion is close to any state.
+
+      std::vector<AStarNode *> neighs;
+      std::vector<AStarNode *> neighsK;
+
+      Eigen::VectorXd state_to_check =
+          traj_wrapper.get_state(traj_wrapper.get_size() - 1);
+      tmp_state->state_eig = state_to_check;
+      T_n->nearestR(tmp_state, delta, neighs);
+
+      // std::cout << "num neighs " << neighs.size() << std::endl;
+
+      T_n->nearestK(tmp_state, 1, neighsK);
+
+      auto nearest = neighsK.at(0);
+      double d =
+          robot->distance(traj_wrapper.get_state(traj_wrapper.get_size() - 1),
+                          nearest->state_eig);
+
+      for (size_t j = 0; j < neighs.size(); j++) {
+        int shortcut = neighs.at(j)->id - rand_ind - traj_wrapper.get_size();
+        if (shortcut > 0) {
+          if (shortcut > max_shortcut) {
+            max_shortcut = shortcut;
+
+            best_shortcut.start = rand_ind;
+            best_shortcut.motion_id = lazy_trajs.at(i).motion->idx;
+            best_shortcut.end = neighs.at(j)->id;
+          }
+
+          early_terminate = max_shortcut > rate_early_terminate * original_size;
+          if (early_terminate) {
+            std::cout << "early terminate " << shortcut << std::endl;
+            break;
+          }
+        }
+      }
+
+      if (early_terminate) {
+        std::cout << "early terminate " << std::endl;
+        break;
+      }
+    }
+    if (early_terminate) {
+      std::cout << "early terminate " << std::endl;
+      break;
+    }
+  }
+  std::cout << "max shortcut is " << max_shortcut << std::endl;
+  std::cout << best_shortcut << std::endl;
+
+  dynobench::Trajectory traj_new;
+
+  for (size_t i = 0; i < best_shortcut.start; i++) {
+    traj_new.states.push_back(traj_in.states.at(i));
+    traj_new.actions.push_back(traj_in.actions.at(i));
+  }
+
+  Eigen::VectorXd _state_to_expand = traj_in.states.at(best_shortcut.start);
+
+  Eigen::VectorXd __offset(robot->get_offset_dim());
+
+  robot->offset(_state_to_expand, __offset);
+  dynobench::Trajectory __traj = motions.at(best_shortcut.motion_id).traj;
+  dynobench::TrajWrapper traj_wrap =
+      dynobench::Trajectory_2_trajWrapper(__traj);
+  robot->transform_primitive(__offset, __traj.states, __traj.actions,
+                             traj_wrap);
+
+  // double check the difference
+
+  double d = robot->distance(traj_wrap.get_state(traj_wrap.get_size() - 1),
+                             traj_in.states.at(best_shortcut.end));
+
+  DYNO_CHECK_LEQ(d, delta, "why?");
+
+  // add the new motion
+  for (size_t i = 0; i < traj_wrap.get_size() - 1; i++) {
+    traj_new.states.push_back(traj_wrap.get_state(i));
+    traj_new.actions.push_back(traj_wrap.get_action(i));
+  }
+
+  // add the last part
+  for (size_t i = best_shortcut.end; i < traj_in.states.size(); i++) {
+    traj_new.states.push_back(traj_in.states.at(i));
+    if (i < traj_in.actions.size())
+      traj_new.actions.push_back(traj_in.actions.at(i));
+  }
+
+  DYNO_CHECK_EQ(traj_new.states.size(), traj_new.actions.size() + 1, "");
+
+  traj_out = traj_new;
+
+  traj_out.check(robot, true);
+  DYNO_CHECK_LEQ(traj_out.max_jump, std::max(max_jump, delta), "");
+}
+
+void shortcut_v0_iterative(const dynobench::Problem &problem,
+                           std::shared_ptr<dynobench::Model_robot> robot,
+                           const Options_dbrrt &options_dbrrt,
+                           const dynobench::Trajectory &traj_in,
+                           dynobench::Trajectory &traj_out) {
+
+  // get max jump
+
+  DYNO_CHECK(options_dbrrt.motions_ptr, "motions_ptr is null");
+  DYNO_CHECK(traj_in.states.size(), "traj_in is too short");
+
+  double rate_stop_shortcut = .9;
+  int max_num_shortcuts = 10;
+
+  auto tic = std::chrono::high_resolution_clock::now();
+  bool stop_shortcut = false;
+  dynobench::Trajectory shortcut_in = traj_in;
+  dynobench::Trajectory shortcut_out;
+  for (int i = 0; i < max_num_shortcuts; i++) {
+    shortcut_v0(problem, robot, options_dbrrt, shortcut_in, shortcut_out);
+    DYNO_CHECK_LEQ(shortcut_out.states.size(), shortcut_in.states.size(),
+                   ""); // shortcut should not increase
+
+    std::cout << "shortcut iteration " << i << std::endl;
+    std::cout << shortcut_out.states.size() << std::endl;
+    std::cout << shortcut_in.states.size() << std::endl;
+    stop_shortcut = shortcut_out.states.size() >
+                    rate_stop_shortcut * shortcut_in.states.size();
+
+    shortcut_in = shortcut_out;
+
+    if (stop_shortcut) {
+      std::cout << "breaking because progress is slower than "
+                << rate_stop_shortcut << std::endl;
+      break;
+    }
+  }
+
+  auto toc = std::chrono::high_resolution_clock::now();
+
+  std::cout << "shortcut summary" << std::endl;
+  std::cout << "From " << traj_in.states.size() << " to "
+            << shortcut_out.states.size() << std::endl;
+  std::cout << "shortcut time "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic)
+                   .count()
+            << " ms" << std::endl;
+
+  traj_out = shortcut_out;
+}
 } // namespace dynoplan
+// namespace dynoplan
+//
 //
 //
 //

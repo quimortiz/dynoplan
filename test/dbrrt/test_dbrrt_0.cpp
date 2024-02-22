@@ -1,3 +1,5 @@
+#include "dynobench/dyno_macros.hpp"
+#include "dynobench/general_utils.hpp"
 #include "dynoplan/dbrrt/dbrrt.hpp"
 
 // #define BOOST_TEST_MODULE test module name
@@ -18,7 +20,102 @@
 using namespace dynoplan;
 using namespace dynobench;
 
+BOOST_AUTO_TEST_CASE(test_shortcut) {
 
+  int argc = boost::unit_test::framework::master_test_suite().argc;
+  char **argv = boost::unit_test::framework::master_test_suite().argv;
+
+  Problem problem(DYNOBENCH_BASE +
+                  std::string("envs/quad2d_v0/quad_bugtrap.yaml"));
+  problem.models_base_path = DYNOBENCH_BASE + std::string("models/");
+
+  Options_dbrrt options_dbrrt;
+  options_dbrrt.timelimit = 1e5; // in ms
+  options_dbrrt.max_motions = 3000;
+  options_dbrrt.debug = true;
+  options_dbrrt.max_expands = 50000;
+  options_dbrrt.cost_bound = 1e6;
+  options_dbrrt.delta = .5;
+  options_dbrrt.goal_bias = .1;
+  options_dbrrt.use_nigh_nn = true;
+  options_dbrrt.seed = 0;
+  options_dbrrt.do_optimization = 0;
+  options_dbrrt.prob_expand_forward = .5; // 0 is working
+
+  options_dbrrt.motionsFile =
+      "../../dynomotions/quad2d_v0_all_im.bin.sp.bin.ca.bin.small5000.msgpack";
+
+  po::options_description desc("Allowed options");
+  options_dbrrt.add_options(desc);
+
+  try {
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+    if (vm.count("help") != 0u) {
+      std::cout << desc << "\n";
+    }
+  } catch (po::error &e) {
+    std::cerr << e.what() << std::endl << std::endl;
+    std::cerr << desc << std::endl;
+  }
+
+  std::vector<Motion> motions;
+
+  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+      (problem.models_base_path + problem.robotType + ".yaml").c_str(),
+      problem.p_lb, problem.p_ub);
+
+  load_env(*robot, problem);
+
+  load_motion_primitives_new(
+      options_dbrrt.motionsFile, *robot, motions, options_dbrrt.max_motions,
+      options_dbrrt.cut_actions, false, options_dbrrt.check_cols);
+
+  options_dbrrt.motions_ptr = &motions;
+  Trajectory traj_out;
+  Info_out out_info;
+
+  Options_trajopt options_trajopt;
+  options_trajopt.solver_id = 0;
+
+  // TODO: replace choose first motion valid
+  options_dbrrt.max_valid_expansions_to_goal = 10;
+  options_dbrrt.max_valid_expansions_to_rand = 10;
+
+  bool solve_planning = false;
+
+  const char *file_out = "/tmp/dynoplan/traj_connect.yaml";
+  if (solve_planning) {
+
+    try {
+      // dbrrtConnect(problem, robot, options_dbrrt, options_trajopt, traj_out,
+      //              out_info);
+
+      dbrrtConnectOrig(problem, robot, options_dbrrt, options_trajopt, traj_out,
+                       out_info);
+
+    } catch (std::exception &e) {
+      std::cout << e.what() << std::endl;
+      BOOST_TEST(false, "caught exception");
+    }
+
+    traj_out.to_yaml_format(file_out);
+    BOOST_TEST(out_info.trajs_raw.size() == 1);
+    BOOST_TEST(out_info.solved_raw == 1);
+  } else {
+
+    traj_out.read_from_yaml(file_out);
+  }
+
+  Trajectory shortcut_out;
+
+  Trajectory traj_out2;
+
+  shortcut_v0_iterative(problem, robot, options_dbrrt, traj_out, shortcut_out);
+
+  BOOST_TEST(shortcut_out.states.size() < traj_out.states.size());
+}
 
 BOOST_AUTO_TEST_CASE(test_dbrrt_vs_idbastar) {
 
@@ -75,12 +172,7 @@ BOOST_AUTO_TEST_CASE(test_dbrrt_vs_idbastar) {
     std::cout << e.what() << std::endl;
     BOOST_TEST(false, "caught exception");
   }
-
-
-
-
 }
-
 
 BOOST_AUTO_TEST_CASE(test_quad3d_connect) {
 

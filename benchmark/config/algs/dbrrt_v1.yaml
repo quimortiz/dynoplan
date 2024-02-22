@@ -3,4 +3,4 @@ default:
   # use_connect: true
   use_connect_orig: true
   # use_mim_solvers: true
-  solver_id: 1
+  # solver_id: 0

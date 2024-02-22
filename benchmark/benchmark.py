@@ -626,6 +626,8 @@ def solve_problem_with_alg(
     # print("**\n**\nDONE RUNNING cpp\n**\n")
 
 
+
+
 class Experiment:
     def __init__(self, path, problem, alg, guess=""):
         self.path = path
@@ -2173,13 +2175,15 @@ def __benchmark(bench_cfg: str):
     print(f"Start a pool with {n_cores}:")
     print("total number of cmds", len(cmds))
 
-    if True:
+    fileouts = []
+    fileouts_raw = []
+    run_cmds = True
+    if run_cmds:
         random.shuffle(cmds)
         with Pool(n_cores) as p:
             p.map(run_cmd, list(enumerate(cmds)), 1)
         print("Pool is DONE")
 
-        fileouts = []
 
         experiments_outs = [e.to_dict() for e in experiments]
         id = str(uuid.uuid4())[:7]
@@ -2187,28 +2191,40 @@ def __benchmark(bench_cfg: str):
         pathlib.Path(filename_experimentes_out).parent.mkdir(
             parents=True, exist_ok=True
         )
+        print(f"experiments out {filename_experimentes_out}")
         with open(filename_experimentes_out, "w") as f:
             yaml.dump(experiments_outs, f)
 
-    if False:
-        pass
-        experiments = []
-        fileouts = []
+    else:
+        experiments_file = "/tmp/dynoplan/experimentes_info_21e8abb.yaml"
+        with open(experiments_file, "r") as f:
+            data = yaml.load(f,Loader=yaml.CLoader)
 
-        path = "../results_new/quadrotor_v1/window/geo_v0/2023-11-06--10-33-07/"
-        experiments.append(
-            Experiment(path=path, problem="quadrotor_v1/window", alg="geo_v0")
-        )
+        experiments = [ Experiment( path = d["path"],
+                    problem = d[ "problem"],
+                    alg = d["alg"],
+                    guess = d[ "guess"]) for d  in data]
+
+
+        # for dd in data:
+        #     experime
+        #
+        #
+        # experiments = data
 
     for experiment in experiments:
         print("experiment")
         print(experiment)
 
         fileout, _ = analyze_runs(
-            experiment.path, experiment.problem, experiment.alg, visualize=False
-        )
+            experiment.path, experiment.problem, experiment.alg, visualize=False)
+
+        fileout_raw, _ = analyze_runs(
+            experiment.path, experiment.problem, experiment.alg, visualize=False, raw_traj = True)
+
         fileouts.append(fileout)
-    return fileouts
+        fileouts_raw.append(fileout_raw)
+    return fileouts, fileouts_raw
 
     compare(fileouts, False)
 
@@ -2232,12 +2248,15 @@ def benchmark(bench_cfg: str):
     elif "input" in d:
         fileouts = d["input"]
     else:
-        fileouts = __benchmark(bench_cfg)
+        fileouts, fileouts_raw = __benchmark(bench_cfg)
 
     if "selected_problems" in d:
         selected_problems = d["selected_problems"]
 
+    print(fileouts)
+    print(fileouts_raw)
     compare(fileouts, selected_problems, False)
+    compare(fileouts_raw, selected_problems, raw= True)
 
 
 def study(bench_cfg: str):
@@ -2273,8 +2292,7 @@ def study(bench_cfg: str):
 
 
 def compare(
-    files: List[str], selected_problems: List[str] = [], interactive: bool = False
-):
+    files: List[str], selected_problems: List[str] = [], interactive: bool = False, raw = False):
     print("calling compare:")
     print(f"files {files}")
 
@@ -2436,7 +2454,10 @@ def compare(
 
     # now print the data!
 
-    filename_pdf = f"../results_new/plots/plot_{date_time}.pdf"
+    if raw:
+        filename_pdf = f"../results_new/plots/plot_{date_time}_raw.pdf"
+    else:
+        filename_pdf = f"../results_new/plots/plot_{date_time}.pdf"
 
     print(f"writing pdf to {filename_pdf}")
 
@@ -2641,7 +2662,10 @@ def compare(
 
     import shutil
 
-    copy_to = "/tmp/tmp_compare.pdf"
+    if raw:
+        copy_to = "/tmp/tmp_compare_raw.pdf"
+    else:
+        copy_to = "/tmp/tmp_compare.pdf"
     shutil.copy(filename_pdf, copy_to)
     print(f"copy_to: {copy_to}")
 
@@ -2666,12 +2690,15 @@ def make_videos(robot: str, problem: str, file: str):
         viewer.make_video(problem, traj, filename)
 
 
-def get_cost_evolution(ax, file: str, **kwargs):
+def get_cost_evolution(ax, file: str, raw_traj = False, **kwargs):
     print(f"loading file {file}")
     with open(file, "r") as f:
         data = yaml.load(f, yaml.SafeLoader)
 
-    trajs_opt = data["trajs_opt"]
+    if raw_traj:
+        trajs_opt = data["trajs_raw"]
+    else:
+        trajs_opt = data["trajs_opt"]
 
     time_cost_pairs = []
 
@@ -2680,11 +2707,11 @@ def get_cost_evolution(ax, file: str, **kwargs):
     if trajs_opt is not None:
         for traj in trajs_opt:
             tts = float(traj["time_stamp"]) / 1000
-            cs = traj["cost"]
+            cs = float(traj["cost"])
             feas = traj["feasible"]
             if feas:
-                print(cs)
-                print(best_cost)
+                print("cs", cs)
+                print("best_cost ", best_cost)
                 if cs < best_cost:
                     time_cost_pairs.append([tts, cs])
                     best_cost = cs
@@ -2929,7 +2956,8 @@ def analyze_runs_time(
 
 
 def analyze_runs(
-    path_to_dir: str, problem: str, alg: str, visualize: bool, **kwargs
+    path_to_dir: str, problem: str, alg: str, visualize: bool, 
+    raw_traj = False, **kwargs
 ) -> Tuple[str, str]:
     print(
         f"path_to_dir:{path_to_dir}\n",
@@ -2955,7 +2983,7 @@ def analyze_runs(
         and "traj" not in f.name
     ]
 
-    print(f"files ", [f.name for f in files])
+    print("files ", [f.name for f in files])
 
     fig, ax = plt.subplots(2, 1, sharex=True)
     fig.suptitle(problem)
@@ -2977,7 +3005,8 @@ def analyze_runs(
 
     else:
         for file in [str(f) for f in files]:
-            time_cost_pairs = get_cost_evolution(ax[0], file, **kwargs)
+            time_cost_pairs = get_cost_evolution(ax[0], file,
+                                                 raw_traj=raw_traj, **kwargs)
             raw_data.append(time_cost_pairs)
             first_solution.append(time_cost_pairs[0][0])
             t = [x[0] for x in time_cost_pairs]
@@ -3098,12 +3127,13 @@ def analyze_runs(
     data_out["files"] = [str(f) for f in files]
     data_out["num_runs"] = len(files)
 
-    fileout = path_to_dir + "/report.yaml"
+    extra_raw_token = "raw" if raw_traj else ""
+    fileout = path_to_dir + f"/report{extra_raw_token}.yaml"
     print(f"fileout {fileout}")
     with open(fileout, "w") as f:
         yaml.dump(data_out, f)
 
-    figureout = path_to_dir + "/report.pdf"
+    figureout = path_to_dir + f"/report{ extra_raw_token }.pdf"
     print(f"figureout {figureout}")
     fig.tight_layout()
     plt.savefig(figureout)
