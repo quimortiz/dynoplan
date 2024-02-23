@@ -63,7 +63,7 @@ bool compareFocalHeuristic::operator()(const open_t::handle_type& h1,
   return (*h1)->gScore > (*h2)->gScore; // cost
 }
 
-int getAllConflicts(
+int highLevelfocalHeuristic(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
@@ -108,6 +108,69 @@ int getAllConflicts(
         } 
     }
     return numConflicts;
+}
+// state heuristic
+int lowLevelfocalHeuristic(
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    const std::shared_ptr<AStarNode> current_node,
+    size_t &current_robot_idx,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
+    std::vector<fcl::CollisionObjectd*>& robot_objs){
+    size_t max_t = 0;
+    int numConflicts = 0;
+    // for the state we are checking
+    std::vector<fcl::Transform3d> current_tmp_ts(1);
+    if (all_robots[current_robot_idx]->name == "car_with_trailers") {
+      current_tmp_ts.resize(2);
+    }
+    all_robots[current_robot_idx]->transformation_collision_geometries(current_node->state_eig, current_tmp_ts);
+
+    for (size_t i = 0; i < solution.size(); ++i){
+      if (i != current_robot_idx && !solution[i].trajectory.states.empty()){
+        max_t = std::max(max_t, solution[i].trajectory.states.size() - 1);
+      }
+    }
+    Eigen::VectorXd node_state;
+    for (size_t t = 0; t <= max_t; ++t){
+        size_t robot_idx = 0;
+        size_t obj_idx = 0;
+        std::vector<fcl::Transform3d> ts_data;
+        for (auto &robot : all_robots){
+          if (robot_idx == current_robot_idx){
+            continue;
+          }
+          if (t >= solution[robot_idx].trajectory.states.size()){
+            node_state = solution[robot_idx].trajectory.states.back();    
+          }
+          else {
+            node_state = solution[robot_idx].trajectory.states[t];
+          }
+          std::vector<fcl::Transform3d> tmp_ts(1);
+          if (robot->name == "car_with_trailers") {
+            tmp_ts.resize(2);
+          }
+          robot->transformation_collision_geometries(node_state, tmp_ts);
+          ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
+          ++robot_idx;
+        }
+        // add the state we are checking
+        ts_data.insert(ts_data.end(), current_tmp_ts.begin(), current_tmp_ts.end());
+        for (size_t i = 0; i < ts_data.size(); i++) {
+          fcl::Transform3d &transform = ts_data[i];
+          robot_objs[obj_idx]->setTranslation(transform.translation());
+          robot_objs[obj_idx]->setRotation(transform.rotation());
+          robot_objs[obj_idx]->computeAABB();
+          ++obj_idx;
+        }
+        col_mng_robots->update(robot_objs);
+        fcl::DefaultCollisionData<double> collision_data;
+        col_mng_robots->collide(&collision_data, fcl::DefaultCollisionFunction<double>);
+        if (collision_data.result.isCollision()) {
+            numConflicts++;
+        } 
+    }
+  return numConflicts;
 }
 
 void tdbastar_epsilon(
@@ -457,9 +520,8 @@ void tdbastar_epsilon(
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
 
-      int focalHeuristic = best_node->focalHeuristic + getAllConflicts(solution,
-                                                                      all_robots, col_mng_robots,
-                                                                      robot_objs); 
+      int focalHeuristic = best_node->focalHeuristic + lowLevelfocalHeuristic(solution, tmp_node, robot_id,
+                                                                      all_robots, col_mng_robots, robot_objs); 
       
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore; 
