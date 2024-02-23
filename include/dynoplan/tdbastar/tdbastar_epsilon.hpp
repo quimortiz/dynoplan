@@ -28,6 +28,8 @@
 #include "dynoplan/dbastar/heuristics.hpp"
 #include "dynoplan/tdbastar/options.hpp"
 #include "dynoplan/tdbastar/tdbastar.hpp"
+#include "dynoplan/tdbastar/planresult.hpp"
+
 
 
 namespace dynoplan {
@@ -53,7 +55,7 @@ void tdbastar_epsilon(
     dynobench::Trajectory &traj_out, const std::vector<Constraint> &constraints,
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
     std::vector<dynobench::Trajectory> &expanded_trajs,
-    std::vector<dynobench::Trajectory> &solution,
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd*>& robot_objs,

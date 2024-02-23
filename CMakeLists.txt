@@ -85,7 +85,7 @@ add_library(tdbastar ./src/tdbastar/tdbastar.cpp ./src/ompl/robots.cpp
                      ./src/tdbastar/options.cpp ./src/dbastar/heuristics.cpp)
 
 add_library(tdbastar_epsilon ./src/tdbastar/tdbastar_epsilon.cpp ./src/ompl/robots.cpp
-                     ./src/tdbastar/options.cpp ./src/dbastar/heuristics.cpp)
+                     ./src/tdbastar/options.cpp ./src/dbastar/heuristics.cpp ./src/tdbastar/tdbastar.cpp)
 
 add_library(dbrrt ./src/dbrrt/dbrrt.cpp ./src/ompl/robots.cpp)
 

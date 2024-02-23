@@ -1,4 +1,3 @@
-#include "dynoplan/tdbastar/tdbastar_epsilon.hpp"
 #include <boost/graph/graphviz.hpp>
 
 #include <ompl/base/spaces/SE2StateSpace.h>
@@ -35,6 +34,11 @@
 
 #include "dynobench/general_utils.hpp"
 #include "dynoplan/nigh_custom_spaces.hpp"
+#include "dynoplan/tdbastar/tdbastar_epsilon.hpp"
+#include "dynoplan/tdbastar/tdbastar.hpp"
+#include "dynoplan/tdbastar/planresult.hpp"
+
+
 
 #define REBUILT_FOCAL_LIST
 
@@ -51,37 +55,23 @@ using Sample_ = ob::State;
 
 // nigh interface for OMPL
 
-// bool compareAStarNode::operator()(const std::shared_ptr<AStarNode> a,
-//                                   const std::shared_ptr<AStarNode> b) const {
-  
-//   if (a->fScore != b->fScore) {
-//     return a->fScore > b->fScore;
-//   } else {
-//     return a->gScore < b->gScore;
-//   }
-// }
-
 bool compareFocalHeuristic::operator()(const open_t::handle_type& h1,
                                        const open_t::handle_type& h2) const {
-  // if (h1->focalHeuristic != h2->focalHeuristic) {
-  //   return h1->focalHeuristic > h2->focalHeuristic;
-  // } else if (h1->fScore != h2->fScore) {
-  //   return h1->fScore > h2->fScore;
-  // } else {
-  //  return h1->gScore < h2->gScore;      
-  // }
-  return true;
+ if ((*h1)->focalHeuristic != (*h2)->focalHeuristic) {
+    return (*h1)->focalHeuristic > (*h2)->focalHeuristic;
+  }
+  return (*h1)->gScore > (*h2)->gScore; // cost
 }
 
 int getAllConflicts(
-    const std::vector<Trajectory>& solution,
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd*>& robot_objs){
     size_t max_t = 0;
     int numConflicts = 0;
     for (const auto& sol : solution){
-      max_t = std::max(max_t, sol.states.size() - 1);
+      max_t = std::max(max_t, sol.trajectory.states.size() - 1);
     }
     Eigen::VectorXd node_state;
     for (size_t t = 0; t <= max_t; ++t){
@@ -89,11 +79,11 @@ int getAllConflicts(
         size_t obj_idx = 0;
         std::vector<fcl::Transform3d> ts_data;
         for (auto &robot : all_robots){
-          if (t >= solution[robot_idx].states.size()){
-            node_state = solution[robot_idx].states.back();    
+          if (t >= solution[robot_idx].trajectory.states.size()){
+            node_state = solution[robot_idx].trajectory.states.back();    
           }
           else {
-            node_state = solution[robot_idx].states[t];
+            node_state = solution[robot_idx].trajectory.states[t];
           }
           std::vector<fcl::Transform3d> tmp_ts(1);
           if (robot->name == "car_with_trailers") {
@@ -125,7 +115,7 @@ void tdbastar_epsilon(
     Trajectory &traj_out, const std::vector<Constraint> &constraints,
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
     std::vector<dynobench::Trajectory> &expanded_trajs,
-    std::vector<dynobench::Trajectory> &solution,
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd*>& robot_objs,
