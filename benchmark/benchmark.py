@@ -19,6 +19,7 @@ from scipy.interpolate import interp1d
 from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib.patches import Patch
 
 from datetime import datetime
 
@@ -29,14 +30,19 @@ import math
 import sys
 
 
-def print(*objects, sep=" ", end="\n", file=sys.stdout, flush=True):
-    __builtins__.print(*objects, sep=sep, end=end, file=file, flush=flush)
+# def print(*objects, sep=" ", end="\n", file=sys.stdout, flush=True):
+#     __builtins__.print(*objects, sep=sep, end=end, file=file, flush=flush)
 
 
 plt.rcParams["font.family"] = "serif"
 plt.rcParams["mathtext.fontset"] = "dejavuserif"
-
 plt.style.use("ggplot")
+
+
+plt.rcParams["font.size"] = "8"
+# plt.rcParams["mathtext.fontset"] = "dejavuserif"
+# plt.style.use("ggplot")
+
 # plt.style.use('tableau-colorblind10')
 
 # parse the results from SBPL
@@ -110,7 +116,9 @@ def generate_texpdf(filename_tex: str) -> None:
 
     print("writing to ", filename_tex + ".tex")
     with open(filename_tex + ".tex", "w") as f:
-        f.writelines(lines)
+        # f.writelines(lines)
+        for line in lines:
+            f.write(line + "\n")
 
     pathlib.Path("/tmp/dynoplan/").mkdir(parents=True, exist_ok=True)
     pathlib.Path("/tmp/dynoplan/tex").mkdir(parents=True, exist_ok=True)
@@ -230,14 +238,14 @@ benchmark_problems = [
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-m", "--mode")
+parser.add_argument("-mo", "--mode")
 parser.add_argument("-bc", "--bench_cfg")
 parser.add_argument("-d", "--dynamics")
 parser.add_argument("-f", "--file_in")
 
 args = parser.parse_args()
 
-print(args.__dict__)
+# print(args.__dict__)
 
 mode = args.mode
 bench_cfg = args.bench_cfg
@@ -249,6 +257,7 @@ MAX_TIME_PLOTS = 120
 
 do_compare = False
 do_benchmark = False
+do_benchmark_iros = False
 do_debug = False
 do_vis_primitives = False
 do_bench_time = False
@@ -272,6 +281,9 @@ if mode == "compare":
 elif mode == "bench":
     do_benchmark = True
 
+elif mode == "bench_iros":
+    do_benchmark_iros = True
+
 elif mode == "debug":
     do_debug = True
 
@@ -281,7 +293,6 @@ elif mode == "vis":
 elif mode == "fancy":
     do_fancy_table = True
 
-import sys
 
 sys.path.append("..")
 
@@ -626,8 +637,6 @@ def solve_problem_with_alg(
     # print("**\n**\nDONE RUNNING cpp\n**\n")
 
 
-
-
 class Experiment:
     def __init__(self, path, problem, alg, guess=""):
         self.path = path
@@ -913,7 +922,7 @@ def compare_search(
         for alg in algs:
             data = Ddata[alg]["time_search_mean"]
             y = np.arange(len(data))
-            plt.plot(data, y, label=Dalg2label[alg], marker="o", linestyle="None")
+            plt.plot(data, y, label=Dalg2label.get(alg,alg), marker="o", linestyle="None")
         # plt.yscale('log')
         # plt.ylim([1,20])
         plt.xlim([1, 20])
@@ -972,7 +981,7 @@ def compare_search(
                     [yy + (i - 1) * width for yy in y],
                     data,
                     width,
-                    label=Dalg2label[alg],
+                    label=Dalg2label.get(alg,alg),
                 )
                 i += 1
                 # ax.bar([x[i] + + width, yb, width, color='C2')
@@ -1043,7 +1052,7 @@ def compare_search(
                     [yy + (i - 1) * width for yy in y],
                     data,
                     width,
-                    label=Dalg2label[alg],
+                    label=Dalg2label.get(alg,alg),
                 )
                 i += 1
 
@@ -1059,7 +1068,7 @@ def compare_search(
                     [yy + (i - 1) * width for yy in y],
                     data,
                     width,
-                    label=Dalg2label[alg],
+                    label=Dalg2label.get(alg,alg),
                 )
                 i += 1
 
@@ -1603,7 +1612,7 @@ def compare_time(
                     [yy + (i - 1) * width for yy in y],
                     data,
                     width,
-                    label=Dalg2label[alg],
+                    label=Dalg2label.get(alg,alg),
                 )
                 i += 1
 
@@ -1634,7 +1643,7 @@ def compare_time(
                     [yy + (i - 1) * width for yy in y],
                     data,
                     width,
-                    label=Dalg2label[alg],
+                    label=Dalg2label.get(alg,alg)
                 )
                 i += 1
 
@@ -1964,9 +1973,9 @@ def __benchmark_search(bench_cfg: str) -> List[str]:
 
     experiments_outs = [e.to_dict() for e in experiments]
     id = str(uuid.uuid4())[:7]
-    filename_experimentes_out = f"/tmp/dynoplan/experimentes_info_{id}.yaml"
-    pathlib.Path(filename_experimentes_out).parent.mkdir(parents=True, exist_ok=True)
-    with open(filename_experimentes_out, "w") as f:
+    filename_experiments_out = f"/tmp/dynoplan/experiments_info_{id}.yaml"
+    pathlib.Path(filename_experiments_out).parent.mkdir(parents=True, exist_ok=True)
+    with open(filename_experiments_out, "w") as f:
         yaml.dump(experiments_outs, f)
 
     for experiment in experiments:
@@ -2080,9 +2089,9 @@ def __benchmark_opti(bench_cfg: str) -> List[str]:
 
     experiments_outs = [e.to_dict() for e in experiments]
     id = str(uuid.uuid4())[:7]
-    filename_experimentes_out = f"/tmp/dynoplan/experimentes_info_{id}.yaml"
-    pathlib.Path(filename_experimentes_out).parent.mkdir(parents=True, exist_ok=True)
-    with open(filename_experimentes_out, "w") as f:
+    filename_experiments_out = f"/tmp/dynoplan/experiments_info_{id}.yaml"
+    pathlib.Path(filename_experiments_out).parent.mkdir(parents=True, exist_ok=True)
+    with open(filename_experiments_out, "w") as f:
         yaml.dump(experiments_outs, f)
 
     for experiment in experiments:
@@ -2184,47 +2193,15 @@ def __benchmark(bench_cfg: str):
             p.map(run_cmd, list(enumerate(cmds)), 1)
         print("Pool is DONE")
 
-
         experiments_outs = [e.to_dict() for e in experiments]
         id = str(uuid.uuid4())[:7]
-        filename_experimentes_out = f"/tmp/dynoplan/experimentes_info_{id}.yaml"
-        pathlib.Path(filename_experimentes_out).parent.mkdir(
-            parents=True, exist_ok=True
-        )
-        print(f"experiments out {filename_experimentes_out}")
-        with open(filename_experimentes_out, "w") as f:
+        filename_experiments_out = f"/tmp/dynoplan/experiments_info_{id}.yaml"
+        pathlib.Path(filename_experiments_out).parent.mkdir(parents=True, exist_ok=True)
+        print(f"experiments out {filename_experiments_out}")
+        with open(filename_experiments_out, "w") as f:
             yaml.dump(experiments_outs, f)
 
-    else:
-        experiments_file = "/tmp/dynoplan/experimentes_info_21e8abb.yaml"
-        with open(experiments_file, "r") as f:
-            data = yaml.load(f,Loader=yaml.CLoader)
-
-        experiments = [ Experiment( path = d["path"],
-                    problem = d[ "problem"],
-                    alg = d["alg"],
-                    guess = d[ "guess"]) for d  in data]
-
-
-        # for dd in data:
-        #     experime
-        #
-        #
-        # experiments = data
-
-    for experiment in experiments:
-        print("experiment")
-        print(experiment)
-
-        fileout, _ = analyze_runs(
-            experiment.path, experiment.problem, experiment.alg, visualize=False)
-
-        fileout_raw, _ = analyze_runs(
-            experiment.path, experiment.problem, experiment.alg, visualize=False, raw_traj = True)
-
-        fileouts.append(fileout)
-        fileouts_raw.append(fileout_raw)
-    return fileouts, fileouts_raw
+    return experiments
 
     compare(fileouts, False)
 
@@ -2238,17 +2215,587 @@ def __benchmark(bench_cfg: str):
 # what to do with the other planners?
 
 
+def analyze_iros(experiments: List[Experiment]):
+
+    now = datetime.now()  # current date and time
+    date_time = now.strftime("%Y-%m-%d--%H-%M-%S")
+
+    all_data = []  # list of dicts, each dicts has fields: "experiment", "data"
+
+    for e in experiments:
+        folder = e.path
+        files = os.listdir(folder)
+        # get only the files that are run_X.yaml and not cfg
+        files = [
+            f
+            for f in files
+            if "run" in f and "yaml" in f and "cfg" not in f and "traj" not in f
+        ]
+        print(files)
+        # load all the files
+        D = {
+            "solved": [],
+            "solved_raw": [],
+            "cost": [],
+            "cost_raw": [],
+            "time": [],
+            "time_raw": [],
+        }
+        for f in files:
+            # load the file
+            filename = folder + "/" + f
+            print(f"loading {filename}")
+            with open(filename, "r") as ff:
+                f_data = yaml.load(ff, Loader=yaml.CLoader)
+            # solved?
+            D["solved"].append(f_data["solved"])
+            D["solved_raw"].append(f_data["solved_raw"])
+
+            if f_data["solved"]:
+                assert f_data["solved_raw"]
+                assert len(f_data["trajs_opt"]) > 0
+                index_first_feasible = 0
+                for iopt, traj_opt in enumerate(f_data["trajs_opt"]):
+                    if traj_opt["feasible"]:
+                        index_first_feasible = iopt
+                        break
+
+                assert f_data["trajs_opt"][index_first_feasible]["feasible"]
+
+                D["cost"].append(f_data["trajs_opt"][index_first_feasible]["cost"])
+                D["time"].append(
+                    f_data["trajs_opt"][index_first_feasible]["time_stamp"] / 1000.0
+                )
+
+            else:
+                D["cost"].append(np.inf)
+                D["time"].append(np.inf)
+
+            if f_data["solved_raw"]:
+                assert len(f_data["trajs_raw"]) > 0
+
+                index_first_feasible = 0
+                for iopt_raw, traj_raw in enumerate(f_data["trajs_raw"]):
+                    if traj_raw["feasible"]:
+                        index_first_feasible = iopt_raw
+                        break
+
+                assert f_data["trajs_raw"][index_first_feasible]["feasible"]
+                D["cost_raw"].append(f_data["trajs_raw"][index_first_feasible]["cost"])
+                D["time_raw"].append(
+                    f_data["trajs_raw"][index_first_feasible]["time_stamp"] / 1000.0
+                )
+
+            else:
+                D["cost_raw"].append(np.inf)
+                D["time_raw"].append(np.inf)
+        D["cost_median"] = np.median(D["cost"])
+        D["time_median"] = np.median(D["time"])
+        D["cost_raw_median"] = np.median(D["cost_raw"])
+        D["time_raw_median"] = np.median(D["time_raw"])
+        D["success"] = np.mean(D["solved"])
+        D["success_raw"] = np.mean(D["solved_raw"])
+
+        all_data.append({"experiment": e, "data": D})
+
+        # get which problems have been solved
+    problems = [e.problem for e in experiments]
+    # get unique problems
+    problems = list(set(problems))
+    algs = list(set([e.alg for e in experiments]))
+
+    # sort the algs
+    algs.sort()
+    problems.sort()
+
+    print("available problems", problems)
+    print("available algs", algs)
+
+    do_latex = True
+    do_box_plot = True
+    do_plot_all = True
+
+    Dfield2label = {
+        "success": "p",
+        "cost_median": "c",
+        "time_raw_median": "t_raw [s]",
+        "time_median": "t [s]",
+    }
+
+    Dalg2label = {
+        "dbrrt_v2": "d2",
+        "dbrrt_v0": "d0",
+        "idbastar_iros": "id",
+        "dbrrt_v1": "d1",
+    }
+
+    if do_latex:
+        latex_lines = []
+
+        fields = [
+            "success",
+            "time_median",
+            "time_raw_median",
+            "cost_median",
+            # "success_raw", "cost_raw_median"
+        ]
+
+        # easy header
+        # header = [r"\begin{tabular}{" + "l" + "c" * len(algs) * len(fields) + "}",
+        #           '&'.join(["Problem"] + [ Dalg2label[alg] + "-" + Dfield2label[f] for alg in algs for f in fields]) + r"\\" ]
+
+        n_id = [Dfield2label[f] for f in fields]
+
+        start_index = 1
+        line_bars = ""
+
+        for i in algs:
+            line_bars = (
+                line_bars
+                + r"\cmidrule(lr){"
+                + str(start_index + 1)
+                + "-"
+                + str(start_index + len(fields))
+                + "}"
+            )
+            start_index += len(fields)
+
+        header = [
+            r"\begin{tabular}{" + "l" + "c" * len(algs) * len(fields) + "}",
+            r"\toprule",
+            r" Problem  &"
+            + "&".join(
+                [
+                    r"\multicolumn{"
+                    + str(len(fields))
+                    + r"}{c}{"
+                    + Dalg2label.get(alg, alg)
+                    + "r}"
+                    for alg in algs
+                ])
+            + r"\\",
+            line_bars,
+            r" &  " + " & ".join(n_id * len(algs)) + r"\\",
+            r"\midrule",
+        ]
+
+        footer = [r"\bottomrule", r"\end{tabular}"]
+
+        def check_if_worst(value: float, field: str, problem: str, all_data) -> bool:
+            eps = 1e-2
+            for d in all_data:
+                if d["experiment"].problem == problem:
+                    if d["data"][field] > value + eps:
+                        return False
+            return True
+
+        def check_if_best(value: float, field: str, problem: str, all_data) -> bool:
+
+            eps = 1e-2
+            for d in all_data:
+                if d["experiment"].problem == problem:
+                    if d["data"][field] < value - eps:
+                        return False
+            else:
+                return True
+
+        for p in problems:
+            line = []
+            line.append(p)
+            for alg in algs:
+                # find the experiment that has the problem and the alg
+                all_data_p = [
+                    d
+                    for d in all_data
+                    if d["experiment"].problem == p and d["experiment"].alg == alg
+                ]
+                assert len(all_data_p) <= 1
+                for field in fields:
+                    if len(all_data_p) == 0:
+                        line.append("-")
+                    else:
+                        data = all_data_p[0]["data"]
+                        c = data[field]
+
+                        is_better = check_if_best(c, field, p, all_data)
+                        is_worst = check_if_worst(c, field, p, all_data)
+                        # if field == "time_median" or field == "time_raw_median":
+                        #     c = c / 1000  # in code is ms ; in the paper we want s
+
+                        if is_better and field != "success":
+                            line.append(r"{ \color{cyan} " + "{:.2f}".format(c) + "}")
+                        elif is_worst and field != "success":
+                            line.append(r"{ \color{red} " + "{:.2f}".format(c) + "}")
+                        else:
+                            line.append("{:.2f}".format(c))
+
+            latex_lines.append(line)
+
+        filename_tex = f"../results_new/summary/summary_iros_{date_time}.tex"
+        Path(filename_tex).parent.mkdir(parents=True, exist_ok=True)
+
+        print(f"writing to {filename_tex}")
+
+        with open(filename_tex, "w") as f:
+            # write header
+            for h in header:
+                f.write(format_latex_str(h))
+                f.write("\n")
+            for ll in latex_lines:
+                f.write(format_latex_str(" & ".join(ll)))
+                f.write(r"\\")
+                f.write("\n")
+            for fo in footer:
+                f.write(fo)
+                f.write("\n")
+
+        copy_to = "/tmp/tmp_iros.tex"
+        shutil.copy(filename_tex, copy_to)
+        print(f"copy_to: {copy_to}")
+
+        filename_log_tex = filename_tex + ".log"
+
+        with open(filename_log_tex, "w") as f:
+            dd = {
+                "input": [e.to_dict() for e in experiments],
+                "output": filename_tex,
+                "date": date_time,
+                "hostname": os.uname()[1],
+            }
+            yaml.dump(dd, f)
+
+        generate_texpdf(filename_tex)
+
+        print("well done!")
+
+    # lets write pdf
+
+    # pdfpages, on problem per page, do a boxplot
+
+    if do_box_plot:
+        filename_pdf = f"../results_new/summary/summary_iros_plot_{date_time}.pdf"
+        print("writing pdf to ", filename_pdf)
+        pp = PdfPages(filename_pdf)
+
+        fields = ["cost", "time", "cost_raw", "time_raw"]
+
+        for p in problems:
+
+            DD = {}
+
+            for field in fields:
+                DD[field] = []
+
+            for alg in algs:
+                data_p = [
+                    d
+                    for d in all_data
+                    if d["experiment"].problem == p and d["experiment"].alg == alg
+                ]
+                assert len(data_p) <= 1
+                data = data_p[0]
+
+                for field in fields:
+                    DD[field].append(data["data"][field])
+
+            fig, ax = plt.subplots(len(fields), 1, sharex=True)
+            # fig, ax = plt.subplots(len(fields), 1)
+            for i, f in enumerate(fields):
+                ax[i].boxplot(DD[f], labels=[Dalg2label.get(alg,alg) for alg in algs])
+                ax[i].set_ylabel(f)
+                # ax[i].set_xticklabels( [ Dalg2label[alg] for alg in algs])
+            fig.suptitle(p)
+            pp.savefig(fig)
+
+        pp.close()
+
+        copy_to = "/tmp/tmp_iros_box.pdf"
+        shutil.copy(filename_pdf, copy_to)
+        print(f"copy_to: {copy_to}")
+
+        # next: do a boxplot or line plot with all the problems in the same graph, as I did for the phd thesis.
+
+        # lets write the latex table
+    if do_plot_all:
+        num_problems = len(problems)
+        num_algs = len(algs)
+
+        # colors = ['blue', 'green', 'red']
+
+        colors = [
+            "#1f77b4",
+            "#ff7f0e",
+            "#2ca02c",
+            "#d62728",
+            "#9467bd",
+            "#8c564b",
+            "#e377c2",
+            "#7f7f7f",
+            "#bcbd22",
+            "#17becf",
+        ]
+
+        assert num_algs <= len(colors)
+
+        # field = "time"
+
+        fields = ["cost", "time", "cost_raw", "time_raw"]
+
+        # get idbastar data as reference
+
+        # fields_normlaizer
+
+        fields_normalizer = [
+            # "success",
+            "cost_median",
+            "time_median",
+            "cost_raw_median",
+            "time_raw_median",
+            # "success_raw", "cost_raw_median"
+        ]
+
+        Dfield2normalizer = {
+            "cost": "cost_median",
+            "time": "time_median",
+            "cost_raw": "cost_raw_median",
+            "time_raw": "time_raw_median",
+        }
+
+        Dnormalizer = {}
+
+        normalize = True
+
+        if normalize:
+            for p_id, p in enumerate(problems):
+
+                Dproblem = {}
+                data_p = [
+                    d
+                    for d in all_data
+                    if d["experiment"].problem == p
+                    and d["experiment"].alg == "idbastar_iros"
+                ]
+                assert len(data_p) == 1
+                data = data_p[0]["data"]
+
+                for f in fields_normalizer:
+                    Dproblem[f] = data[f]
+                Dnormalizer[p] = Dproblem
+
+        print("Dnormalizer", Dnormalizer)
+
+        filename_pdf = f"../results_new/summary/summary_iros_plot_{date_time}_all.pdf"
+        print("writing pdf to ", filename_pdf)
+        pp = PdfPages(filename_pdf)
+
+        # fig, ax = plt.subplots(len(fields), 1, sharex=True, figsize=(40,6))
+
+        # partition by problems per page
+        # problems_per_page = 4
+        # problems_sets = []
+        # for k in range(0, num_problems, problems_per_page):
+        #     problems_page = problems[k : k + problems_per_page]
+        #     problems_sets.append(problems_page)
+
+        # partition by dynamic system
+        systems = [p.split("/")[0] for p in problems]
+        systems = list(set(systems))
+        systems.sort()
+        problems_sets = []
+        for system in systems:
+            problem_per_system = [p for p in problems if p.split("/")[0] == system]
+            problems_sets.append(problem_per_system)
+
+        counter = 0
+        for problems_page in problems_sets:
+            fig, ax = plt.subplots(len(fields), 1, sharex=True)
+            _num_problems = len(problems_page)
+            for p_id, p in enumerate(problems_page):
+                x_positions = np.arange(num_algs) + p_id * (num_algs + 1)
+                for a_id, a in enumerate(algs):
+
+                    data_p = [
+                        d
+                        for d in all_data
+                        if d["experiment"].problem == p and d["experiment"].alg == a
+                    ]
+
+                    assert len(data_p) == 1
+
+                    data = data_p[0]
+
+                    for f_id, field in enumerate(fields):
+                        ax_i = ax[f_id]
+                        data_f = data["data"][field]
+                        if normalize:
+                            data_f = data_f / Dnormalizer[p][Dfield2normalizer[field]]
+                        ax_i.boxplot(
+                            data_f,
+                            positions=[x_positions[a_id]],
+                            widths=0.6,
+                            patch_artist=True,
+                            boxprops=dict(facecolor=colors[a_id]),
+                        )
+                        ax_i.set_ylabel(field)
+
+            print("problems", problems_page)
+
+            Dproblem2label = {}
+            plt.xticks(
+                np.arange(_num_problems) * (num_algs + 1) + 1,
+                [Dproblem2label.get(p, p) for p in problems_page],
+            )
+            plt.xlabel("Problem")
+
+            # plt.xlabel("Problem")
+
+            # Set y-axis label
+            # plt.ylabel("Measurements")
+
+            # Set title
+            fig.suptitle("Results")
+
+            # Add legend for algorithms
+            # plt.legend([f'Algorithm {i+1}' for i in range(K)], loc='upper right')
+
+            # Create custom legend patches
+            legend_patches = [
+                Patch(
+                    color=colors[i],
+                    # label=f"Algorithm {i+1}") for i in range(num_algs)
+                    label=algs[i],
+                )
+                for i in range(num_algs)
+            ]
+
+            # Add legend for algorithms
+            fig.legend(handles=legend_patches, loc="upper right")
+            # plt.legend(handles=legend_patches, loc="upper right")
+
+            # plt.legend(handles=legend_patches, loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=3)
+            # plt.legend(handles=legend_patches, loc='upper center', bbox_to_anchor=(0.5, 1.15), ncol=4)
+            # fig.legend(
+            #     handles=legend_patches,
+            #     loc="upper center",
+            #     bbox_to_anchor=(0.5, 1.0),
+            #     ncol=3,
+            # )
+            # fig.legend(
+            #     handles=legend_patches,
+            #     loc="lower center",
+            #     bbox_to_anchor=(0.5, -0.1),
+            #     ncol=3,
+            # )
+
+            # Adjust layout to make space for the legend
+            # plt.subplots_adjust(bottom=0.2)
+
+            # Show plot
+
+            # Show plot
+            plt.grid(True)
+            plt.tight_layout()
+            file_out = f"../results_new/summary/summary_iros_plot_all_{date_time}_{counter}.pdf"
+            # print("writing pdf to ", filename_pdf)
+            pathlib.Path(file_out).parent.mkdir(parents=True, exist_ok=True)
+            print(f"saving plot to {file_out}")
+            plt.savefig(file_out)
+            # plt.show()
+            copy_to = f"/tmp/tmp_iros_box_all_{counter}.pdf"
+            counter += 1
+            shutil.copy(file_out, copy_to)
+            print(f"copy_to: {copy_to}")
+
+            pp.savefig(fig)
+        pp.close()
+
+        # copy to
+        print("writing pdf to ", filename_pdf)
+        copy_to = "/tmp/tmp_iros_box_all.pdf"
+        shutil.copy(filename_pdf, copy_to)
+        print(f"copy_to: {copy_to}")
+
+    # continue here !!
+
+
+def benchmark_iros(bench_cfg: str):
+
+    run_code = False
+    if run_code:
+        with open(bench_cfg) as f:
+            d = yaml.load(f, Loader=yaml.CLoader)
+
+        experiments = __benchmark(bench_cfg)
+
+        # continue here!
+
+        now = datetime.now()  # current date and time
+        date_time = now.strftime("%Y-%m-%d--%H-%M-%S")
+
+        fileout_log = f"../results_new/infos/experiments_info_{date_time}.yaml"
+        pathlib.Path(fileout_log).parent.mkdir(parents=True, exist_ok=True)
+
+        print(f"writing experiments out to {fileout_log}")
+
+        experiments_std = [e.to_dict() for e in experiments]
+
+        with open(fileout_log, "w") as f:
+            yaml.dump(experiments_std, f)
+
+    else:
+        # file = "/tmp/dynoplan/experimentes_info_2024-02-22--18-46-19.yaml"
+        # file = "/tmp/dynoplan/experimentes_info_2024-02-23--11-08-29.yaml"
+
+        # file = "/tmp/dynoplan/experimentes_info_eef2926.yaml"
+        # file = "/tmp/dynoplan/experimentes_info_2024-02-23--13-07-47.yaml"
+
+
+        file = "/tmp/dynoplan/experiments_info_befc085.yaml"
+        # file = "/tmp/dynoplan/experiments_info_bd48ae6.yaml"
+        # -rw-rw-r-- 1 quim quim 7.7K Feb 23 12:50 experimentes_info_eef2926.yaml
+        # -rw-rw-r-- 1 quim quim 7.7K Feb 23 12:50 experimentes_info_2024-02-23--12-50-39.yaml
+        # -rw-rw-r-- 1 quim quim  11K Feb 23 13:07 experimentes_info_99840c3.yaml
+        # -rw-rw-r-- 1 quim quim  11K Feb 23 13:07 experimentes_info_2024-02-23--13-07-47.yaml
+
+        with open(file, "r") as f:
+            data = yaml.load(f, Loader=yaml.CLoader)
+
+        # transform dict to Experiment
+        experiments = [Experiment(**d) for d in data]
+
+    analyze_iros(experiments)
+
+
 def benchmark(bench_cfg: str):
     with open(bench_cfg) as f:
         d = yaml.load(f, Loader=yaml.CLoader)
 
-    selected_problems = []
     if "files" in d:
         fileouts = d["files"]
+        fileouts_raw = d["files_raw"]
     elif "input" in d:
         fileouts = d["input"]
+        fileouts_raw = d["input_raw"]
     else:
-        fileouts, fileouts_raw = __benchmark(bench_cfg)
+        experiments = __benchmark(bench_cfg)
+        fileouts = []
+        fileouts_raw = []
+        for experiment in experiments:
+
+            fileout, _ = analyze_runs(
+                experiment.path, experiment.problem, experiment.alg, visualize=False
+            )
+
+            fileout_raw, _ = analyze_runs(
+                experiment.path,
+                experiment.problem,
+                experiment.alg,
+                visualize=False,
+                raw_traj=True,
+            )
+
+            fileouts.append(fileout)
+            fileouts_raw.append(fileout_raw)
 
     if "selected_problems" in d:
         selected_problems = d["selected_problems"]
@@ -2256,7 +2803,7 @@ def benchmark(bench_cfg: str):
     print(fileouts)
     print(fileouts_raw)
     compare(fileouts, selected_problems, False)
-    compare(fileouts_raw, selected_problems, raw= True)
+    compare(fileouts_raw, selected_problems, raw=True)
 
 
 def study(bench_cfg: str):
@@ -2292,7 +2839,11 @@ def study(bench_cfg: str):
 
 
 def compare(
-    files: List[str], selected_problems: List[str] = [], interactive: bool = False, raw = False):
+    files: List[str],
+    selected_problems: List[str] = [],
+    interactive: bool = False,
+    raw=False,
+):
     print("calling compare:")
     print(f"files {files}")
 
@@ -2690,7 +3241,7 @@ def make_videos(robot: str, problem: str, file: str):
         viewer.make_video(problem, traj, filename)
 
 
-def get_cost_evolution(ax, file: str, raw_traj = False, **kwargs):
+def get_cost_evolution(ax, file: str, raw_traj=False, **kwargs):
     print(f"loading file {file}")
     with open(file, "r") as f:
         data = yaml.load(f, yaml.SafeLoader)
@@ -2956,8 +3507,7 @@ def analyze_runs_time(
 
 
 def analyze_runs(
-    path_to_dir: str, problem: str, alg: str, visualize: bool, 
-    raw_traj = False, **kwargs
+    path_to_dir: str, problem: str, alg: str, visualize: bool, raw_traj=False, **kwargs
 ) -> Tuple[str, str]:
     print(
         f"path_to_dir:{path_to_dir}\n",
@@ -3005,8 +3555,9 @@ def analyze_runs(
 
     else:
         for file in [str(f) for f in files]:
-            time_cost_pairs = get_cost_evolution(ax[0], file,
-                                                 raw_traj=raw_traj, **kwargs)
+            time_cost_pairs = get_cost_evolution(
+                ax[0], file, raw_traj=raw_traj, **kwargs
+            )
             raw_data.append(time_cost_pairs)
             first_solution.append(time_cost_pairs[0][0])
             t = [x[0] for x in time_cost_pairs]
@@ -4004,6 +4555,9 @@ if __name__ == "__main__":
         compare(files, interactive=True)
     if do_benchmark:
         benchmark(bench_cfg)
+
+    if do_benchmark_iros:
+        benchmark_iros(bench_cfg)
 
     if do_bench_time:
         benchmark_opti(bench_cfg)

@@ -156,6 +156,8 @@ void solve_sst(const dynobench::Problem &problem,
           const ob::Cost cost) {
         // i cast hte planeer
 
+        info_out_omplsst.solved_raw = true;
+
         (void)states;
         std::cout << "hello world " << std::endl;
         double tt =
@@ -196,6 +198,8 @@ void solve_sst(const dynobench::Problem &problem,
           traj_sst.cost = robot->diff_model->ref_dt * traj_sst.actions.size();
 
           traj_sst.check(robot->diff_model);
+          traj_sst.feasible = true; // feasible here means that i could
+                                    // find a trajectory.
           info_out_omplsst.trajs_raw.push_back(traj_sst);
 
 #if 0

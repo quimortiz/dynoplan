@@ -4,27 +4,30 @@ n_cores: 8 # -1=auto
 
 
 problems:
-  - acrobot/swing_up_empty
-  - acrobot/swing_up_obs_hard
-  - car_first_order_with_1_trailers_0/kink_0
-  - car_first_order_with_1_trailers_0/parallelpark_0
-  - quad2d/fall_through
-  - quad2d/quad_bugtrap
-  - quad2dpole/up_obs
-  - quad2dpole/window_hard
-  - quadrotor_0/recovery
-  - quadrotor_0/recovery_with_obs
-  - quadrotor_ompl/quad_one_obs
-  - quadrotor_ompl/window
-  - unicycle_first_order_0/bugtrap_0
-  - unicycle_first_order_2/wall_0
-  - unicycle_second_order_0/bugtrap_0
-  - unicycle_second_order_0/parallelpark_0
+  # - acrobot_v0/swing_up_empty
+  # - acrobot_v0/swing_up_obs_hard
+  # - car1_v0/kink_0
+  # - car1_v0/parallelpark_0
+  # - quad2d_v0/fall_through
+  # - quad2d_v0/quad_bugtrap
+  # - quad2dpole_v0/up_obs
+  # - quad2dpole_v0/window_hard
+  # - quadrotor_v0/recovery
+  # - quadrotor_v0/recovery_with_obs
+  # - quadrotor_v1/quad_one_obs
+  # - quadrotor_v1/window
+  - unicycle1_v0/bugtrap_0
+  # - unicycle1_v2/wall_0
+  - unicycle2_v0/bugtrap_0
+  # - unicycle2_v0/parallelpark_0
+
 
 algs:
   - idbastar_iros
   - dbrrt_v0
   - dbrrt_v1
   - dbrrt_v2
+  - geo_v0
+  - sst_v0
 
 

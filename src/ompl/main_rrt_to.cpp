@@ -57,6 +57,9 @@ int main(int argc, char *argv[]) {
   solve_ompl_geometric(problem, options_geo, options_trajopt, traj_out,
                        info_out_omplgeo);
 
+  // solve_ompl_geometric_iterative_rrt( problem, options_geo, options_trajopt, traj_out,
+  //                      info_out_omplgeo);
+
   std::cout << "*** info_out_omplgeo   *** " << std::endl;
   info_out_omplgeo.print(std::cout);
   std::cout << "***" << std::endl;

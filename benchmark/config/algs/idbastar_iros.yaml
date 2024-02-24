@@ -10,6 +10,10 @@ unicycle2_v0:
   default:
     motionsFile: ../dynomotions/unicycle2_v0__ispso__2023_04_03__15_36_01.bin.im.bin.im.bin.small5000.msgpack
 
+unicycle1_v2:
+  defaults:
+    motionsFile: ../dynomotions/tmp_motions_unicycle1_v2.bin.sp.bin.small5000.msgpack
+
 car1_v0:
   default:
     motionsFile: ../dynomotions/car1_v0_all.bin.sp.bin.small5000.msgpack

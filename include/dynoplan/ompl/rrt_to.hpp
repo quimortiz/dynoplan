@@ -82,4 +82,15 @@ void solve_ompl_geometric(const dynobench::Problem &problem,
                           dynobench::Trajectory &traj_out,
                           dynobench::Info_out &info_out_omplgeo);
 
+
+void solve_ompl_geometric_iterative_rrt(const dynobench::Problem &problem,
+                          const Options_geo &options_geo,
+                          const Options_trajopt &options_trajopt,
+                          dynobench::Trajectory &traj_out,
+                          dynobench::Info_out &info_out_omplgeo);
+
+
+
+
+
 } // namespace dynoplan
