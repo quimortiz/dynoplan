@@ -132,12 +132,13 @@ int lowLevelfocalHeuristic(
       }
     }
     Eigen::VectorXd node_state;
-    for (size_t t = 0; t <= max_t; ++t){
+    for (size_t t = 0; t < max_t; ++t){
         size_t robot_idx = 0;
         size_t obj_idx = 0;
         std::vector<fcl::Transform3d> ts_data;
         for (auto &robot : all_robots){
           if (robot_idx == current_robot_idx){
+            ++robot_idx;
             continue;
           }
           if (t >= solution[robot_idx].trajectory.states.size()){
@@ -666,7 +667,7 @@ void tdbastar_epsilon(
     traj_out.goal = problem.goals[robot_id];
     traj_out.check(robot, false);
     traj_out.cost = traj_out.actions.size() * robot->ref_dt;
-    traj_out.cost = open.top()->fScore;
+    traj_out.fmin = open.top()->fScore;
     dynobench::Feasibility_thresholds thresholds;
     thresholds.col_tol =
         5 * 1e-2; // NOTE: for the systems with 0.01 s integration step,
