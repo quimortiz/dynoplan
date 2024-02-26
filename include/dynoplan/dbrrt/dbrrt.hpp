@@ -39,6 +39,7 @@ struct Options_dbrrt {
   int max_valid_expansions_to_goal = 10;
   bool use_connect_orig = false;
   bool shortcut = false;
+  int max_idb_it = 10;
 
   // if 1, i take the first primitive that is valid.
   // if > 1 i wait until max_valid_expansions are valid and then i take the
@@ -84,6 +85,8 @@ struct Options_dbrrt {
     loader.set(VAR_WITH_NAME(max_valid_expansions_to_goal));
     loader.set(VAR_WITH_NAME(use_connect_orig));
     loader.set(VAR_WITH_NAME(shortcut));
+    loader.set(VAR_WITH_NAME(max_idb_it));
+
   }
 
   void add_options(po::options_description &desc) { __load_data(&desc, true); }

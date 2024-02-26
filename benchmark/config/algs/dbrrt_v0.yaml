@@ -1,10 +1,11 @@
 # general parameters, all systems and problems
 default:
-  solver_id: 1
+  solver_id: 0
   do_optimization: true
   search_timelimit: 15000 # in ms
   cost_delta_factor: 1
-  smooth_traj: true
+  smooth_traj: false
+  max_idb_it: 5
 
 # you can set parameters per dynamial system
 unicycle1_v0:
@@ -75,7 +76,7 @@ quad2dpole_v0:
     # weight_goal: 200
     weight_goal: 300
     max_iter: 150
-    solver_id: 1
+    # solver_id: 1
     # shortcut: true
 
 
@@ -103,13 +104,13 @@ quad3d_v0:
     # goal_region: .7
 
     delta: .35
+    # goal_region: .
     goal_region: .7
-    # goal_region: .65
     # max_motions: 5000
     max_motions: 5000
     max_iter: 100 
     # solver_id: 0
-    weight_goal: 100
+    weight_goal: 100 
     use_collision_shape: false
     solver_id: 0
     # use_mim_solvers: true

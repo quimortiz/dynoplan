@@ -2353,7 +2353,7 @@ void idbrrt(const dynobench::Problem &problem,
   double time_search = 0;
   double time_opt = 0;
 
-  while (!finished && it < max_it) {
+  while (!finished && it < options_dbrrt.max_idb_it) {
     if (it > 0) {
       options_dbrrt_local.delta *= delta_factor;
       options_dbrrt_local.goal_region *= delta_factor;

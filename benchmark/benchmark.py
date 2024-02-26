@@ -242,6 +242,7 @@ parser.add_argument("-mo", "--mode")
 parser.add_argument("-bc", "--bench_cfg")
 parser.add_argument("-d", "--dynamics")
 parser.add_argument("-f", "--file_in")
+parser.add_argument("-r", "--run", type=int, default=1)
 
 args = parser.parse_args()
 
@@ -2566,6 +2567,9 @@ def analyze_iros(experiments: List[Experiment]):
         normalize = True
 
         if normalize:
+
+            # chech that i have a normalizer
+
             for p_id, p in enumerate(problems):
 
                 Dproblem = {}
@@ -2575,14 +2579,26 @@ def analyze_iros(experiments: List[Experiment]):
                     if d["experiment"].problem == p
                     and d["experiment"].alg == "idbastar_iros"
                 ]
-                assert len(data_p) == 1
-                data = data_p[0]["data"]
+                if not len(data_p) == 1:
+                    normalize = False
 
-                for f in fields_normalizer:
-                    Dproblem[f] = data[f]
-                Dnormalizer[p] = Dproblem
+            if normalize:
+                for p_id, p in enumerate(problems):
+                    Dproblem = {}
+                    data_p = [
+                        d
+                        for d in all_data
+                        if d["experiment"].problem == p
+                        and d["experiment"].alg == "idbastar_iros"
+                    ]
+                    assert len(data_p) == 1
+                    data = data_p[0]["data"]
 
-        print("Dnormalizer", Dnormalizer)
+                    for f in fields_normalizer:
+                        Dproblem[f] = data[f]
+                    Dnormalizer[p] = Dproblem
+
+            print("Dnormalizer", Dnormalizer)
 
         filename_pdf = f"../results_new/summary/summary_iros_plot_{date_time}_all.pdf"
         print("writing pdf to ", filename_pdf)
@@ -2720,10 +2736,11 @@ def analyze_iros(experiments: List[Experiment]):
 
 def benchmark_iros(bench_cfg: str):
 
-    run_code = False
+    run_code = args.run
+
     if run_code:
-        with open(bench_cfg) as f:
-            d = yaml.load(f, Loader=yaml.CLoader)
+        # with open(bench_cfg) as f:
+        #     bench_cfg = yaml.load(f, Loader=yaml.CLoader)
 
         experiments = __benchmark(bench_cfg)
 

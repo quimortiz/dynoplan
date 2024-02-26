@@ -1,4 +1,4 @@
-trials:  5
+trials:  10
 timelimit: 60
 n_cores: 8 # -1=auto
 
@@ -6,28 +6,29 @@ n_cores: 8 # -1=auto
 problems:
   # - acrobot_v0/swing_up_empty
   # - acrobot_v0/swing_up_obs_hard
-  # - car1_v0/kink_0
-  # - car1_v0/parallelpark_0
-  # - quad2d_v0/fall_through
-  # - quad2d_v0/quad_bugtrap
-  # - quad2dpole_v0/up_obs
-  # - quad2dpole_v0/window_hard
-  # - quadrotor_v0/recovery
-  # - quadrotor_v0/recovery_with_obs
-  # - quadrotor_v1/quad_one_obs
-  # - quadrotor_v1/window
+  - car1_v0/kink_0
+  - car1_v0/parallelpark_0
+  - quad2d_v0/fall_through
+  - quad2d_v0/quad_bugtrap
+  - quad2dpole_v0/up_obs
+  - quad2dpole_v0/window_hard
+  - quadrotor_v0/recovery
+  - quadrotor_v0/recovery_with_obs
+  - quadrotor_v1/quad_one_obs
+  - quadrotor_v1/window
   - unicycle1_v0/bugtrap_0
-  # - unicycle1_v2/wall_0
+  - unicycle1_v2/wall_0
   - unicycle2_v0/bugtrap_0
-  # - unicycle2_v0/parallelpark_0
+  - unicycle2_v0/parallelpark_0
 
-
+# continue here!!
+# in bidirectional search, add a different parameter for the delta of the connection?
 algs:
   - idbastar_iros
   - dbrrt_v0
   - dbrrt_v1
   - dbrrt_v2
-  - geo_v0
-  - sst_v0
+  # - geo_v0
+  # - sst_v0
 
 
