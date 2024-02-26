@@ -71,12 +71,10 @@ int highLevelfocalHeuristic(
     size_t max_t = 0;
     int numConflicts = 0;
     for (const auto& sol : solution){
-      if (!sol.trajectory.states.empty()){
-        max_t = std::max(max_t, sol.trajectory.states.size() - 1);
-      }
+      max_t = std::max(max_t, sol.trajectory.states.size() - 1);
     }
     Eigen::VectorXd node_state;
-    for (size_t t = 0; t < max_t; ++t){
+    for (size_t t = 0; t <= max_t; ++t){
         size_t robot_idx = 0;
         size_t obj_idx = 0;
         std::vector<fcl::Transform3d> ts_data;
@@ -356,13 +354,6 @@ void tdbastar_epsilon(
       status = Terminate_status::EMPTY_QUEUE;
       std::cout << "BREAK search:"
                 << "EMPTY_QUEUE OPEN" << std::endl;
-      return true;
-    }
-
-    if (focal.empty()) {
-      status = Terminate_status::EMPTY_QUEUE;
-      std::cout << "BREAK search:"
-                << "EMPTY_QUEUE FOCAL" << std::endl;
       return true;
     }
 
