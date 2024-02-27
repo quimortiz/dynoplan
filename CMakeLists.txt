@@ -84,6 +84,12 @@ add_library(dbastar ./src/dbastar/dbastar.cpp ./src/dbastar/options.cpp
 add_library(tdbastar ./src/tdbastar/tdbastar.cpp ./src/ompl/robots.cpp
                      ./src/tdbastar/options.cpp ./src/dbastar/heuristics.cpp)
 
+add_library(
+  tdbastar_epsilon
+  ./src/tdbastar/tdbastar_epsilon.cpp ./src/ompl/robots.cpp
+  ./src/tdbastar/options.cpp ./src/dbastar/heuristics.cpp
+  ./src/tdbastar/tdbastar.cpp)
+
 add_library(dbrrt ./src/dbrrt/dbrrt.cpp ./src/ompl/robots.cpp)
 
 add_library(idbastar ./src/idbastar/idbastar.cpp)
@@ -270,6 +276,7 @@ target_link_libraries(
 
 # for tdb-A*
 add_library(idbastar::tdbastar ALIAS tdbastar) # for use in test folder
+add_library(idbastar::tdbastar_epsilon ALIAS tdbastar_epsilon)
 
 target_include_directories(
   tdbastar
@@ -281,6 +288,23 @@ target_include_directories(
 
 target_link_libraries(
   tdbastar
+  PUBLIC Eigen3::Eigen dynobench::dynobench
+  PRIVATE fcl ${OMPL_LIBRARIES} ${LZ4_LIBRARIES})
+
+# for tdb-A*-epsilon
+add_library(idbastar::tdbastar_epsilon ALIAS tdbastar_epsilon) # for use in test
+                                                               # folder
+
+target_include_directories(
+  tdbastar_epsilon
+  PUBLIC $<INSTALL_INTERFACE:include>
+         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+         ${OMPL_INCLUDE_DIRS}
+  PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src
+          ${CMAKE_CURRENT_SOURCE_DIR}/deps/nigh/src)
+
+target_link_libraries(
+  tdbastar_epsilon
   PUBLIC Eigen3::Eigen dynobench::dynobench
   PRIVATE fcl ${OMPL_LIBRARIES} ${LZ4_LIBRARIES})
 

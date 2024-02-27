@@ -218,7 +218,6 @@ public:
 
   double cost;
   size_t idx;
-  // std::string name;
   bool disabled = false;
   double get_cost() const { return cost; }
 

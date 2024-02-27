@@ -55,6 +55,7 @@ struct AStarNode {
   double fScore;
   double gScore;
   double hScore;
+  int focalHeuristic;         // ecbs
   std::vector<int> motions{}; // list of applicable motions
 
   double get_cost() const { return gScore; }
@@ -72,7 +73,7 @@ struct AStarNode {
   // can arrive at this node at time gScore, starting from came_from, using
   // motion used_motion
   struct arrival {
-    float gScore;
+    double gScore;
     // AStarNode* came_from;
     std::shared_ptr<AStarNode> came_from;
     size_t used_motion;
