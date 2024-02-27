@@ -55,7 +55,7 @@ struct AStarNode {
   double fScore;
   double gScore;
   double hScore;
-  int focalHeuristic; // ecbs
+  int focalHeuristic;         // ecbs
   std::vector<int> motions{}; // list of applicable motions
 
   double get_cost() const { return gScore; }

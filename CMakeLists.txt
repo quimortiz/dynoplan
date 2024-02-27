@@ -84,8 +84,11 @@ add_library(dbastar ./src/dbastar/dbastar.cpp ./src/dbastar/options.cpp
 add_library(tdbastar ./src/tdbastar/tdbastar.cpp ./src/ompl/robots.cpp
                      ./src/tdbastar/options.cpp ./src/dbastar/heuristics.cpp)
 
-add_library(tdbastar_epsilon ./src/tdbastar/tdbastar_epsilon.cpp ./src/ompl/robots.cpp
-                     ./src/tdbastar/options.cpp ./src/dbastar/heuristics.cpp ./src/tdbastar/tdbastar.cpp)
+add_library(
+  tdbastar_epsilon
+  ./src/tdbastar/tdbastar_epsilon.cpp ./src/ompl/robots.cpp
+  ./src/tdbastar/options.cpp ./src/dbastar/heuristics.cpp
+  ./src/tdbastar/tdbastar.cpp)
 
 add_library(dbrrt ./src/dbrrt/dbrrt.cpp ./src/ompl/robots.cpp)
 
@@ -273,7 +276,7 @@ target_link_libraries(
 
 # for tdb-A*
 add_library(idbastar::tdbastar ALIAS tdbastar) # for use in test folder
-add_library(idbastar::tdbastar_epsilon ALIAS tdbastar_epsilon) 
+add_library(idbastar::tdbastar_epsilon ALIAS tdbastar_epsilon)
 
 target_include_directories(
   tdbastar
@@ -289,7 +292,8 @@ target_link_libraries(
   PRIVATE fcl ${OMPL_LIBRARIES} ${LZ4_LIBRARIES})
 
 # for tdb-A*-epsilon
-add_library(idbastar::tdbastar_epsilon ALIAS tdbastar_epsilon) # for use in test folder
+add_library(idbastar::tdbastar_epsilon ALIAS tdbastar_epsilon) # for use in test
+                                                               # folder
 
 target_include_directories(
   tdbastar_epsilon
