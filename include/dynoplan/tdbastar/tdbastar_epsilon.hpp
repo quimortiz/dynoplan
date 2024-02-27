@@ -27,10 +27,8 @@
 
 #include "dynoplan/dbastar/heuristics.hpp"
 #include "dynoplan/tdbastar/options.hpp"
-#include "dynoplan/tdbastar/tdbastar.hpp"
 #include "dynoplan/tdbastar/planresult.hpp"
-
-
+#include "dynoplan/tdbastar/tdbastar.hpp"
 
 namespace dynoplan {
 
@@ -40,15 +38,15 @@ using Sample = std::vector<double>;
 using Sample_ = ob::State;
 
 // focalSet
-struct compareFocalHeuristic { 
-  bool operator()(const open_t::handle_type& h1,
-                  const open_t::handle_type& h2) const;
+struct compareFocalHeuristic {
+  bool operator()(const open_t::handle_type &h1,
+                  const open_t::handle_type &h2) const;
 };
 
 typedef typename boost::heap::d_ary_heap<
-      open_t::handle_type, boost::heap::arity<2>, 
-      boost::heap::compare<compareFocalHeuristic>, boost::heap::mutable_<true>>
-      focal_t;
+    open_t::handle_type, boost::heap::arity<2>,
+    boost::heap::compare<compareFocalHeuristic>, boost::heap::mutable_<true>>
+    focal_t;
 
 void tdbastar_epsilon(
     dynobench::Problem &problem, Options_tdbastar options_dbastar,
@@ -56,26 +54,25 @@ void tdbastar_epsilon(
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
     std::vector<dynobench::Trajectory> &expanded_trajs,
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
-    const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
-    std::vector<fcl::CollisionObjectd*>& robot_objs,
+    std::vector<fcl::CollisionObjectd *> &robot_objs,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> *heuristic_nn = nullptr,
-    ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result =nullptr,
+    ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result =
+        nullptr,
     float w = 0.0);
-
 
 int highLevelfocalHeuristic(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
-    const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
-    std::vector<fcl::CollisionObjectd*>& robot_objs);
+    std::vector<fcl::CollisionObjectd *> &robot_objs);
 
 int lowLevelfocalHeuristic(
-    const std::vector<dynobench::Trajectory>& solution,
-    const std::shared_ptr<AStarNode> node_to_check,
-    size_t &robot_id,
-    const std::vector<std::shared_ptr<dynobench::Model_robot>>& all_robots,
+    const std::vector<dynobench::Trajectory> &solution,
+    const std::shared_ptr<AStarNode> node_to_check, size_t &robot_id,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
-    std::vector<fcl::CollisionObjectd*>& robot_objs);
+    std::vector<fcl::CollisionObjectd *> &robot_objs);
 
 } // namespace dynoplan

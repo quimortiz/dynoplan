@@ -1,8 +1,7 @@
 #pragma once
-#include <vector>
 #include <iostream>
+#include <vector>
 
-template <typename TrajectoryT>
-struct LowLevelPlan {
+template <typename TrajectoryT> struct LowLevelPlan {
   TrajectoryT trajectory;
 };

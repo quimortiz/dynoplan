@@ -60,7 +60,7 @@ struct Options_tdbastar {
   bool use_nigh_nn = true;          // use nigh for nearest neighbor.
   bool check_cols = true;
   bool rewire = true; // to allow rewiring during the search
-  double w = 1.0; // omega for ecbs
+  double w = 1.0;     // omega for ecbs
 
   void add_options(po::options_description &desc);
 
