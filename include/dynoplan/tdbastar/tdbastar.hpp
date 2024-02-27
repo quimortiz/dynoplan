@@ -316,9 +316,13 @@ bool check_lazy_trajectory(
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
     int *num_valid_states = nullptr, bool forward = true);
 
+// TODO: @Akmaral, are you using this function? -- if not remove from here and
+// from cpp
 void disable_motions(std::shared_ptr<dynobench::Model_robot> &robot,
                      std::string &robot_name, float delta,
                      bool filterDuplicates, float alpha, size_t num_max_motions,
                      std::vector<Motion> &motions);
 
+void export_node_expansion(std::vector<dynobench::Trajectory> &expanded_trajs,
+                           std::ostream *out);
 } // namespace dynoplan

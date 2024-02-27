@@ -14,6 +14,16 @@ using V1d = Eigen::Matrix<double, 1, 1>;
 
 namespace dynoplan {
 
+template <typename K, typename V>
+V GetWithDef(const std::map<K, V> &m, const K &key, const V &defval) {
+  typename std::map<K, V>::const_iterator it = m.find(key);
+  if (it == m.end()) {
+    return defval;
+  } else {
+    return it->second;
+  }
+}
+
 Eigen::VectorXd derivate_wrt_time(dynobench::Model_robot &robot_model,
                                   const Eigen::VectorXd &x,
                                   const Eigen::VectorXd &u, double dt) {
@@ -30,8 +40,9 @@ Eigen::VectorXd derivate_wrt_time(dynobench::Model_robot &robot_model,
 
 ptr<Dynamics>
 create_dynamics(std::shared_ptr<dynobench::Model_robot> model_robot,
-                const Control_Mode &control_mode) {
-  return mk<Dynamics>(model_robot, control_mode);
+                const Control_Mode &control_mode,
+                const std::map<std::string, double> &params) {
+  return mk<Dynamics>(model_robot, control_mode, params);
 }
 
 void modify_x_bound_for_free_time_linear(const Vxd &__x_lb, const Vxd &__x_ub,
@@ -120,7 +131,8 @@ void modify_u_for_free_time_linear(const Vxd &__u_lb, const Vxd &__u_ub,
 void modify_u_bound_for_free_time(const Vxd &__u_lb, const Vxd &__u_ub,
                                   const Vxd &__u__weight, const Vxd &__u__ref,
                                   Vxd &u_lb, Vxd &u_ub, Vxd &u_weight,
-                                  Vxd &u_ref) {
+                                  Vxd &u_ref,
+                                  const std::map<std::string, double> &params) {
 
   DYNO_CHECK_EQ(__u_lb.size(), __u_ub.size(), AT);
   DYNO_CHECK_EQ(__u__weight.size(), __u_ub.size(), AT);
@@ -135,14 +147,17 @@ void modify_u_bound_for_free_time(const Vxd &__u_lb, const Vxd &__u_ub,
   u_ub = Vxd(nu);
   u_ref = Vxd(nu);
 
-  const double min_time_rate = .4;
-  const double max_time_rate = 2;
-  const double ref_time_rate = .5;
+  const double min_time_rate =
+      GetWithDef(params, std::string("min_time_rate"), .4);
+  const double max_time_rate =
+      GetWithDef(params, std::string("max_time_rate"), 2.);
+  const double ref_time_rate = GetWithDef(params, std::string("time_ref"), .5);
+  const double time_weight = GetWithDef(params, std::string("time_weight"), .7);
 
   u_lb << __u_lb, min_time_rate;
   u_ub << __u_ub, max_time_rate;
   u_ref << __u__ref, ref_time_rate;
-  u_weight << __u__weight, .7;
+  u_weight << __u__weight, time_weight;
 }
 
 void check_input_calc(Eigen::Ref<Eigen::VectorXd> xnext,
@@ -381,7 +396,7 @@ void Contour_cost_x::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x) {
 
   last_query = alpha;
   CHECK(path, AT);
-  DYNO_DYNO_CHECK_GEQ(weight, 0, AT);
+  DYNO_CHECK_GEQ(weight, 0, AT);
   path->interpolate(alpha, last_out, last_J);
 
   r = weight * (last_out - x.head(nx - 1));
@@ -1440,7 +1455,7 @@ Quaternion_cost::Quaternion_cost(size_t nx, size_t nu) : Cost(nx, nu, 1) {
 
 void Quaternion_cost::calc(Eigen::Ref<Eigen::VectorXd> r,
                            const Eigen::Ref<const Eigen::VectorXd> &x) {
-  DYNO_DYNO_CHECK_GEQ(k_quat, 0., AT);
+  DYNO_CHECK_GEQ(k_quat, 0., AT);
 
   check_input_calc(r, x);
 
@@ -1545,6 +1560,97 @@ Acceleration_cost_acrobot::Acceleration_cost_acrobot(size_t nx, size_t nu)
   f.setZero();
 }
 
+// 6 Payload
+// 6 Cable
+// 6
+// 7
+// 7
+// TOTAL:  32
+// nx (point):
+// 6 payload: (pos, vel)
+// 6*num_robots (qc_0, wc_0, qc_1, wc_1, ...,qc_{n-1}, wc_{n-1}), cable vector
+// and omega 7* num_robots (q, w): (q_0, w_0, ..., q_{n-1}, w_{n-1}), quat and
+// omega
+Payload_n_acceleration_cost::Payload_n_acceleration_cost(
+    const std::shared_ptr<dynobench::Model_robot> &model_robot, double k_acc)
+    : Cost(model_robot->nx, model_robot->nu, model_robot->nx), k_acc(k_acc),
+      model(model_robot) {
+
+  name = "acceleration";
+  int nx = model_robot->nx;
+  int nu = model_robot->nu;
+  int num_robots = int((nx - 6) / 13);
+  f.resize(nx);
+  f.setZero();
+
+  acc_u.resize(nx, nu);
+  acc_x.resize(nx, nx);
+  Jv_u.resize(nx, nu);
+  Jv_x.resize(nx, nx);
+
+  acc_u.setZero();
+  acc_x.setZero();
+  Jv_u.setZero();
+  Jv_x.setZero();
+
+  // TODO@ KHALED -> we need this generic!!
+  selector.resize(nx);
+  selector.setZero();
+  // lets put only the entries that are about acceleration
+  // selector for the accelerations: a_payload, wc_dot, w_dot (angular acc cable
+  // and uav)
+  selector.segment(3, 3).setOnes();
+  for (int i = 0; i < num_robots; ++i) {
+    selector.segment(6 + 6 * i + 3, 3).setOnes();
+    selector.segment(6 + 6 * num_robots + 7 * i + 4, 3).setOnes();
+  }
+
+  // selector.segment(6 + 3, 3).setOnes();
+  // selector.segment(2 * 6 + 3, 3).setOnes();
+
+  // selector.segment(3 * 6 + 4, 3).setOnes();
+  // selector.segment(3 * 6 + 7 + 4, 3).setOnes();
+}
+
+void Payload_n_acceleration_cost::calc(
+    Eigen::Ref<Eigen::VectorXd> r, const Eigen::Ref<const Eigen::VectorXd> &x,
+    const Eigen::Ref<const Eigen::VectorXd> &u) {
+
+  // CSTR_V(x);
+  // CSTR_V(u);
+  // CSTR_V(f);
+  assert(model);
+  model->calcV(f, x.head(model->nx), u.head(model->nu));
+  // CSTR_V(f);
+  // CSTR_V(selector);
+  r = k_acc * f.cwiseProduct(selector);
+  // I have to choose some entries...: DONE
+}
+
+void Payload_n_acceleration_cost::calcDiff(
+    Eigen::Ref<Eigen::VectorXd> Lx, Eigen::Ref<Eigen::VectorXd> Lu,
+    Eigen::Ref<Eigen::MatrixXd> Lxx, Eigen::Ref<Eigen::MatrixXd> Luu,
+    Eigen::Ref<Eigen::MatrixXd> Lxu, const Eigen::Ref<const Eigen::VectorXd> &x,
+    const Eigen::Ref<const Eigen::VectorXd> &u) {
+
+  assert(model);
+  model->calcV(f, x.head(model->nx), u.head(model->nu));
+
+  model->calcDiffV(Jv_x, Jv_u, x.head(model->nx), u.head(model->nu));
+
+  // set to zeros some of the entries
+
+  acc_x = Jv_x.array().colwise() * selector.array();
+  acc_u = Jv_u.array().colwise() * selector.array();
+
+  const double k_acc2 = k_acc * k_acc;
+  Lx.head(model->nx) += k_acc2 * f.cwiseProduct(selector).transpose() * acc_x;
+  Lu.head(model->nu) += k_acc2 * f.cwiseProduct(selector).transpose() * acc_u;
+  Lxx.block(0, 0, model->nx, model->nx) += k_acc2 * acc_x.transpose() * acc_x;
+  Luu.block(0, 0, model->nu, model->nu) += k_acc2 * acc_u.transpose() * acc_u;
+  Lxu.block(0, 0, model->nx, model->nu) += k_acc2 * acc_x.transpose() * acc_u;
+}
+
 void Acceleration_cost_acrobot::calc(
     Eigen::Ref<Eigen::VectorXd> r, const Eigen::Ref<const Eigen::VectorXd> &x,
     const Eigen::Ref<const Eigen::VectorXd> &u) {
@@ -1617,8 +1723,9 @@ void Acceleration_cost_quad2d::calcDiff(
 }
 
 Dynamics::Dynamics(std::shared_ptr<dynobench::Model_robot> robot_model,
-                   const Control_Mode &control_mode)
-    : robot_model(robot_model), control_mode(control_mode) {
+                   const Control_Mode &control_mode,
+                   const std::map<std::string, double> &params)
+    : robot_model(robot_model), control_mode(control_mode), params(params) {
   CHECK(robot_model, AT);
   u_lb = robot_model->get_u_lb();
   u_ub = robot_model->get_u_ub();

@@ -23,7 +23,9 @@
 #include <Eigen/Dense>
 #include <iostream>
 
-#define dynobench_base "../../dynobench/"
+// #define DYNOBENCH_BASE "../../dynobench/dynobench/"
+#define DYNOBENCH_BASE "../../dynobench/"
+#define DYNOBENCH_BASE_DATA "../../dynobench/"
 
 using namespace dynoplan;
 using namespace dynobench;
@@ -31,11 +33,11 @@ using namespace dynobench;
 BOOST_AUTO_TEST_CASE(second_order_park_traj_opt) {
 
   Options_trajopt options_trajopt;
-  Problem problem(dynobench_base +
+  Problem problem(DYNOBENCH_BASE +
                   std::string("envs/unicycle2_v0/parallelpark_0.yaml"));
 
   Trajectory init_guess(
-      dynobench_base +
+      DYNOBENCH_BASE_DATA +
       std::string("data/unicycle2_0_parallelark_guess_0.yaml"));
 
   options_trajopt.solver_id = static_cast<int>(SOLVER::traj_opt);
@@ -43,7 +45,7 @@ BOOST_AUTO_TEST_CASE(second_order_park_traj_opt) {
   options_trajopt.use_warmstart = 1;
   options_trajopt.weight_goal = 100;
   options_trajopt.max_iter = 50;
-  problem.models_base_path = dynobench_base + std::string("models/");
+  problem.models_base_path = DYNOBENCH_BASE + std::string("models/");
 
   Result_opti result;
   Trajectory sol;

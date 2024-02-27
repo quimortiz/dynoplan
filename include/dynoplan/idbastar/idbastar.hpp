@@ -45,17 +45,18 @@ struct Info_out_idbastar : dynobench::Info_out {
 };
 
 struct Options_idbAStar {
-  double delta_0 = .3;
-  size_t num_primitives_0 = 1000;
-  double delta_rate = .9;
-  double num_primitives_rate = 1.5;
-  double timelimit = 10; // in seconds
-  size_t max_it = 10;
-  size_t max_num_sol = 5;
-  size_t max_motions_primitives = 1e4;
-  bool new_schedule = true;
-  bool add_primitives_opt = true;
-  std::string model_base_path = "";
+  double delta_0 = .3;              // initial delta
+  size_t num_primitives_0 = 1000;   // initial number of primitives
+  double delta_rate = .9;           // rate to decrease delta
+  double num_primitives_rate = 1.5; // rate to increase number of primitives
+  double timelimit = 10;            // Time limit in seconds
+  size_t max_it = 10;               // Maximum number of iterations
+  size_t max_num_sol = 5; //  Stop when you reach this number of solutions
+  size_t max_motions_primitives =
+      1e4; // Maximum number of primitives to load frol file
+  bool new_schedule =
+      true; // Schedule for delta and number of primitives of the TRO paper.
+  bool add_primitives_opt = true; // Add primitives after optimization
 
   void add_options(po::options_description &desc) {
 
@@ -68,7 +69,6 @@ struct Options_idbAStar {
     set_from_boostop(desc, VAR_WITH_NAME(new_schedule));
     set_from_boostop(desc, VAR_WITH_NAME(max_motions_primitives));
     set_from_boostop(desc, VAR_WITH_NAME(add_primitives_opt));
-    set_from_boostop(desc, VAR_WITH_NAME(model_base_path));
   }
   void print(std::ostream &out, const std::string be = "",
              const std::string af = ": ") const {
@@ -82,7 +82,6 @@ struct Options_idbAStar {
     out << be << STR(new_schedule, af) << std::endl;
     out << be << STR(max_motions_primitives, af) << std::endl;
     out << be << STR(add_primitives_opt, af) << std::endl;
-    out << be << STR(model_base_path, af) << std::endl;
   }
 
   void __read_from_node(const YAML::Node &node) {
@@ -96,7 +95,6 @@ struct Options_idbAStar {
     set_from_yaml(node, VAR_WITH_NAME(new_schedule));
     set_from_yaml(node, VAR_WITH_NAME(max_motions_primitives));
     set_from_yaml(node, VAR_WITH_NAME(add_primitives_opt));
-    set_from_yaml(node, VAR_WITH_NAME(model_base_path));
   }
 
   void read_from_yaml(YAML::Node &node) {

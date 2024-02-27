@@ -8,6 +8,10 @@ namespace dynoplan {
 
 void Options_trajopt::add_options(po::options_description &desc) {
 
+  set_from_boostop(desc, VAR_WITH_NAME(time_ref));
+  set_from_boostop(desc, VAR_WITH_NAME(time_weight));
+  set_from_boostop(desc, VAR_WITH_NAME(check_with_finite_diff));
+
   set_from_boostop(desc, VAR_WITH_NAME(name));
   set_from_boostop(desc, VAR_WITH_NAME(soft_control_bounds));
   set_from_boostop(desc, VAR_WITH_NAME(rollout_warmstart));
@@ -46,6 +50,10 @@ void Options_trajopt::read_from_yaml(const char *file) {
 }
 
 void Options_trajopt::__read_from_node(const YAML::Node &node) {
+
+  set_from_yaml(node, VAR_WITH_NAME(time_ref));
+  set_from_yaml(node, VAR_WITH_NAME(time_weight));
+  set_from_yaml(node, VAR_WITH_NAME(check_with_finite_diff));
 
   set_from_yaml(node, VAR_WITH_NAME(name));
   set_from_yaml(node, VAR_WITH_NAME(soft_control_bounds));

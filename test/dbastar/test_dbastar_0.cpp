@@ -24,6 +24,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 
+// #define DYNOBENCH_BASE "../../dynobench/dynobench/"
 #define DYNOBENCH_BASE "../../dynobench/"
 #define BASE_PATH_MOTIONS "../../dynomotions/"
 
@@ -125,8 +126,8 @@ BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {
   options_dbastar.search_timelimit = 1e5; // in ms
   options_dbastar.max_motions = 100;
   options_dbastar.motionsFile =
-      "../../data/motion_primitives/unicycle1_v0/"
-      "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.less.bin";
+      BASE_PATH_MOTIONS "unicycle1_v0__ispso__2023_04_03__14_56_57.bin.im.bin."
+                        "im.bin.small5000.msgpack";
 
   // DEBUG THIS!! -- add tools for debugging :)
 
