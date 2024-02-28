@@ -3118,13 +3118,26 @@ void load_motion_primitives_new(const std::string &motionsFile,
     std::cout << "WARNING:"
               << "adding noise to first and last state" << std::endl;
     const double noise = 1e-7;
+    std::cout << "size " << trajs.data.size() << std::endl;
+    // TODO: unicycle1_v2 contains trajs of length 0.
+    // I shoudl delte this ones
     for (auto &t : trajs.data) {
+      if (t.states.size() == 0) {
+        std::cout << "WARNING: traj of length 0" << std::endl;
+        continue;
+      }
       t.states.front() +=
           noise * Eigen::VectorXd::Random(t.states.front().size());
 
       t.states.back() +=
           noise * Eigen::VectorXd::Random(t.states.back().size());
     }
+
+    // delte trajs of length 0 with erase-remove idiom
+    trajs.data.erase(
+        std::remove_if(trajs.data.begin(), trajs.data.end(),
+                       [](const auto &t) { return t.states.size() == 0; }),
+        trajs.data.end());
   }
 
   // TODO: robot should have "add noise function"

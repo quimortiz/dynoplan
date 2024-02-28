@@ -27,7 +27,7 @@ algs:
   - idbastar_iros
   - dbrrt_v0
   - dbrrt_v1
-  - dbrrt_v2
+  # - dbrrt_v2
   # - geo_v0
   # - sst_v0
 
