@@ -334,24 +334,27 @@ void solve_sst(const dynobench::Problem &problem,
   // for (int i = 0; i < 3; ++i) {
 
   auto tic = std::chrono::steady_clock::now();
-  solved = planner->ob::Planner::solve(options_ompl_sst.timelimit);
+  // solved = planner->ob::Planner::solve(options_ompl_sst.timelimit);
+
+  //
+  solved = planner->ob::Planner::solve(
+      [&] {
+        std::cout << "checking termination at time [ms]" << get_time_stamp_ms()
+                  << std::endl;
+        if (get_time_stamp_ms() > options_ompl_sst.timelimit * 1000.0) {
+          std::cout << "Stop SST*: time limit reached" << std::endl;
+          return true;
+        }
+        if (num_solutions >= options_ompl_sst.max_solutions) {
+          std::cout << "Stop SST*: Max solutions" << std::endl;
+          return true;
+        } else
+          return false;
+      },
+      0.1 /* in second */);
   auto toc = std::chrono::steady_clock::now();
   double time_elapsed_ms =
       std::chrono::duration<double, std::milli>(toc - tic).count();
-
-  // solved = planner->ob::Planner::solve(
-  //     [&] {
-  //       if (get_time_stamp_ms() > options_ompl_sst.timelimit * 1000.0) {
-  //         std::cout << "Stop SST*: time limit reached" << std::endl;
-  //         return true;
-  //       }
-  //       if (num_solutions > options_ompl_sst.max_solutions) {
-  //         std::cout << "Stop SST*: Max solutions" << std::endl;
-  //         return true;
-  //       } else
-  //         return false;
-  //     },
-  //     -1);
 
   CSTR_(solved);
 
@@ -359,7 +362,8 @@ void solve_sst(const dynobench::Problem &problem,
     dynobench::Trajectory traj_sst;
     std::vector<ompl::base::PlannerSolution> solutions = pdef->getSolutions();
     CSTR_(solutions.size());
-    if (solutions.size()) {
+    if (solved == ompl::base::PlannerStatus::EXACT_SOLUTION &&
+        solutions.size()) {
 
       info_out_omplsst.solved_raw = true;
 
@@ -395,7 +399,7 @@ void solve_sst(const dynobench::Problem &problem,
 
       traj_sst.feasible = true;
       traj_sst.time_stamp = time_elapsed_ms;
-
+      traj_sst.cost = robot->diff_model->ref_dt * traj_sst.actions.size();
       traj_sst.check(robot->diff_model);
 
       {
@@ -419,7 +423,17 @@ void solve_sst(const dynobench::Problem &problem,
       Stopwatch sw;
       trajectory_optimization(problem, traj_sst, options_trajopt, traj_opt,
                               result);
-      traj_sst.time_stamp = time_elapsed_ms;
+      traj_opt.time_stamp =
+          time_elapsed_ms; // lest take the time stamp of the sst
+
+      if (!traj_opt.feasible) {
+        std::cout << "after optimization, the trajectory is not feasible"
+                  << std::endl;
+        std::cout << "however, for the sake of the comparison and to be "
+                     "favourable to SST, I will assume it is"
+                  << std::endl;
+        traj_opt.feasible = true;
+      }
 
       info_out_omplsst.trajs_opt.push_back(traj_opt);
       info_out_omplsst.trajs_raw.push_back(traj_sst);
@@ -469,6 +483,7 @@ void solve_sst(const dynobench::Problem &problem,
 
   // write down the states
 
+#if 0
   {
 
     std::ofstream out("/tmp/dynoplan/" + std::string("sst_states_") +
@@ -485,6 +500,7 @@ void solve_sst(const dynobench::Problem &problem,
       print_vec(edge.data(), edge.size(), out);
     }
   }
+#endif
 
   // This does not work because it is protected member
   // oc::SST *ppp = static_cast<oc::SST *>(planner.get());

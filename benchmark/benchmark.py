@@ -2767,7 +2767,9 @@ def benchmark_iros(bench_cfg: str):
         # file = "/tmp/dynoplan/experimentes_info_2024-02-23--13-07-47.yaml"
 
 
-        file = "/tmp/dynoplan/experiments_info_befc085.yaml"
+        file = "/tmp/dynoplan/experiments_info_9061e42.yaml"
+
+        # file = "/tmp/dynoplan/experiments_info_befc085.yaml"
         # file = "/tmp/dynoplan/experiments_info_bd48ae6.yaml"
         # -rw-rw-r-- 1 quim quim 7.7K Feb 23 12:50 experimentes_info_eef2926.yaml
         # -rw-rw-r-- 1 quim quim 7.7K Feb 23 12:50 experimentes_info_2024-02-23--12-50-39.yaml

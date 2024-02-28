@@ -45,6 +45,8 @@ struct Options_sst {
   void add_options(po::options_description &desc) {
     set_from_boostop(desc, VAR_WITH_NAME(sst_use_nigh));
     set_from_boostop(desc, VAR_WITH_NAME(custom_sampling));
+    set_from_boostop(desc, VAR_WITH_NAME(max_solutions));
+
     set_from_boostop(desc, VAR_WITH_NAME(planner));
     set_from_boostop(desc, VAR_WITH_NAME(timelimit));
     set_from_boostop(desc, VAR_WITH_NAME(goal_epsilon));
@@ -62,6 +64,7 @@ struct Options_sst {
              const std::string &af = ": ") {
 
     STRY(custom_sampling, out, be, af);
+    STRY(max_solutions, out, be, af);
     STRY(sst_use_nigh, out, be, af);
     STRY(planner, out, be, af);
     STRY(timelimit, out, be, af);
@@ -78,6 +81,7 @@ struct Options_sst {
   void __read_from_node(const YAML::Node &node) {
     set_from_yaml(node, VAR_WITH_NAME(sst_use_nigh));
     set_from_yaml(node, VAR_WITH_NAME(custom_sampling));
+    set_from_yaml(node, VAR_WITH_NAME(max_solutions));
     set_from_yaml(node, VAR_WITH_NAME(planner));
     set_from_yaml(node, VAR_WITH_NAME(timelimit));
     set_from_yaml(node, VAR_WITH_NAME(goal_epsilon));

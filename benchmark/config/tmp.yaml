@@ -4,31 +4,31 @@ n_cores: 4 # -1=auto
 
 problems:
   # # # # # #
-  - unicycle1_v0/parallelpark_0
-  - unicycle1_v0/bugtrap_0
-  - unicycle1_v0/kink_0
+  # - unicycle1_v0/parallelpark_0
+  # - unicycle1_v0/bugtrap_0
+  # - unicycle1_v0/kink_0
   # - unicycle1_v0/bugtrap_double
   # - unicycle1_v0/narrow_passage
   # # # # # #
   # - unicycle1_v1/kink_0
   # - unicycle1_v2/wall_0
   # # # # # # # # #
-  - unicycle2_v0/kink_0
-  - unicycle2_v0/parallelpark_0
-  - unicycle2_v0/bugtrap_0
+  # - unicycle2_v0/kink_0
+  # - unicycle2_v0/parallelpark_0
+  # - unicycle2_v0/bugtrap_0
   # - unicycle2_v0/bugtrap_double
   # - unicycle2_v0/narrow_passage
   # # # # # # # # # #
-  - car1_v0/kink_0
-  - car1_v0/bugtrap_0
-  - car1_v0/bugtrap_double
+  # - car1_v0/kink_0
+  # - car1_v0/bugtrap_0
+  # - car1_v0/bugtrap_double
   # - car1_v0/narrow_passage
   # - car1_v0/parallelpark_0
   # - car1_v0/parallelpark_0
   # # # # # # # #
   # - quad2d_v0/empty_0
   # - quad2d_v0/empty_1
-  # - quad2d_v0/quad_obs_columf
+  - quad2d_v0/quad_obs_column
   # - quad2d_v0/quad_bugtrap
   # - quad2d_v0/quad_bugtrap_double
   # - quad2d_v0/narrow_passage
@@ -88,7 +88,7 @@ algs:
   # - idbastar_iros
   # - geo_iros
   # - geo_v0
-  - sst_v0
+  - sst_v0_one_sol
   - sst_iros
   # - dbrrt_v0
   # # - dbrrt_v0DEV
