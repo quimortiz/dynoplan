@@ -285,7 +285,7 @@ void tdbastar_epsilon(
                                   .used_motion = (size_t)-1,
                                   .arrival_idx = (size_t)-1});
 
-  DYNO_DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
+  DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
 
   auto goal_node = std::make_shared<AStarNode>();
