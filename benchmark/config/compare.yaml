@@ -16,7 +16,7 @@ problems:
   # - unicycle1_v0/narrow_passage
   # # # # # #
   # - unicycle1_v1/kink_0
-  # - unicycle1_v2/wall_0
+  - unicycle1_v2/wall_0
   # # # # # # # # #
   # - unicycle2_v0/kink_0
   # - unicycle2_v0/parallelpark_0
@@ -94,9 +94,9 @@ algs:
   # # - geo_v0
   # # - sst_v0
   - dbrrt_v0
-  # # - dbrrt_v0DEV
-  - dbrrt_v1
-  - dbrrt_v2
+  # # # - dbrrt_v0DEV
+  # - dbrrt_v1
+  # - dbrrt_v2
   # - dbaorrt_v0
   # - dbaorrt_v1
 

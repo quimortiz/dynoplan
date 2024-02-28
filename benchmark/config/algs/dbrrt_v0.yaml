@@ -20,14 +20,14 @@ unicycle1_v1:
   default:
     goal_region: 0.2
     delta: 0.2
-    motionsFile: ../dynomotions_full/tmp_motions_unicycle1_v1.bin.sp.bin.msgpack
+    motionsFile: ../dynomotions/tmp_motions_unicycle1_v1.bin.sp.bin.small5000.msgpack
     max_motions: 200
 #
 unicycle1_v2:
   default:
     goal_region: .2
     delta: .15
-    motionsFile: ../dynomotions_full/tmp_motions_unicycle1_v2.bin.sp.bin.msgpack
+    motionsFile: ../dynomotions/tmp_motions_unicycle1_v2.bin.sp.bin.small5000.msgpack
     max_motions: 200
     # soft_control_bounds: true
 #
@@ -112,7 +112,7 @@ quad3d_v0:
     # solver_id: 0
     weight_goal: 100 
     use_collision_shape: false
-    solver_id: 0
+    # solver_id: 0
     # use_mim_solvers: true
 
   # recovery_with_obs:

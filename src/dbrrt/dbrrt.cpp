@@ -2369,7 +2369,12 @@ void idbrrt(const dynobench::Problem &problem,
   DYNO_CHECK_EQ(options_dbrrt.ao_rrt, false,
                 "ao rrt not supported in this mode");
 
-  double delta_factor = .99;
+
+  // NOTE: in current implementation i don't change the number 
+  // of motions because the RRT is always able to find a solution
+  double motion_factor = 1.05;
+
+  double delta_factor = .95;
   size_t it = 0;
 
   Stopwatch watch;
@@ -2380,7 +2385,12 @@ void idbrrt(const dynobench::Problem &problem,
   double time_search = 0;
   double time_opt = 0;
 
-  while (!finished && it < options_dbrrt.max_idb_it) {
+  auto tic = std::chrono::high_resolution_clock::now();
+  // int max_motions  = options_dbrrt.max_motions;
+
+
+  while (!finished) {
+
     if (it > 0) {
       options_dbrrt_local.delta *= delta_factor;
       options_dbrrt_local.goal_region *= delta_factor;
@@ -2456,6 +2466,19 @@ void idbrrt(const dynobench::Problem &problem,
     }
 
     it++;
+
+    double elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(
+                              std::chrono::high_resolution_clock::now() - tic)
+                              .count();
+    if (elapsed_time / 1000. > options_dbrrt.timelimit) {
+      std::cout << "iDb-RRT: breaking because of time limit" << std::endl;
+      break;
+    }
+
+    if (it >= options_dbrrt.max_idb_it) {
+      std::cout << "iDb-RRT: breaking because of outter iterations" << std::endl;
+      break;
+    }
   }
 
   info_out.data.insert(
