@@ -53,6 +53,29 @@ BOOST_AUTO_TEST_CASE(parallel_park_1) {
   BOOST_TEST(info_out_omplgeo.cost < 5.);
 }
 
+BOOST_AUTO_TEST_CASE(t_bugtrap1) {
+
+  Options_geo options_geo;
+  Options_trajopt options_trajopt;
+  options_geo.planner = "rrt";
+  options_geo.timelimit = 3;
+  options_geo.max_trials_rrt = 1;
+
+  options_trajopt.solver_id = static_cast<int>(SOLVER::time_search_traj_opt);
+
+  Trajectory traj_out;
+  Info_out info_out_omplgeo;
+
+  Problem problem(DYNOBENCH_BASE +
+                  std::string("envs/unicycle1_v0/bugtrap_0.yaml"));
+  problem.models_base_path = DYNOBENCH_BASE + std::string("models/");
+
+  solve_ompl_geometric_iterative_rrt(problem, options_geo, options_trajopt,
+                                     traj_out, info_out_omplgeo);
+  BOOST_TEST(info_out_omplgeo.solved == true);
+  BOOST_TEST(info_out_omplgeo.cost < 100.);
+}
+
 // TODO:
 // BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {
 //

@@ -53,6 +53,28 @@ BOOST_AUTO_TEST_CASE(parallel_park_1) {
   BOOST_TEST(info_out_omplgeo.cost <= 20);
 }
 
+BOOST_AUTO_TEST_CASE(t_parallel_park_1) {
+
+  Options_sst options_ompl_sst;
+  Options_trajopt options_trajopt;
+  Trajectory traj_out;
+  Info_out info_out_omplgeo;
+
+  options_ompl_sst.timelimit = 5;
+  options_ompl_sst.sst_use_nigh = true;
+  options_ompl_sst.planner = "rrt";
+
+  Problem problem(DYNOBENCH_BASE +
+                  std::string("envs/unicycle1_v0/parallelpark_0.yaml"));
+  problem.models_base_path = DYNOBENCH_BASE + std::string("models/");
+
+  solve_sst(problem, options_ompl_sst, options_trajopt, traj_out,
+            info_out_omplgeo);
+
+  BOOST_TEST(info_out_omplgeo.solved == true);
+  BOOST_TEST(info_out_omplgeo.cost <= 20);
+}
+
 // BOOST_AUTO_TEST_CASE(test_bugtrap_heu) {
 //
 //   Problem problem(DYNOBENCH_BASE +

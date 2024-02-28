@@ -277,8 +277,7 @@ void reverse_motions(std::vector<Motion> &motions_rev,
     } else if (startsWith(robot.name, "acrobot")) {
       // Don't do anything for the acrobot
 
-    }
-    else {
+    } else {
       std::string msg = "robot name " + robot.name + "not supported";
       ERROR_WITH_INFO(msg);
     }
@@ -748,6 +747,34 @@ void dbrrtConnect(const dynobench::Problem &problem,
   std::cout << "sizeTN_rev: " << T_nrev->size() << std::endl;
 
   std::cout << "time_bench:" << std::endl;
+
+  std::string random_id = gen_random(6);
+
+  if (options_dbrrt.debug) {
+    std::cout << "saving trajectories to disk " << std::endl;
+    std::cout << "random id: " << random_id << std::endl;
+
+    auto fileout_name =
+        "/tmp/dynoplan/db_rrt_time_bench_" + random_id + ".yaml";
+
+    std::cout << "saving expanded trajs to " << fileout_name << std::endl;
+    create_dir_if_necessary(fileout_name);
+
+    std::ofstream fileout(fileout_name);
+
+    fileout << "chosen_trajs_fwd:" << std::endl;
+    for (auto &traj : chosen_trajs_fwd) {
+      fileout << "  - " << std::endl;
+      traj.to_yaml_format(fileout, "    ");
+    }
+
+    fileout << "chosen_trajs_bwd:" << std::endl;
+    for (auto &traj : chosen_trajs_bwd) {
+      fileout << "  - " << std::endl;
+      traj.to_yaml_format(fileout, "    ");
+    }
+  }
+
   time_bench.write(std::cout);
 
   if (solution_bwd && solution_fwd) {
@@ -1479,7 +1506,7 @@ void dbrrtConnectOrig(const dynobench::Problem &problem,
     plot_search_tree(active_nodes_bwd, motions_rev, *robot,
                      ("/tmp/dynoplan/db_rrt_tree_bwd_" +
                       std::to_string(info_out.trajs_raw.size()) + ".yaml")
-                         .c_str());
+                         .c_str(),false);
 
     if (info_out.solved_raw) {
       traj_out.to_yaml_format("/tmp/dynoplan/db_rrt_traj_" +

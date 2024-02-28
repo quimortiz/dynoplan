@@ -10,10 +10,10 @@ n_cores: 8 # -1=auto
 problems:
   # # # # # #
   # - unicycle1_v0/parallelpark_0
-  - unicycle1_v0/bugtrap_0
+  # - unicycle1_v0/bugtrap_0
   # - unicycle1_v0/kink_0
-  - unicycle1_v0/bugtrap_double
-  - unicycle1_v0/narrow_passage
+  # - unicycle1_v0/bugtrap_double
+  # - unicycle1_v0/narrow_passage
   # # # # # #
   # - unicycle1_v1/kink_0
   # - unicycle1_v2/wall_0
@@ -25,9 +25,9 @@ problems:
   # - unicycle2_v0/narrow_passage
   # # # # # # # # # #
   # - car1_v0/kink_0
-  # - car1_v0/bugtrap_0
-  # - car1_v0/bugtrap_double
-  # - car1_v0/narrow_passage
+  - car1_v0/bugtrap_0
+  - car1_v0/bugtrap_double
+  - car1_v0/narrow_passage
   # - car1_v0/parallelpark_0
   # - car1_v0/parallelpark_0
   # # # # # # # #

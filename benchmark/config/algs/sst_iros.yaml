@@ -1,0 +1,4 @@
+reference: "sst_v0"
+# params for SST
+default:
+  planner: "rrt"

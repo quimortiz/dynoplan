@@ -1,29 +1,28 @@
-trials:  10
+trials:  5
 timelimit: 60
-n_cores: 8 # -1=auto
-
+n_cores: 4 # -1=auto
 
 problems:
   # # # # # #
-  # - unicycle1_v0/parallelpark_0
-  # - unicycle1_v0/bugtrap_0
-  # - unicycle1_v0/kink_0
-  - unicycle1_v0/bugtrap_double
-  - unicycle1_v0/narrow_passage
+  - unicycle1_v0/parallelpark_0
+  - unicycle1_v0/bugtrap_0
+  - unicycle1_v0/kink_0
+  # - unicycle1_v0/bugtrap_double
+  # - unicycle1_v0/narrow_passage
   # # # # # #
   # - unicycle1_v1/kink_0
   # - unicycle1_v2/wall_0
   # # # # # # # # #
-  # - unicycle2_v0/kink_0
-  # - unicycle2_v0/parallelpark_0
-  # - unicycle2_v0/bugtrap_0
-  - unicycle2_v0/bugtrap_double
-  - unicycle2_v0/narrow_passage
+  - unicycle2_v0/kink_0
+  - unicycle2_v0/parallelpark_0
+  - unicycle2_v0/bugtrap_0
+  # - unicycle2_v0/bugtrap_double
+  # - unicycle2_v0/narrow_passage
   # # # # # # # # # #
-  # - car1_v0/kink_0
-  # - car1_v0/bugtrap_0
+  - car1_v0/kink_0
+  - car1_v0/bugtrap_0
   - car1_v0/bugtrap_double
-  - car1_v0/narrow_passage
+  # - car1_v0/narrow_passage
   # - car1_v0/parallelpark_0
   # - car1_v0/parallelpark_0
   # # # # # # # #
@@ -31,11 +30,11 @@ problems:
   # - quad2d_v0/empty_1
   # - quad2d_v0/quad_obs_columf
   # - quad2d_v0/quad_bugtrap
-  - quad2d_v0/quad_bugtrap_double
-  - quad2d_v0/narrow_passage
+  # - quad2d_v0/quad_bugtrap_double
+  # - quad2d_v0/narrow_passage
   # - quad2d_v0/quad2d_recovery_wo_obs
   # - quad2d_v0/quad2d_recovery_obs
-  - quad2d_v0/quad2d_recovery_obs_double
+  # - quad2d_v0/quad2d_recovery_obs_double
   # - quad2d_v0/fall_through
   # # # # # # # # #
   # - quad2dpole_v0/move_with_down
@@ -47,8 +46,8 @@ problems:
   # - quad2dpole_v0/window
   # - quad2dpole_v0/window_hard
   # - quad2dpole_v0/window_hard2
-  - quad2dpole_v0/up_obs2
-  - quad2dpole_v0/window_hard2
+  # - quad2dpole_v0/up_obs2
+  # - quad2dpole_v0/window_hard2
   # # # # # # # # #
   # - acrobot_v0/swing_up_empty
   # - acrobot_v0/swing_up_obs
@@ -62,13 +61,13 @@ problems:
   # - quadrotor_v0/recovery
   # - quadrotor_v0/recovery_with_obs
   # - quadrotor_v0/recovery_with_obs2
-  - quadrotor_v0/recovery_with_obs3
-  - quadrotor_v0/recovery_with_obs4
+  # - quadrotor_v0/recovery_with_obs3
+  # - quadrotor_v0/recovery_with_obs4
   # - quadrotor_v0/quad_one_obs
-  - quadrotor_v0/window_double
+  # - quadrotor_v0/window_double
   # - quadrotor_v0/bugtrap
   # - quadrotor_v0/bugtrap2
-  - quadrotor_v0/bugtrap3
+  # - quadrotor_v0/bugtrap3
   # - quadrotor_v0/narrow_recovery # NOT working
   # # # # # # # # # #
   # - quadrotor_v1/empty_0_easy
@@ -77,22 +76,24 @@ problems:
   # - quadrotor_v1/recovery
   # - quadrotor_v1/quad_one_obs
   # - quadrotor_v1/recovery_with_obs
-  - quadrotor_v1/recovery_with_obs4
+  # - quadrotor_v1/recovery_with_obs4
   # - quadrotor_v1/window_double
-  - quadrotor_v1/window_double2
-  - quadrotor_v1/bugtrap3
+  # - quadrotor_v1/window_double2
+  # - quadrotor_v1/bugtrap3
 
 algs:
 
   # Idbastar
   # - idbastar_v0
-  - idbastar_iros
-  - geo_iros
-  # # - sst_v0
-  - dbrrt_v0
+  # - idbastar_iros
+  # - geo_iros
+  # - geo_v0
+  - sst_v0
+  - sst_iros
+  # - dbrrt_v0
   # # - dbrrt_v0DEV
-  - dbrrt_v1
-  - dbrrt_v2
+  # - dbrrt_v1
+  # - dbrrt_v2
   # - dbaorrt_v0
   # - dbaorrt_v1
 
