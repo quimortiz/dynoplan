@@ -40,7 +40,7 @@ car1_v0:
 quad2d_v0:
   default:
     goal_epsilon: 0.5
-    goal_bias: 0.5
+    goal_bias: 0.4
     propagation_step_size: 0.01
     min_control_duration: 10
     max_control_duration: 50
