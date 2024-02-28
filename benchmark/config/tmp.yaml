@@ -1,33 +1,28 @@
-trials:  8
+trials:  5
 timelimit: 60
-n_cores: 8 # -1=auto
-
-
-
-
-
+n_cores: 4 # -1=auto
 
 problems:
   # # # # # #
-  # - unicycle1_v0/parallelpark_0
-  # - unicycle1_v0/bugtrap_0
-  # - unicycle1_v0/kink_0
+  - unicycle1_v0/parallelpark_0
+  - unicycle1_v0/bugtrap_0
+  - unicycle1_v0/kink_0
   # - unicycle1_v0/bugtrap_double
   # - unicycle1_v0/narrow_passage
   # # # # # #
   # - unicycle1_v1/kink_0
-  - unicycle1_v2/wall_0
+  # - unicycle1_v2/wall_0
   # # # # # # # # #
-  # - unicycle2_v0/kink_0
-  # - unicycle2_v0/parallelpark_0
-  # - unicycle2_v0/bugtrap_0
+  - unicycle2_v0/kink_0
+  - unicycle2_v0/parallelpark_0
+  - unicycle2_v0/bugtrap_0
   # - unicycle2_v0/bugtrap_double
   # - unicycle2_v0/narrow_passage
   # # # # # # # # # #
-  # - car1_v0/kink_0
+  - car1_v0/kink_0
   - car1_v0/bugtrap_0
   - car1_v0/bugtrap_double
-  - car1_v0/narrow_passage
+  # - car1_v0/narrow_passage
   # - car1_v0/parallelpark_0
   # - car1_v0/parallelpark_0
   # # # # # # # #
@@ -90,11 +85,13 @@ algs:
 
   # Idbastar
   # - idbastar_v0
-  - idbastar_iros
-  # # - geo_v0
-  # # - sst_v0
-  - dbrrt_v0
-  # # # - dbrrt_v0DEV
+  # - idbastar_iros
+  # - geo_iros
+  # - geo_v0
+  - sst_v0
+  - sst_iros
+  # - dbrrt_v0
+  # # - dbrrt_v0DEV
   # - dbrrt_v1
   # - dbrrt_v2
   # - dbaorrt_v0

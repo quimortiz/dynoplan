@@ -36,11 +36,27 @@ struct SST_public_interface : public oc::SST {
   ompl::base::Cost get_prevSolutionCost_() const { return prevSolutionCost_; }
 };
 
+struct RRTc_public_interface : public oc::RRT {
+
+  RRTc_public_interface(const oc::SpaceInformationPtr &si) : oc::RRT(si) {}
+
+  ~RRTc_public_interface() = default;
+
+  void setNearestNeighbors(const std::string &name,
+                           const std::shared_ptr<dynoplan::RobotOmpl> &robot) {
+    auto t = nigh_factory<oc::RRT::Motion *>(
+        name, robot, [](oc::RRT::Motion *m) { return m->state; });
+    nn_.reset(t);
+  }
+};
+
 void solve_sst(const dynobench::Problem &problem,
                const Options_sst &options_ompl_sst,
                const Options_trajopt &options_trajopt,
                dynobench::Trajectory &traj_out,
                dynobench::Info_out &info_out_omplsst) {
+  // TODO: separate into two implementations:
+  // SST vs RRT.
 
   std::string random_id = gen_random(6);
 
@@ -99,8 +115,11 @@ void solve_sst(const dynobench::Problem &problem,
   auto robot_type = problem.robotType;
 
   if (options_ompl_sst.planner == "rrt") {
-    auto rrt = new oc::RRT(si);
+    auto rrt = new RRTc_public_interface(si);
+    // koc::RRT(si);
     rrt->setGoalBias(options_ompl_sst.goal_bias);
+    if (options_ompl_sst.sst_use_nigh)
+      rrt->setNearestNeighbors(problem.robotType, robot);
     planner.reset(rrt);
   } else if (options_ompl_sst.planner == "sst") {
     // auto sst =fnew oc::SST(si);
@@ -313,7 +332,12 @@ void solve_sst(const dynobench::Problem &problem,
   ob::PlannerStatus solved;
 
   // for (int i = 0; i < 3; ++i) {
+
+  auto tic = std::chrono::steady_clock::now();
   solved = planner->ob::Planner::solve(options_ompl_sst.timelimit);
+  auto toc = std::chrono::steady_clock::now();
+  double time_elapsed_ms =
+      std::chrono::duration<double, std::milli>(toc - tic).count();
 
   // solved = planner->ob::Planner::solve(
   //     [&] {
@@ -331,26 +355,29 @@ void solve_sst(const dynobench::Problem &problem,
 
   CSTR_(solved);
 
-  {
+  if (options_ompl_sst.planner == "rrt") {
     dynobench::Trajectory traj_sst;
     std::vector<ompl::base::PlannerSolution> solutions = pdef->getSolutions();
     CSTR_(solutions.size());
     if (solutions.size()) {
+
+      info_out_omplsst.solved_raw = true;
+
       // TODO : why I am doint this here? Clean the code!!
       ompl::base::PlannerSolution sol = solutions.front();
       auto sol_control = sol.path_->as<ompl::control::PathControl>();
+      sol_control->interpolate(); // this interpolate with the dt
+
       std::vector<ob::State *> states = sol_control->getStates();
 
+      // std::cout << "last state is " << std::endl;
+      // si->printState(states.back(), std::cout);
       //
-      std::cout << "last state is " << std::endl;
-      si->printState(states.back(), std::cout);
-
-      double distance_to_goal = si->distance(states.back(), goalState);
-      CSTR_(distance_to_goal);
-
-      sol_control->print(std::cout);
-      sol_control->interpolate();
-      sol_control->print(std::cout);
+      // double distance_to_goal = si->distance(states.back(), goalState);
+      // CSTR_(distance_to_goal);
+      //
+      // sol_control->print(std::cout);
+      // sol_control->print(std::cout);
 
       Eigen::VectorXd x;
       for (size_t i = 0; i < sol_control->getStateCount(); ++i) {
@@ -366,6 +393,9 @@ void solve_sst(const dynobench::Problem &problem,
         traj_sst.actions.push_back(u);
       }
 
+      traj_sst.feasible = true;
+      traj_sst.time_stamp = time_elapsed_ms;
+
       traj_sst.check(robot->diff_model);
 
       {
@@ -373,6 +403,28 @@ void solve_sst(const dynobench::Problem &problem,
                           random_id + ".yaml");
         traj_sst.to_yaml_format(out);
       }
+
+      // run trajectory optimization
+      //
+      //
+      //
+
+      Result_opti result;
+      dynobench::Trajectory traj_opt;
+      std::cout << "*** Sart optimization ***" << std::endl;
+
+      // NOTE: I don't consider the time spent in optimization,
+      // as it was not part of planning time (i.e. this is a lower bound
+      // on true cost)
+      Stopwatch sw;
+      trajectory_optimization(problem, traj_sst, options_trajopt, traj_opt,
+                              result);
+      traj_sst.time_stamp = time_elapsed_ms;
+
+      info_out_omplsst.trajs_opt.push_back(traj_opt);
+      info_out_omplsst.trajs_raw.push_back(traj_sst);
+      info_out_omplsst.cost = traj_opt.cost;
+      info_out_omplsst.solved = true;
     }
   }
 
@@ -446,9 +498,9 @@ void solve_sst(const dynobench::Problem &problem,
   //     << std::endl;
 
   if (info_out_omplsst.solved) {
-    std::cout << "Found solution:" << std::endl;
+    std::cout << "Kino RRT -- Found solution" << std::endl;
   } else {
-    std::cout << "No solution found" << std::endl;
+    std::cout << "Kino RRT -- No solution found" << std::endl;
   }
 }
 } // namespace dynoplan

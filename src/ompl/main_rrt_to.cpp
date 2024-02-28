@@ -54,10 +54,19 @@ int main(int argc, char *argv[]) {
   dynobench::Info_out info_out_omplgeo;
   dynobench::Trajectory traj_out;
 
-  solve_ompl_geometric(problem, options_geo, options_trajopt, traj_out,
-                       info_out_omplgeo);
+  if (options_geo.iterative_rrt) {
+    solve_ompl_geometric_iterative_rrt(problem, options_geo, options_trajopt,
+                                       traj_out, info_out_omplgeo);
+  } else {
+    solve_ompl_geometric(problem, options_geo, options_trajopt, traj_out,
+                         info_out_omplgeo);
+  }
 
-  // solve_ompl_geometric_iterative_rrt( problem, options_geo, options_trajopt, traj_out,
+  // solve_ompl_geometric(problem, options_geo, options_trajopt, traj_out,
+  //                      info_out_omplgeo);
+
+  // solve_ompl_geometric_iterative_rrt( problem, options_geo, options_trajopt,
+  // traj_out,
   //                      info_out_omplgeo);
 
   std::cout << "*** info_out_omplgeo   *** " << std::endl;

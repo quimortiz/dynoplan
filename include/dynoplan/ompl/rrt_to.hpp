@@ -29,6 +29,8 @@ struct Options_geo {
   double range = -1;
   std::string outFile = "out.yaml";
   bool geo_use_nigh = false;
+  bool iterative_rrt = false;
+  int max_trials_rrt = 10; // only used in iterative rrt
 
   void add_options(po::options_description &desc) {
 
@@ -38,6 +40,8 @@ struct Options_geo {
     set_from_boostop(desc, VAR_WITH_NAME(planner));
     set_from_boostop(desc, VAR_WITH_NAME(timelimit));
     set_from_boostop(desc, VAR_WITH_NAME(outFile));
+    set_from_boostop(desc, VAR_WITH_NAME(iterative_rrt));
+    set_from_boostop(desc, VAR_WITH_NAME(max_trials_rrt));
   }
 
   void read_from_yaml(const char *file) {
@@ -62,6 +66,8 @@ struct Options_geo {
     set_from_yaml(node, VAR_WITH_NAME(planner));
     set_from_yaml(node, VAR_WITH_NAME(timelimit));
     set_from_yaml(node, VAR_WITH_NAME(outFile));
+    set_from_yaml(node, VAR_WITH_NAME(iterative_rrt));
+    set_from_yaml(node, VAR_WITH_NAME(max_trials_rrt));
   }
 
   void print(std::ostream &out, const std::string &be = "",
@@ -82,15 +88,10 @@ void solve_ompl_geometric(const dynobench::Problem &problem,
                           dynobench::Trajectory &traj_out,
                           dynobench::Info_out &info_out_omplgeo);
 
-
 void solve_ompl_geometric_iterative_rrt(const dynobench::Problem &problem,
-                          const Options_geo &options_geo,
-                          const Options_trajopt &options_trajopt,
-                          dynobench::Trajectory &traj_out,
-                          dynobench::Info_out &info_out_omplgeo);
-
-
-
-
+                                        const Options_geo &options_geo,
+                                        const Options_trajopt &options_trajopt,
+                                        dynobench::Trajectory &traj_out,
+                                        dynobench::Info_out &info_out_omplgeo);
 
 } // namespace dynoplan

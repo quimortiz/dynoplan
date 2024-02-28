@@ -127,7 +127,6 @@ void solve_ompl_geometric(const dynobench::Problem &problem,
   pdef->setIntermediateSolutionCallback(
       [&](const ob::Planner *, const std::vector<const ob::State *> &states,
           const ob::Cost cost) {
-
         info_out_omplgeo.solved_raw = true;
         dynobench::Trajectory traj;
         dynobench::Trajectory traj_geo;
@@ -149,7 +148,6 @@ void solve_ompl_geometric(const dynobench::Problem &problem,
           traj_geo.states.push_back(x);
         }
         traj_geo.states.push_back(traj_geo.goal);
-        traj_geo.feasible = false;
         double time = 0;
 
         traj_geo.times.resize(traj_geo.states.size());
@@ -316,7 +314,7 @@ void solve_ompl_geometric_iterative_rrt(const dynobench::Problem &problem,
                                         dynobench::Trajectory &traj_out,
                                         dynobench::Info_out &info_out_omplgeo) {
 
-  int max_trials = 100;
+  int max_trials = options_geo.max_trials_rrt;
 
   bool terminate = false;
   int trial = 0;
@@ -349,6 +347,9 @@ void solve_ompl_geometric_iterative_rrt(const dynobench::Problem &problem,
   TerminateCriteria terminate_criteria = RUNNING;
 
   int max_planning_seconds = 10;
+
+  double counter_time_ms = 0;
+
   while (!terminate) {
 
     // RUN RRT.
@@ -410,26 +411,38 @@ void solve_ompl_geometric_iterative_rrt(const dynobench::Problem &problem,
     pdef->print(std::cout);
 
     // attempt to solve the problem within timelimit
-    ob::PlannerStatus solved;
+    ob::PlannerStatus solved_raw;
 
-    solved = planner->ob::Planner::solve(max_planning_seconds);
+    auto tic = std::chrono::steady_clock::now();
+    solved_raw = planner->ob::Planner::solve(max_planning_seconds);
+    auto toc = std::chrono::steady_clock::now();
+
+    counter_time_ms +=
+        std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic)
+            .count();
 
     dynobench::Trajectory traj_opt;
 
-    if (solved) {
+    if (solved_raw) {
+
+      info_out_omplgeo.solved_raw = true;
 
       ob::PathPtr path = pdef->getSolutionPath();
       std::cout << "Found solution:" << std::endl;
 
-      std::cout << "print as path geometric" << std::endl;
+      std::cout << "Print as path geometric" << std::endl;
       path->as<og::PathGeometric>()->print(std::cout);
       auto states = path->as<og::PathGeometric>()->getStates();
 
       dynobench::Trajectory traj_geo;
 
+      traj_geo.time_stamp = counter_time_ms;
+
       state_to_eigen(traj_geo.start, si, startState);
       state_to_eigen(traj_geo.goal, si, goalState);
       traj_geo.states.push_back(traj_geo.start);
+      traj_geo.feasible = true; // TODO: feasible here means it was a success,
+      // not that it fulfils the dynamics constraints.
 
       auto __states = states;
 
@@ -442,7 +455,33 @@ void solve_ompl_geometric_iterative_rrt(const dynobench::Problem &problem,
       }
       // run trajectory optimization
 
+      double time = 0;
+
+      traj_geo.times.resize(traj_geo.states.size());
+      traj_geo.times(0) = 0.;
+
+      // compute the times.
+      for (size_t i = 0; i < traj_geo.states.size() - 1; i++) {
+        auto &x = traj_geo.states.at(i);
+        auto &y = traj_geo.states.at(i + 1);
+        time += robot->diff_model->lower_bound_time(x, y);
+        traj_geo.times(i + 1) = time;
+      }
+
+      traj_geo.cost = traj_geo.times.tail(1)(0);
+
+      // add the control
+
+      for (size_t i = 0; i < traj_geo.states.size() - 1; i++) {
+        traj_geo.actions.push_back(robot->diff_model->u_0);
+      }
+
       traj_geo.to_yaml_format(std::cout);
+
+      std::cout << "traj geo " << std::endl;
+
+      info_out_omplgeo.trajs_raw.push_back(traj_geo);
+      traj_geo.to_yaml_format("/tmp/dynoplan/traj_out.yaml");
 
       Result_opti result;
 
@@ -459,17 +498,26 @@ void solve_ompl_geometric_iterative_rrt(const dynobench::Problem &problem,
 
       trajectory_optimization(problem, traj_geo, options_trajopt, traj_opt,
                               result);
+
+      counter_time_ms +=
+          watch.elapsed_ms() - std::stof(result.data.at("time_ddp_total"));
+
+      traj_opt.time_stamp = counter_time_ms;
+
       double raw_time = watch.elapsed_ms();
 
       std::cout << "*** Optimization done ***" << std::endl;
 
       std::cout << "traj opt" << std::endl;
       traj_opt.to_yaml_format(std::cout);
+      info_out_omplgeo.trajs_opt.push_back(traj_opt);
 
       if (traj_opt.feasible) {
         // solved!
         terminate = true;
         terminate_criteria = SOLVED;
+        info_out_omplgeo.solved = true;
+        info_out_omplgeo.cost = traj_opt.cost;
       }
     }
 
@@ -496,5 +544,7 @@ void solve_ompl_geometric_iterative_rrt(const dynobench::Problem &problem,
   std::cout << "Terminated with criteria: "
             << terminate_criteria_str(terminate_criteria) << std::endl;
 }
+
+// set info_out_omplgeo
 
 } // namespace dynoplan

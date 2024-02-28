@@ -87,7 +87,7 @@ algs:
   # Idbastar
   # - idbastar_v0
   - idbastar_iros
-  # # - geo_v0
+  - geo_iros
   # # - sst_v0
   - dbrrt_v0
   # # - dbrrt_v0DEV

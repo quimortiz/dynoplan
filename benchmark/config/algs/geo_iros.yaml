@@ -1,0 +1,6 @@
+reference: geo_v0 # I import the weight_goal parameter from idbastar_v0
+default:
+  iterative_rrt: True
+  max_trials_rrt: 20
+  planner: "rrt"
+  solver_id: 1

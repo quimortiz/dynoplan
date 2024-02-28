@@ -295,7 +295,8 @@ struct Expander {
 //
 void plot_search_tree(std::vector<AStarNode *> nodes,
                       std::vector<Motion> &motions,
-                      dynobench::Model_robot &robot, const char *filename);
+                      dynobench::Model_robot &robot, const char *filename,
+                      bool fwd = true);
 
 void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     const std::vector<Motion> &motions,

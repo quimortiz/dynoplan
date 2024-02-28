@@ -69,7 +69,7 @@ bool compareAStarNode::operator()(const AStarNode *a,
 
 void plot_search_tree(std::vector<AStarNode *> nodes,
                       std::vector<Motion> &motions,
-                      dynobench::Model_robot &robot, const char *filename) {
+                      dynobench::Model_robot &robot, const char *filename, bool fwd) {
 
   std::cout << "plotting search tree to: " << filename << std::endl;
   std::ofstream out(filename);
@@ -117,7 +117,7 @@ void plot_search_tree(std::vector<AStarNode *> nodes,
       dynobench::Trajectory traj;
       traj.states = lazy_traj.motion->traj.states;
       traj.actions = lazy_traj.motion->traj.actions;
-      lazy_traj.compute(traj);
+      lazy_traj.compute(traj,fwd);
       out << indent4 << "traj:" << std::endl;
       for (auto &s : traj.states) {
         out << indent6 << "- " << s.format(dynobench::FMT) << std::endl;
