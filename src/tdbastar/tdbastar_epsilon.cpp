@@ -61,6 +61,44 @@ bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
   return (*h1)->gScore > (*h2)->gScore; // cost
 }
 
+void from_solution_to_motions(const std::vector<Motion> &motions,
+                              std::shared_ptr<AStarNode> solution_n,
+                              const std::vector<Motion> &motions_out) {
+
+  std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>> result;
+  CHECK(solution_n, AT);
+  std::shared_ptr<AStarNode> n = solution_n;
+  size_t arrival_idx = n->current_arrival_idx;
+  while (n != nullptr) {
+    result.push_back(std::make_pair(n, arrival_idx));
+    const auto &arrival = n->arrivals[arrival_idx];
+    n = arrival.came_from;
+    arrival_idx = arrival.arrival_idx;
+  }
+  std::reverse(result.begin(), result.end());
+  
+  for (size_t i = 0; i < result.size() - 1; ++i) {
+    motions_out.push_back(motions.at(
+        result[i + 1].first->arrivals[result[i + 1].second].used_motion));
+  }
+}
+
+// focal heuristic based on shape
+int lowLevelfocalHeuristicShape(
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
+    LazyTraj &lazy_traj, size_t &robot_id,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots){
+    int numConflicts = 0;
+    // for (auto &result : results){
+    //   for (size_t i = 0; i < result.size() - 1; ++i) {
+    //     const auto &motion = motions.at(
+    //             result[i + 1].first->arrivals[result[i + 1].second].used_motion);
+    //   }
+    // }
+    return numConflicts;
+  }
+
+// focal heuristic based on state
 int highLevelfocalHeuristic(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
@@ -178,6 +216,7 @@ void tdbastar_epsilon(
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
     std::vector<dynobench::Trajectory> &expanded_trajs,
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs,
@@ -517,9 +556,9 @@ void tdbastar_epsilon(
                                                   traj_wrapper.get_state(0));
 
       int focalHeuristic =
-          best_node->focalHeuristic +
-          lowLevelfocalHeuristic(solution, tmp_node, robot_id, all_robots,
-                                 col_mng_robots, robot_objs);
+          best_node->focalHeuristic + lowLevelfocalHeuristicShape(results, lazy_traj, robot_id, all_robots);
+            // lowLevelfocalHeuristic(solution, tmp_node, robot_id, all_robots,
+            //                      col_mng_robots, robot_objs);
 
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore;

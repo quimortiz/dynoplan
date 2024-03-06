@@ -48,12 +48,17 @@ typedef typename boost::heap::d_ary_heap<
     boost::heap::compare<compareFocalHeuristic>, boost::heap::mutable_<true>>
     focal_t;
 
+void from_solution_to_motions(const std::vector<Motion> &motions,
+                              std::shared_ptr<AStarNode> solution_n,
+                              std::vector<Motion> &motions_out);
+
 void tdbastar_epsilon(
     dynobench::Problem &problem, Options_tdbastar options_dbastar,
     dynobench::Trajectory &traj_out, const std::vector<Constraint> &constraints,
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
     std::vector<dynobench::Trajectory> &expanded_trajs,
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs,
@@ -74,5 +79,10 @@ int lowLevelfocalHeuristic(
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs);
+
+int lowLevelfocalHeuristicShape(
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
+    LazyTraj &lazy_traj, size_t &robot_id,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots);
 
 } // namespace dynoplan
