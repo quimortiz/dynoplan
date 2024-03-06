@@ -48,9 +48,10 @@ typedef typename boost::heap::d_ary_heap<
     boost::heap::compare<compareFocalHeuristic>, boost::heap::mutable_<true>>
     focal_t;
 
-void from_solution_to_motions(const std::vector<Motion> &motions,
-                              std::shared_ptr<AStarNode> solution_n,
-                              std::vector<Motion> &motions_out);
+void from_solution_to_motions_to_result(std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>> &result,
+                                        const std::vector<Motion> &motions,
+                                        std::shared_ptr<AStarNode> solution_n,
+                                        std::map<size_t, Motion*> &map_motions_out);
 
 void tdbastar_epsilon(
     dynobench::Problem &problem, Options_tdbastar options_dbastar,
@@ -59,12 +60,12 @@ void tdbastar_epsilon(
     std::vector<dynobench::Trajectory> &expanded_trajs,
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
+    std::vector<std::map<size_t, Motion*>> &result_motions,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> *heuristic_nn = nullptr,
-    ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result =
-        nullptr,
+    ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result = nullptr,
     float w = 0.0);
 
 int highLevelfocalHeuristic(
@@ -82,7 +83,8 @@ int lowLevelfocalHeuristic(
 
 int lowLevelfocalHeuristicShape(
     std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
-    LazyTraj &lazy_traj, size_t &robot_id,
+    std::vector<std::map<size_t, Motion*>> &result_motions,
+    LazyTraj &lazy_traj, size_t &robot_id, const float current_gscore,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots);
 
 } // namespace dynoplan
