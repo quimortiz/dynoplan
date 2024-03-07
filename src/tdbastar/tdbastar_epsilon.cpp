@@ -61,35 +61,10 @@ bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
   return (*h1)->gScore > (*h2)->gScore; // cost
 }
 
-void from_solution_to_motions_to_result(std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>> &result,
-                              std::vector<Motion> &motions,
-                              std::shared_ptr<AStarNode> solution_n,
-                              // std::vector<Motion*> &motions_out,
-                              std::map<size_t, Motion*> &map_motions_out) {
-
-  // std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>> result;
-  CHECK(solution_n, AT);
-  std::shared_ptr<AStarNode> n = solution_n;
-  size_t arrival_idx = n->current_arrival_idx;
-  while (n != nullptr) {
-    result.push_back(std::make_pair(n, arrival_idx));
-    const auto &arrival = n->arrivals[arrival_idx];
-    n = arrival.came_from;
-    arrival_idx = arrival.arrival_idx;
-  }
-  std::reverse(result.begin(), result.end());
-  size_t used_motion_id;
-  for (size_t i = 0; i < result.size() - 1; ++i) {
-    used_motion_id = result[i + 1].first->arrivals[result[i + 1].second].used_motion;
-    Motion &m = motions.at(used_motion_id);
-    // motions_out.push_back(&m);
-    map_motions_out[used_motion_id] = &m;
-  }
-}
-
 // focal heuristic based on shape
 int lowLevelfocalHeuristicShape(std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
-                                std::vector<std::map<size_t, Motion*>> &result_motions,
+                                std::map<std::string, std::vector<Motion>> &robot_motions,
+                                const dynobench::Problem &problem,
                                 LazyTraj &current_lazy_traj, size_t &current_robot_idx,
                                 const float current_gscore,
                                 const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots) {
@@ -97,7 +72,6 @@ int lowLevelfocalHeuristicShape(std::vector<std::vector<std::pair<std::shared_pt
     int time_index = 0;
     Eigen::VectorXd node_state;
     auto &current_motion = current_lazy_traj.motion;
-      // prepare the current_motion_primitive
     Eigen::VectorXd offset = *current_lazy_traj.offset;
     assert(offset.size() == 2 || offset.size() == 3);
     Eigen::Vector3d __offset;
@@ -113,30 +87,40 @@ int lowLevelfocalHeuristicShape(std::vector<std::vector<std::pair<std::shared_pt
     current_motion->collision_manager->shift(__offset);
     size_t idx = 0;
     size_t motion_idx = 0;
+    size_t max_size = 0;
+    Eigen::Vector3d __offset_tmp;
     for (auto &r : results) { // for each neighbor
-      Eigen::VectorXd __offset_tmp(all_robots[idx]->get_offset_dim()); 
+      Eigen::VectorXd offset_tmp(all_robots[idx]->get_offset_dim()); 
+      max_size = r.size() - 1;
       if (idx != current_robot_idx && !r.empty()){
-        auto tmp_motions = result_motions[idx];
         fcl::DefaultCollisionData<double> collision_data;
+        // get the time index for other robots solution trajectory
         time_index = std::lround(current_gscore / all_robots[idx]->ref_dt);
-        // if (time_index >= int(r.size() - 1)){ Need to do! 
-        // }
+        if (time_index >= int(max_size - 1)){
+          time_index = max_size - 1;
+        }
         node_state = r[time_index].first->state_eig;
-        motion_idx = r[time_index].first->arrivals[r[time_index + 1].second].used_motion;
-        auto &motion_to_check = tmp_motions[motion_idx];
-        all_robots[idx]->offset(node_state, __offset_tmp);
+        motion_idx = r[time_index + 1].first->arrivals[r[time_index + 1].second].used_motion;
+        auto &motion_to_check = robot_motions[problem.robotTypes[idx]].at(motion_idx);
+        all_robots[idx]->offset(node_state, offset_tmp);
+        if (offset_tmp.size() == 2) {
+          __offset_tmp = Eigen::Vector3d(offset_tmp(0), offset_tmp(1), 0);
+        } else {
+          __offset_tmp = offset_tmp.head<3>();
+        }
         std::vector<fcl::CollisionObject<double> *> objs; // should it be re-used ?
-        motion_to_check->collision_manager->getObjects(objs);
-        motion_to_check->collision_manager->shift(__offset_tmp);
+        motion_to_check.collision_manager->getObjects(objs);
+        motion_to_check.collision_manager->shift(__offset_tmp);
         // check for collision
-        current_motion->collision_manager->collide(motion_to_check->collision_manager.get(), &collision_data,
+        current_motion->collision_manager->collide(motion_to_check.collision_manager.get(), &collision_data,
                                          fcl::DefaultCollisionFunction<double>);
-        motion_to_check->collision_manager->shift(-__offset_tmp);
-        if(collision_data.result.isCollision())
+        motion_to_check.collision_manager->shift(-__offset_tmp);
+        if(collision_data.result.isCollision()){
           numConflicts++;
+        }
       }
-      current_motion->collision_manager->shift(-__offset);
     }
+    current_motion->collision_manager->shift(-__offset);
     return numConflicts;
   }
 
@@ -259,13 +243,13 @@ void tdbastar_epsilon(
     std::vector<dynobench::Trajectory> &expanded_trajs,
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
-    std::vector<std::map<size_t, Motion*>> &result_motions,
+    std::map<std::string, std::vector<Motion>> &robot_motions,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> *heuristic_nn,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result,
-    float w) {
+    float w, std::string focal_heuristic_name) {
 
   // #ifdef DBG_PRINTS
   std::cout << "Running tdbA* for robot " << robot_id << std::endl;
@@ -366,7 +350,7 @@ void tdbastar_epsilon(
                                   .came_from = nullptr,
                                   .used_motion = (size_t)-1,
                                   .arrival_idx = (size_t)-1});
-
+  start_node->current_arrival_idx = 0;
   DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
 
@@ -471,7 +455,7 @@ void tdbastar_epsilon(
   }
 
   Eigen::VectorXd aux_last_state(robot->nx);
-
+  int focalHeuristic = 0;
   while (!stop_search()) {
 #ifdef REBUILT_FOCAL_LIST
     focal.clear();
@@ -598,11 +582,14 @@ void tdbastar_epsilon(
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
 
-      int focalHeuristic =
-          best_node->focalHeuristic;// + lowLevelfocalHeuristicShape(results, lazy_traj, robot_id, all_robots);
-            // lowLevelfocalHeuristic(solution, tmp_node, robot_id, all_robots,
-            //                      col_mng_robots, robot_objs);
-
+      if (focal_heuristic_name == "volume_wise")
+        focalHeuristic =
+          best_node->focalHeuristic + lowLevelfocalHeuristicShape(results, robot_motions, 
+                                            problem, lazy_traj, robot_id, best_node->gScore, all_robots);
+      else
+        focalHeuristic = 
+          best_node->focalHeuristic + lowLevelfocalHeuristic(solution, tmp_node, robot_id, all_robots,
+                                 col_mng_robots, robot_objs);
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore;
       expanded_trajs.push_back(tmp_traj);
@@ -750,29 +737,19 @@ void tdbastar_epsilon(
     dynobench::Feasibility_thresholds thresholds;
     thresholds.col_tol =
         5 * 1e-2; // NOTE: for the systems with 0.01 s integration step,
-    // I check collisions only at 0.05s . Thus, an intermediate state
-    // could be slightly in collision.
     thresholds.goal_tol = options_tdbastar.delta;
     thresholds.traj_tol = options_tdbastar.delta;
     traj_out.update_feasibility(thresholds, false);
-    // CHECK(traj_out.feasible, ""); // should I keep it ?
 
     // Sanity check here, that verifies that we obey all constraints
     std::cout << "checking constraints for the final solution " << std::endl;
     for (const auto &constraint : constraints) {
-      // std::cout << "constraint t = " << constraint.time << std::endl;
-      // std::cout << constraint.constrained_state.format(dynobench::FMT) <<
-      // std::endl;
       int time_index = std::lround(constraint.time / robot->ref_dt);
       assert(time_index >= 0);
       if (time_index > (int)traj_out.states.size() - 1) {
         continue;
       }
-      // time_index = std::min<int>(time_index, (int)traj_out.states.size()-1);
       assert(time_index < (int)traj_out.states.size());
-      // std::cout << robot->distance(traj_out.states.at(time_index),
-      // constraint.constrained_state) << std::endl; std::cout <<
-      // traj_out.states.at(time_index).format(dynobench::FMT) << std::endl;
       float dist = robot->distance(traj_out.states.at(time_index),
                                    constraint.constrained_state);
       if (dist <= options_tdbastar.delta) {
@@ -781,12 +758,20 @@ void tdbastar_epsilon(
                   << std::endl;
         std::cout << traj_out.states.at(time_index).format(dynobench::FMT)
                   << std::endl;
-        // throw std::runtime_error("Internal error: constraint violation in
-        // solution!");
         break;
       }
       assert(dist > options_tdbastar.delta);
     }
+    // get results filled with updated new solution
+    results[robot_id].clear();
+    size_t arrival_idx = solution_node->current_arrival_idx;
+    while (solution_node != nullptr) {
+      results[robot_id].push_back(std::make_pair(solution_node, arrival_idx));
+      const auto &arrival = solution_node->arrivals[arrival_idx];
+      solution_node = arrival.came_from;
+      arrival_idx = arrival.arrival_idx;
+    }
+    std::reverse(results[robot_id].begin(), results[robot_id].end());
   }
 
   out_info_tdb.solved = status == Terminate_status::SOLVED;
