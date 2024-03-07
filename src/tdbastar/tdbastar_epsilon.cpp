@@ -1,8 +1,8 @@
 #include <boost/graph/graphviz.hpp>
 
+#include <map>
 #include <ompl/base/spaces/SE2StateSpace.h>
 #include <yaml-cpp/yaml.h>
-#include <map>
 // #include <boost/functional/hash.hpp>
 #include <boost/heap/d_ary_heap.hpp>
 #include <boost/program_options.hpp>
