@@ -334,8 +334,8 @@ void split_motion_primitives(const dynobench::Trajectories &in,
       }
 
       dynobench::Trajectory new_traj;
-      std::cout << "i: " << i << " "
-                << "start: " << start << " length:" << length << std::endl;
+      std::cout << "i: " << i << " " << "start: " << start
+                << " length:" << length << std::endl;
       new_traj.states = std::vector<Eigen::VectorXd>{
           traj.states.begin() + start,
           traj.states.begin() + start + length + 1};
