@@ -3114,8 +3114,8 @@ void load_motion_primitives_new(const std::string &motionsFile,
   CSTR_(add_noise_first_state);
 
   if (add_noise_first_state) {
-    std::cout << "WARNING:"
-              << "adding noise to first and last state" << std::endl;
+    std::cout << "WARNING:" << "adding noise to first and last state"
+              << std::endl;
     const double noise = 1e-7;
     for (auto &t : trajs.data) {
       t.states.front() +=
