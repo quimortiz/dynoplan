@@ -62,6 +62,9 @@ bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
 }
 
 // focal heuristic based on shape
+// this function counts the number of conflicts between the motion (being considered as applicable for expansion) with the 
+// solution of other neighbor robots. Here each neighbors solution is given in &results vector, and robot_motions are used
+// to retrieve the exact motion primitive from &results vector.
 int lowLevelfocalHeuristicShape(std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
                                 std::map<std::string, std::vector<Motion>> &robot_motions,
                                 const dynobench::Problem &problem,
@@ -71,6 +74,7 @@ int lowLevelfocalHeuristicShape(std::vector<std::vector<std::pair<std::shared_pt
     int numConflicts = 0;
     int time_index = 0;
     Eigen::VectorXd node_state;
+    // motion primitve being considered as applicable for expansion
     auto &current_motion = current_lazy_traj.motion;
     Eigen::VectorXd offset = *current_lazy_traj.offset;
     assert(offset.size() == 2 || offset.size() == 3);
@@ -82,13 +86,12 @@ int lowLevelfocalHeuristicShape(std::vector<std::vector<std::pair<std::shared_pt
     }
     assert(current_motion);
     assert(current_motion->collision_manager);
-    std::vector<fcl::CollisionObject<double> *> objs;
-    current_motion->collision_manager->getObjects(objs);
     current_motion->collision_manager->shift(__offset);
     size_t idx = 0;
     size_t motion_idx = 0;
     size_t max_size = 0;
     Eigen::Vector3d __offset_tmp;
+    // check the motion primitive for collision with each robots final solution
     for (auto &r : results) { // for each neighbor
       Eigen::VectorXd offset_tmp(all_robots[idx]->get_offset_dim()); 
       max_size = r.size() - 1;
@@ -101,6 +104,7 @@ int lowLevelfocalHeuristicShape(std::vector<std::vector<std::pair<std::shared_pt
         }
         node_state = r[time_index].first->state_eig;
         motion_idx = r[time_index + 1].first->arrivals[r[time_index + 1].second].used_motion;
+        // get the motion primitive corresponding to the time_index from results[current_robot]
         auto &motion_to_check = robot_motions[problem.robotTypes[idx]].at(motion_idx);
         all_robots[idx]->offset(node_state, offset_tmp);
         if (offset_tmp.size() == 2) {
@@ -108,10 +112,8 @@ int lowLevelfocalHeuristicShape(std::vector<std::vector<std::pair<std::shared_pt
         } else {
           __offset_tmp = offset_tmp.head<3>();
         }
-        std::vector<fcl::CollisionObject<double> *> objs; // should it be re-used ?
-        motion_to_check.collision_manager->getObjects(objs);
         motion_to_check.collision_manager->shift(__offset_tmp);
-        // check for collision
+        // check for collision two motion primitives
         current_motion->collision_manager->collide(motion_to_check.collision_manager.get(), &collision_data,
                                          fcl::DefaultCollisionFunction<double>);
         motion_to_check.collision_manager->shift(-__offset_tmp);
