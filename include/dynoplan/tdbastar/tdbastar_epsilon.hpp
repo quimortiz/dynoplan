@@ -54,15 +54,17 @@ void tdbastar_epsilon(
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
     std::vector<dynobench::Trajectory> &expanded_trajs,
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
-    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
+        &results,
     // std::vector<std::map<size_t, Motion*>> &result_motions,
     std::map<std::string, std::vector<Motion>> &robot_motions,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> *heuristic_nn = nullptr,
-    ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result = nullptr,
-    float w = 0.0, std::string focal_heuristic_name="volume_wise");
+    ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result =
+        nullptr,
+    float w = 0.0, std::string focal_heuristic_name = "volume_wise");
 
 int highLevelfocalHeuristic(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
@@ -78,10 +80,11 @@ int lowLevelfocalHeuristic(
     std::vector<fcl::CollisionObjectd *> &robot_objs);
 
 int lowLevelfocalHeuristicShape(
-    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
+        &results,
     std::map<std::string, std::vector<Motion>> &robot_motions,
-    const dynobench::Problem &problem,
-    LazyTraj &lazy_traj, size_t &robot_id, const float current_gscore,
+    const dynobench::Problem &problem, LazyTraj &lazy_traj, size_t &robot_id,
+    const float current_gscore,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots);
 
 } // namespace dynoplan

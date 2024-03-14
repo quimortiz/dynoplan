@@ -244,7 +244,8 @@ void tdbastar_epsilon(
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
     std::vector<dynobench::Trajectory> &expanded_trajs,
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
-    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
+        &results,
     std::map<std::string, std::vector<Motion>> &robot_motions,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
@@ -585,13 +586,15 @@ void tdbastar_epsilon(
                                                   traj_wrapper.get_state(0));
 
       if (focal_heuristic_name == "volume_wise")
-        focalHeuristic =
-          best_node->focalHeuristic + lowLevelfocalHeuristicShape(results, robot_motions, 
-                                            problem, lazy_traj, robot_id, best_node->gScore, all_robots);
+        focalHeuristic = best_node->focalHeuristic +
+                         lowLevelfocalHeuristicShape(
+                             results, robot_motions, problem, lazy_traj,
+                             robot_id, best_node->gScore, all_robots);
       else
-        focalHeuristic = 
-          best_node->focalHeuristic + lowLevelfocalHeuristic(solution, tmp_node, robot_id, all_robots,
-                                 col_mng_robots, robot_objs);
+        focalHeuristic =
+            best_node->focalHeuristic +
+            lowLevelfocalHeuristic(solution, tmp_node, robot_id, all_robots,
+                                   col_mng_robots, robot_objs);
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore;
       expanded_trajs.push_back(tmp_traj);
