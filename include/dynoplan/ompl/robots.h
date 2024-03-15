@@ -250,5 +250,6 @@ void traj_to_motion(const dynobench::Trajectory &traj,
                     bool compute_col);
 
 void compute_col_shape(Motion &m, dynobench::Model_robot &robot);
+void compute_col_shape_joint(Motion &m, dynobench::Model_robot &robot);
 
 } // namespace dynoplan
