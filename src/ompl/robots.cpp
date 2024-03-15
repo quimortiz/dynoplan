@@ -3246,8 +3246,8 @@ void compute_col_shape_joint(Motion &m, dynobench::Model_robot &robot) {
   auto co = std::make_unique<fcl::CollisionObjectd>(tmp_geom);
   m.collision_objects.push_back(std::move(co));
   // Print the merged AABB's minimum and maximum points
-  std::cout << "Merged AABB Minimum: " << aabb_merged.min_.transpose() << std::endl;
-  std::cout << "Merged AABB Maximum: " << aabb_merged.max_.transpose() << std::endl;
+  // std::cout << "Merged AABB Minimum: " << aabb_merged.min_.transpose() << std::endl;
+  // std::cout << "Merged AABB Maximum: " << aabb_merged.max_.transpose() << std::endl;
 
   std::vector<fcl::CollisionObjectd *> cols_ptrs(m.collision_objects.size());
   std::transform(m.collision_objects.begin(), m.collision_objects.end(),
@@ -3255,7 +3255,6 @@ void compute_col_shape_joint(Motion &m, dynobench::Model_robot &robot) {
 
   m.collision_manager.reset(
       new ShiftableDynamicAABBTreeCollisionManager<double>());
-  // TODO: double check that fcl doesn't take ownership of the objects
   m.collision_manager->registerObjects(cols_ptrs);
 };
 
