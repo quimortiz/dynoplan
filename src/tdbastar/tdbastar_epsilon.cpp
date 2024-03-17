@@ -600,7 +600,7 @@ void tdbastar_epsilon(
         float dist = robot->distance(best_node->state_eig,
                                     constraint.constrained_state);
         if (dist <= options_tdbastar.delta) {
-          std::cout << "VIOLATION, best_node: " << best_node->state_eig.format(FMT) << ", dist: " << dist <<std::endl;
+          // std::cout << "VIOLATION, best_node: " << best_node->state_eig.format(FMT) << ", dist: " << dist <<std::endl;
           break;
         }
         assert(dist > options_tdbastar.delta);
