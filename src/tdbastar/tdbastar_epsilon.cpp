@@ -51,7 +51,59 @@ namespace ob = ompl::base;
 using Sample = std::vector<double>;
 using Sample_ = ob::State;
 
-// nigh interface for OMPL
+bool lazy_trajectory_to_wrapper(
+    LazyTraj &lazy_traj, dynobench::Model_robot &robot,
+    Time_benchmark &time_bench,
+    dynobench::TrajWrapper &tmp_traj,
+    Eigen::Ref<Eigen::VectorXd> aux_last_state,
+    std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state,
+    int *num_valid_states, bool forward) {
+
+  time_bench.time_alloc_primitive += 0; 
+  // preliminary check only on bounds of last state
+  if (robot.transform_primitive_last_state_available) {
+
+    if (forward) {
+      robot.transform_primitive_last_state(
+          *lazy_traj.offset, lazy_traj.motion->traj.states,
+          lazy_traj.motion->traj.actions, aux_last_state);
+
+    } else {
+      robot.transform_primitive_last_state_backward(
+          *lazy_traj.offset, lazy_traj.motion->traj.states,
+          lazy_traj.motion->traj.actions, aux_last_state);
+    }
+
+    if (!robot.is_state_valid(aux_last_state))
+      return false;
+  }
+
+  Stopwatch wacht_tp;
+  lazy_traj.compute(tmp_traj, forward, check_state, num_valid_states);
+  time_bench.time_transform_primitive += wacht_tp.elapsed_ms();
+  if (num_valid_states && *num_valid_states < 1) {
+    return false;
+  }
+
+  if (check_state) {
+    // bounds are check when doing the rollout
+    if (forward)
+      assert(num_valid_states);
+    if (*num_valid_states < lazy_traj.motion->traj.states.size()) {
+      return false;
+    }
+
+  } else {
+    // checking backwards is usually faster
+    for (size_t i = 0; i < tmp_traj.get_size(); i++) {
+      if (!robot.is_state_valid(
+              tmp_traj.get_state(tmp_traj.get_size() - 1 - i))) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
 
 bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
                                        const open_t::handle_type &h2) const {
@@ -281,6 +333,23 @@ void tdbastar_epsilon(
   traj_out.actions.clear();
   traj_out.cost = 0;
   traj_out.fmin = 0;
+  // for best_node collision checking
+  std::vector<fcl::Transform3d> ts_data(1);
+  if (robot->name == "car_with_trailers") {
+    ts_data.resize(2);
+  }
+  // create objs for a single robot
+  std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_;
+  col_mng_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerd>();
+  col_mng_->setup();
+  std::vector<fcl::CollisionObjectd*> objs_;
+  for (size_t i = 0; i < ts_data.size(); i++) {
+    auto geom = robot->collision_geometries.at(i);
+    auto obj = new fcl::CollisionObject(geom);
+    objs_.push_back(obj); 
+  }
+  col_mng_->registerObjects(objs_);
+
   CHECK(options_tdbastar.motions_ptr,
         "motions should be loaded before calling dbastar");
   std::vector<Motion> &motions = *options_tdbastar.motions_ptr;
@@ -512,6 +581,31 @@ void tdbastar_epsilon(
     }
 
     time_bench.expands++;
+    // Collision checking with environment
+    // ts_data.clear();
+    robot->transformation_collision_geometries(best_node->state_eig, ts_data);
+    for (size_t i = 0; i < ts_data.size(); i++) {
+      fcl::Transform3d &transform = ts_data[i];
+      objs_[i]->setTranslation(transform.translation());
+      objs_[i]->setRotation(transform.rotation());
+      objs_[i]->computeAABB();
+    }
+    col_mng_->update(objs_);
+    fcl::DefaultCollisionData<double> collision_data;
+    col_mng_->collide(robot->env.get(), &collision_data,
+                                        fcl::DefaultCollisionFunction<double>);
+    bool best_node_valid = !collision_data.result.isCollision();  
+    if (best_node_valid && !constraints.empty()){
+      for (const auto &constraint : constraints) {
+        float dist = robot->distance(best_node->state_eig,
+                                    constraint.constrained_state);
+        if (dist <= options_tdbastar.delta) {
+          std::cout << "VIOLATION, best_node: " << best_node->state_eig.format(FMT) << ", dist: " << dist <<std::endl;
+          break;
+        }
+        assert(dist > options_tdbastar.delta);
+      }
+    }                                
 
     // CHECK if best node is close ENOUGH to goal
     double distance_to_goal =
@@ -559,11 +653,10 @@ void tdbastar_epsilon(
       int num_valid_states = -1;
       traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
 
-      bool motion_valid = check_lazy_trajectory(
-          lazy_traj, *robot, problem.goals[robot_id], time_bench, traj_wrapper,
-          constraints, best_node->gScore, options_tdbastar.delta,
+      bool traj_valid = lazy_trajectory_to_wrapper(
+          lazy_traj, *robot, time_bench, traj_wrapper,
           aux_last_state, &ff, &num_valid_states, !reverse_search);
-      if (!motion_valid) {
+      if (!traj_valid) {
         continue;
       }
 

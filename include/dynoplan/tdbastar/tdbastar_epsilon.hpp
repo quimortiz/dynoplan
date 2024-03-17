@@ -87,4 +87,12 @@ int lowLevelfocalHeuristicShape(
     const float current_gscore,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots);
 
+bool lazy_trajectory_to_wrapper(
+    LazyTraj &lazy_traj, dynobench::Model_robot &robot,
+    Time_benchmark &time_bench,
+    dynobench::TrajWrapper &tmp_traj,
+    Eigen::Ref<Eigen::VectorXd> aux_last_state,
+    std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
+    int *num_valid_states = nullptr, bool forward = true);
+
 } // namespace dynoplan
