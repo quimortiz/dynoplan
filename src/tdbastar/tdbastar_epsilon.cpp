@@ -55,6 +55,8 @@ bool lazy_trajectory_to_wrapper(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
     Time_benchmark &time_bench,
     dynobench::TrajWrapper &tmp_traj,
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng,
+    std::vector<fcl::CollisionObjectd *> &objs,
     Eigen::Ref<Eigen::VectorXd> aux_last_state,
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state,
     int *num_valid_states, bool forward) {
@@ -81,27 +83,31 @@ bool lazy_trajectory_to_wrapper(
   Stopwatch wacht_tp;
   lazy_traj.compute(tmp_traj, forward, check_state, num_valid_states);
   time_bench.time_transform_primitive += wacht_tp.elapsed_ms();
-  if (num_valid_states && *num_valid_states < 1) {
+  // check for collision with the environment
+  auto tmp_node = std::make_shared<AStarNode>();
+  tmp_node->state_eig = Eigen::VectorXd::Zero(robot.nx);
+  if (forward) {
+    tmp_node->state_eig = tmp_traj.get_state(tmp_traj.get_size() - 1);
+  }
+  else {
+    tmp_node->state_eig = tmp_traj.get_state(0);
+  }
+ 
+  std::vector<fcl::Transform3d> ts_data(objs.size());
+  robot.transformation_collision_geometries(tmp_node->state_eig, ts_data); // last state or the fisrt (backward, forward)
+  for (size_t i = 0; i < ts_data.size(); i++) {
+    fcl::Transform3d &transform = ts_data[i];
+    objs[i]->setTranslation(transform.translation());
+    objs[i]->setRotation(transform.rotation());
+    objs[i]->computeAABB();
+  }
+  col_mng->update(objs);
+  fcl::DefaultCollisionData<double> collision_data;
+  col_mng->collide(robot.env.get(), &collision_data,
+                                      fcl::DefaultCollisionFunction<double>);
+  if (collision_data.result.isCollision()) // collides with the environment
     return false;
-  }
 
-  if (check_state) {
-    // bounds are check when doing the rollout
-    if (forward)
-      assert(num_valid_states);
-    if (*num_valid_states < lazy_traj.motion->traj.states.size()) {
-      return false;
-    }
-
-  } else {
-    // checking backwards is usually faster
-    for (size_t i = 0; i < tmp_traj.get_size(); i++) {
-      if (!robot.is_state_valid(
-              tmp_traj.get_state(tmp_traj.get_size() - 1 - i))) {
-        return false;
-      }
-    }
-  }
   return true;
 };
 
@@ -334,22 +340,23 @@ void tdbastar_epsilon(
   traj_out.cost = 0;
   traj_out.fmin = 0;
   // for best_node collision checking
-  std::vector<fcl::Transform3d> ts_data(1);
+  size_t robot_parts = 1;
   if (robot->name == "car_with_trailers") {
-    ts_data.resize(2);
+    robot_parts = 2;
   }
   // create objs for a single robot
   std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_;
   col_mng_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerd>();
   col_mng_->setup();
   std::vector<fcl::CollisionObjectd*> objs_;
-  for (size_t i = 0; i < ts_data.size(); i++) {
+  for (size_t i = 0; i < robot_parts; i++) {
     auto geom = robot->collision_geometries.at(i);
     auto obj = new fcl::CollisionObject(geom);
     objs_.push_back(obj); 
   }
   col_mng_->registerObjects(objs_);
-
+  
+  Eigen::VectorXd node_offset(all_robots[robot_id]->get_offset_dim());
   CHECK(options_tdbastar.motions_ptr,
         "motions should be loaded before calling dbastar");
   std::vector<Motion> &motions = *options_tdbastar.motions_ptr;
@@ -406,6 +413,21 @@ void tdbastar_epsilon(
 
   std::shared_ptr<Heu_fun> h_fun = nullptr;
   std::vector<Heuristic_node> heu_map;
+   // we allocate a trajectory for the largest motion primitive
+  dynobench::TrajWrapper traj_wrapper;
+  {
+    std::vector<Motion *> motions;
+    T_m->list(motions);
+    size_t max_traj_size = (*std::max_element(motions.begin(), motions.end(),
+                                              [](Motion *a, Motion *b) {
+                                                return a->traj.states.size() <
+                                                       b->traj.states.size();
+                                              }))
+                               ->traj.states.size();
+
+    traj_wrapper.allocate_size(max_traj_size, robot->nx, robot->nu);
+  }
+  Eigen::VectorXd aux_last_state(robot->nx);
 
   if (reverse_search) {
     h_fun = std::make_shared<Heu_blind>();
@@ -518,23 +540,6 @@ void tdbastar_epsilon(
         return robot->is_state_valid(state);
       };
 
-  // we allocate a trajectory for the largest motion primitive
-
-  dynobench::TrajWrapper traj_wrapper;
-  {
-    std::vector<Motion *> motions;
-    T_m->list(motions);
-    size_t max_traj_size = (*std::max_element(motions.begin(), motions.end(),
-                                              [](Motion *a, Motion *b) {
-                                                return a->traj.states.size() <
-                                                       b->traj.states.size();
-                                              }))
-                               ->traj.states.size();
-
-    traj_wrapper.allocate_size(max_traj_size, robot->nx, robot->nu);
-  }
-
-  Eigen::VectorXd aux_last_state(robot->nx);
   int focalHeuristic = 0;
   while (!stop_search()) {
 #ifdef REBUILT_FOCAL_LIST
@@ -581,26 +586,22 @@ void tdbastar_epsilon(
     }
 
     time_bench.expands++;
-    // Collision checking with environment
-    // ts_data.clear();
-    robot->transformation_collision_geometries(best_node->state_eig, ts_data);
-    for (size_t i = 0; i < ts_data.size(); i++) {
-      fcl::Transform3d &transform = ts_data[i];
-      objs_[i]->setTranslation(transform.translation());
-      objs_[i]->setRotation(transform.rotation());
-      objs_[i]->computeAABB();
-    }
-    col_mng_->update(objs_);
-    fcl::DefaultCollisionData<double> collision_data;
-    col_mng_->collide(robot->env.get(), &collision_data,
-                                        fcl::DefaultCollisionFunction<double>);
-    bool best_node_valid = !collision_data.result.isCollision();  
-    for (const auto &constraint : constraints) {
-      if (constraint.time >= best_node->gScore - 1e-6) {
-        best_node_valid = robot->distance(best_node->state_eig,
-                                          constraint.constrained_state) <=
-                          options_tdbastar.delta;
-      }
+    // check the entire motion
+    robot->offset(best_node->state_eig, node_offset);
+    bool best_node_valid = true;
+    // for the start node there is no motion primitive for example
+    if (best_node->arrivals[best_node->current_arrival_idx].came_from != nullptr){
+      size_t motion_idx = best_node->arrivals[best_node->current_arrival_idx].used_motion;
+      auto &motion_to_check =
+        robot_motions[problem.robotTypes[robot_id]].at(motion_idx);
+      // get the tmp_traj for node with its motion
+      LazyTraj lazy_traj_for_node{.offset = &node_offset, .robot = robot.get(), .motion = &motion_to_check};
+      int num_valid_states_tmp = -1;
+      traj_wrapper.set_size(lazy_traj_for_node.motion->traj.states.size());
+      best_node_valid = check_lazy_trajectory(
+            lazy_traj_for_node, *robot, problem.goals[robot_id], time_bench, traj_wrapper,
+            constraints, best_node->gScore, options_tdbastar.delta,
+            aux_last_state, &ff, &num_valid_states_tmp, !reverse_search);
     }
     if (!best_node_valid){
       focal.pop();
@@ -654,7 +655,7 @@ void tdbastar_epsilon(
       traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
 
       bool traj_valid = lazy_trajectory_to_wrapper(
-          lazy_traj, *robot, time_bench, traj_wrapper,
+          lazy_traj, *robot, time_bench, traj_wrapper, col_mng_, objs_,
           aux_last_state, &ff, &num_valid_states, !reverse_search);
       if (!traj_valid) {
         continue;
@@ -665,7 +666,7 @@ void tdbastar_epsilon(
                  traj_wrapper,
                  options_tdbastar.delta_factor_goal * options_tdbastar.delta,
                  num_check_goal, chosen_index, !reverse_search);
-
+      
       // for the Node, if it reaches after the motion being transferred
       bool reachesGoal =
           robot->distance(tmp_node->state_eig, problem.goals[robot_id]) <=
@@ -765,7 +766,7 @@ void tdbastar_epsilon(
                      .came_from = best_node,
                      .used_motion = lazy_traj.motion->idx,
                      .arrival_idx = best_node->current_arrival_idx});
-                ++n->current_arrival_idx;
+                ++n->current_arrival_idx; // keep track of which index of arrivals we are going to use with the current node
                 if (n->is_in_open) {
                   time_bench.time_queue +=
                       timed_fun_void([&] { open.increase(n->handle); });
@@ -859,11 +860,12 @@ void tdbastar_epsilon(
       float dist = robot->distance(traj_out.states.at(time_index),
                                    constraint.constrained_state);
       if (dist <= options_tdbastar.delta) {
-        std::cout << "VIOLATION in solution  " << dist << " "
+        std::cout << "VIOLATION in solution, dist:  " << dist << ", "
                   << "time index in solution: " << time_index << " "
                   << std::endl;
         std::cout << traj_out.states.at(time_index).format(dynobench::FMT)
                   << std::endl;
+        std::cout << "solution traj size: " << traj_out.states.size() << std::endl;
         break;
       }
       assert(dist > options_tdbastar.delta);

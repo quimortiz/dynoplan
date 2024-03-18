@@ -129,10 +129,10 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
   // TODO: check what happens if a solution is a single state?
 
   std::shared_ptr<AStarNode> n = solution;
-  size_t arrival_idx = n->current_arrival_idx;
+  size_t arrival_idx = n->current_arrival_idx; // increments when I update the node, needed to find the index of the arrival struct
   while (n != nullptr) {
-    result.push_back(std::make_pair(n, arrival_idx));
-    const auto &arrival = n->arrivals[arrival_idx];
+    result.push_back(std::make_pair(n, arrival_idx)); // arrival_idx is the index of arrivals vector of the parent node that we are going to use
+    const auto &arrival = n->arrivals[arrival_idx]; // this one naprimer, to get the parent node
     n = arrival.came_from;
     arrival_idx = arrival.arrival_idx;
   }
@@ -164,7 +164,7 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
   for (size_t i = 0; i < result.size() - 1; ++i) {
     const auto node_state = result[i].first->state_eig;
     const auto &motion = motions.at(
-        result[i + 1].first->arrivals[result[i + 1].second].used_motion);
+        result[i + 1].first->arrivals[result[i + 1].second].used_motion); // lazy_traj.motion->idx
     int take_until = result[i + 1].first->intermediate_state;
     if (take_until != -1) {
       if (out) {

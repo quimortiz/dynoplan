@@ -243,11 +243,11 @@ struct Expander {
 
   void seed(int seed) { g.seed(seed); }
 
-  void expand_lazy(Eigen::Ref<const Eigen::VectorXd> x,
+  void expand_lazy(Eigen::Ref<const Eigen::VectorXd> x, // best_node->state_eig
                    std::vector<LazyTraj> &lazy_trajs) {
 
-    robot->canonical_state(x, canonical_state);
-    robot->offset(x, offset);
+    robot->canonical_state(x, canonical_state); // zeros position part
+    robot->offset(x, offset); // offset = x.position of the state
     fakeMotion.traj.states.at(0) = canonical_state;
     assert(delta > 0);
 
