@@ -322,7 +322,7 @@ void tdbastar_epsilon(
               << std::endl;
   }
   // #endif
-  std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
+   std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
       (problem.models_base_path + problem.robotTypes[robot_id] + ".yaml")
           .c_str(),
       problem.p_lb, problem.p_ub);
@@ -595,6 +595,13 @@ void tdbastar_epsilon(
     col_mng_->collide(robot->env.get(), &collision_data,
                                         fcl::DefaultCollisionFunction<double>);
     bool best_node_valid = !collision_data.result.isCollision();  
+    for (const auto &constraint : constraints) {
+      if (constraint.time >= best_node->gScore - 1e-6) {
+        best_node_valid = robot->distance(best_node->state_eig,
+                                          constraint.constrained_state) <=
+                          options_tdbastar.delta;
+      }
+    }
     if (!best_node_valid){
       focal.pop();
       open.erase(best_handle);
