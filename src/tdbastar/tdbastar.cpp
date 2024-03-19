@@ -425,7 +425,7 @@ bool check_lazy_trajectory(
     if (time_index >= 0 && time_index < (int)tmp_traj.get_size() - 1) {
       state_to_check = tmp_traj.get_state(time_index);
     }
-
+    // std::cout << "Time index: " << time_index << "  gScore: " << best_node_gScore << std::endl;
     if (state_to_check.size() > 0) {
       bool violation =
           robot.distance(state_to_check, constraint.constrained_state) <= delta;
@@ -434,10 +434,8 @@ bool check_lazy_trajectory(
         // std::cout << "VIOLATION inside lazy traj check" << time_index << " "
         // << tmp_traj.get_size() << std::endl; std::cout << "State to check: "
         // << state_to_check.format(dynobench::FMT) << std::endl; std::cout <<
-        // "Constraint state: " <<
-        // constraint.constrained_state.format(dynobench::FMT) << std::endl;
-        // throw std::runtime_error("Internal error: constraint violation in
-        // check lazy trajectory!");
+        // "Constraint state: " << constraint.constrained_state.format(dynobench::FMT) << std::endl;
+        // throw std::runtime_error("Internal error: constraint violation in check lazy trajectory!");
         break;
       }
     }

@@ -50,11 +50,11 @@ namespace ob = ompl::base;
 
 using Sample = std::vector<double>;
 using Sample_ = ob::State;
-
+// checks ffor collision the final state of the motion with the 1) environment, 2) constraints
 bool lazy_trajectory_to_wrapper(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
     Time_benchmark &time_bench,
-    dynobench::TrajWrapper &tmp_traj,
+    dynobench::TrajWrapper &tmp_traj, Eigen::Ref<Eigen::VectorXd> x,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng,
     std::vector<fcl::CollisionObjectd *> &objs,
     Eigen::Ref<Eigen::VectorXd> aux_last_state,
@@ -81,20 +81,19 @@ bool lazy_trajectory_to_wrapper(
   }
 
   Stopwatch wacht_tp;
+  bool motion_valid = true;
   lazy_traj.compute(tmp_traj, forward, check_state, num_valid_states);
   time_bench.time_transform_primitive += wacht_tp.elapsed_ms();
   // check for collision with the environment
-  auto tmp_node = std::make_shared<AStarNode>();
-  tmp_node->state_eig = Eigen::VectorXd::Zero(robot.nx);
   if (forward) {
-    tmp_node->state_eig = tmp_traj.get_state(tmp_traj.get_size() - 1);
+    x = tmp_traj.get_state(tmp_traj.get_size() - 1);
   }
   else {
-    tmp_node->state_eig = tmp_traj.get_state(0);
+    x = tmp_traj.get_state(0);
   }
  
   std::vector<fcl::Transform3d> ts_data(objs.size());
-  robot.transformation_collision_geometries(tmp_node->state_eig, ts_data); // last state or the fisrt (backward, forward)
+  robot.transformation_collision_geometries(x, ts_data); // last state or the fisrt (backward, forward)
   for (size_t i = 0; i < ts_data.size(); i++) {
     fcl::Transform3d &transform = ts_data[i];
     objs[i]->setTranslation(transform.translation());
@@ -107,8 +106,17 @@ bool lazy_trajectory_to_wrapper(
                                       fcl::DefaultCollisionFunction<double>);
   if (collision_data.result.isCollision()) // collides with the environment
     return false;
-
-  return true;
+  // check with constraints
+  // for (const auto &constraint : constraints) {
+  //   if (constraint.time >= best_node_gScore - 1e-6) {
+  //     bool violation = robot.distance(x,
+  //                                       constraint.constrained_state) <= delta;
+  //     if (violation) {
+  //       motion_valid = false;
+  //     }
+  //   }
+  // }
+  return motion_valid;
 };
 
 bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
@@ -587,20 +595,24 @@ void tdbastar_epsilon(
 
     time_bench.expands++;
     // check the entire motion
-    robot->offset(best_node->state_eig, node_offset);
     bool best_node_valid = true;
+    auto tmp_parent_node = std::make_shared<AStarNode>();
     // for the start node there is no motion primitive for example
     if (best_node->arrivals[best_node->current_arrival_idx].came_from != nullptr){
+      size_t arrival_idx = best_node->current_arrival_idx; // where it did come from
+      const auto &arrival = best_node->arrivals[arrival_idx]; // which element of the arrivals
+      tmp_parent_node = arrival.came_from;
       size_t motion_idx = best_node->arrivals[best_node->current_arrival_idx].used_motion;
       auto &motion_to_check =
         robot_motions[problem.robotTypes[robot_id]].at(motion_idx);
       // get the tmp_traj for node with its motion
+      robot->offset(tmp_parent_node->state_eig, node_offset); // as forward search
       LazyTraj lazy_traj_for_node{.offset = &node_offset, .robot = robot.get(), .motion = &motion_to_check};
       int num_valid_states_tmp = -1;
       traj_wrapper.set_size(lazy_traj_for_node.motion->traj.states.size());
       best_node_valid = check_lazy_trajectory(
             lazy_traj_for_node, *robot, problem.goals[robot_id], time_bench, traj_wrapper,
-            constraints, best_node->gScore, options_tdbastar.delta,
+            constraints, tmp_parent_node->gScore, options_tdbastar.delta, // assumed that the constraint.t is before the current node
             aux_last_state, &ff, &num_valid_states_tmp, !reverse_search);
     }
     if (!best_node_valid){
@@ -653,19 +665,20 @@ void tdbastar_epsilon(
 
       int num_valid_states = -1;
       traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
-
+      // update the tmp_node state, check motion validity, collision check with env. for the last state of the motion
       bool traj_valid = lazy_trajectory_to_wrapper(
-          lazy_traj, *robot, time_bench, traj_wrapper, col_mng_, objs_,
+          lazy_traj, *robot, time_bench, traj_wrapper, tmp_node->state_eig, 
+          col_mng_, objs_,
           aux_last_state, &ff, &num_valid_states, !reverse_search);
       if (!traj_valid) {
         continue;
       }
 
       int chosen_index = -1;
-      check_goal(*robot, tmp_node->state_eig, problem.goals[robot_id],
-                 traj_wrapper,
-                 options_tdbastar.delta_factor_goal * options_tdbastar.delta,
-                 num_check_goal, chosen_index, !reverse_search);
+      // check_goal(*robot, tmp_node->state_eig, problem.goals[robot_id],
+      //            traj_wrapper,
+      //            options_tdbastar.delta_factor_goal * options_tdbastar.delta,
+      //            num_check_goal, chosen_index, !reverse_search);
       
       // for the Node, if it reaches after the motion being transferred
       bool reachesGoal =
