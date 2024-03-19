@@ -3183,7 +3183,7 @@ void traj_to_motion(const dynobench::Trajectory &traj,
   motion_out.actions.resize(traj.actions.size());
 
   if (compute_col)
-    compute_col_shape(motion_out, robot);
+    compute_col_shape_joint(motion_out, robot);
   motion_out.cost = traj.cost;
 }
 
@@ -3211,6 +3211,50 @@ void compute_col_shape(Motion &m, dynobench::Model_robot &robot) {
   m.collision_manager.reset(
       new ShiftableDynamicAABBTreeCollisionManager<double>());
   // TODO: double check that fcl doesn't take ownership of the objects
+  m.collision_manager->registerObjects(cols_ptrs);
+};
+
+void compute_col_shape_joint(Motion &m, dynobench::Model_robot &robot) {
+  std::vector<std::unique_ptr<fcl::CollisionObjectd>> collision_objects_tmp;
+  for (auto &x : m.traj.states) {
+
+    auto &ts_data = robot.ts_data;
+    auto &col_geo = robot.collision_geometries;
+    robot.transformation_collision_geometries(x, ts_data);
+
+    for (size_t i = 0; i < ts_data.size(); i++) {
+      auto &transform = ts_data.at(i);
+      auto co = std::make_unique<fcl::CollisionObjectd>(col_geo.at(i));
+      co->setTranslation(transform.translation());
+      co->setRotation(transform.rotation());
+      co->computeAABB();
+      collision_objects_tmp.push_back(std::move(co));
+    }
+  }
+  // get the merged one
+  fcl::AABB<double> aabb_merged;
+  for (auto& tmp_co : collision_objects_tmp){
+    auto aabb_tmp = tmp_co->getAABB();
+    aabb_merged += aabb_tmp;
+  }
+  
+  fcl::Vector3<double>& max_coords = aabb_merged.max_;
+  fcl::Vector3<double>& min_coords = aabb_merged.min_;
+  std::shared_ptr<fcl::CollisionGeometryd> tmp_geom = std::make_shared<fcl::Boxd>((max_coords[0] - min_coords[0]), 
+                                                                  (max_coords[1] - min_coords[1]), 
+                                                                  (max_coords[2] - min_coords[2]));
+  auto co = std::make_unique<fcl::CollisionObjectd>(tmp_geom);
+  m.collision_objects.push_back(std::move(co));
+  // Print the merged AABB's minimum and maximum points
+  // std::cout << "Merged AABB Minimum: " << aabb_merged.min_.transpose() << std::endl;
+  // std::cout << "Merged AABB Maximum: " << aabb_merged.max_.transpose() << std::endl;
+
+  std::vector<fcl::CollisionObjectd *> cols_ptrs(m.collision_objects.size());
+  std::transform(m.collision_objects.begin(), m.collision_objects.end(),
+                 cols_ptrs.begin(), [](auto &ptr) { return ptr.get(); });
+
+  m.collision_manager.reset(
+      new ShiftableDynamicAABBTreeCollisionManager<double>());
   m.collision_manager->registerObjects(cols_ptrs);
 };
 
