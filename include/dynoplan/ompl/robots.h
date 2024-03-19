@@ -238,7 +238,7 @@ enum class MotionPrimitiveFormat { BOOST, YAML, JSON, MSGPACK, AUTO };
 void load_motion_primitives_new(
     const std::string &motionsFile, dynobench::Model_robot &robot,
     std::vector<Motion> &motions, int max_motions, bool cut_actions,
-    bool shuffle, bool compute_col = true,
+    bool shuffle, bool compute_col = true, bool merged = false,
     MotionPrimitiveFormat format = MotionPrimitiveFormat::AUTO);
 
 void load_motion_primitives(const std::string &motionsFile, RobotOmpl &robot,
@@ -247,9 +247,8 @@ void load_motion_primitives(const std::string &motionsFile, RobotOmpl &robot,
 
 void traj_to_motion(const dynobench::Trajectory &traj,
                     dynobench::Model_robot &robot, Motion &motion_out,
-                    bool compute_col);
+                    bool compute_col, bool merged = false);
 
-void compute_col_shape(Motion &m, dynobench::Model_robot &robot);
-void compute_col_shape_joint(Motion &m, dynobench::Model_robot &robot);
+void compute_col_shape(Motion &m, dynobench::Model_robot &robot, bool merged = false);
 
 } // namespace dynoplan

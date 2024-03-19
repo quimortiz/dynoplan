@@ -3062,7 +3062,7 @@ void load_motion_primitives_new(const std::string &motionsFile,
                                 dynobench::Model_robot &robot,
                                 std::vector<Motion> &motions, int max_motions,
                                 bool cut_actions, bool shuffle,
-                                bool compute_col,
+                                bool compute_col, bool merged,
                                 MotionPrimitiveFormat format) {
 
   dynobench::Trajectories trajs;
@@ -3143,7 +3143,7 @@ void load_motion_primitives_new(const std::string &motionsFile,
                  [&](const auto &traj) {
                    // traj.to_yaml_format(std::cout, "");
                    Motion m;
-                   traj_to_motion(traj, robot, m, compute_col);
+                   traj_to_motion(traj, robot, m, compute_col, merged);
                    return m;
                  });
 
@@ -3172,10 +3172,10 @@ void load_motion_primitives_new(const std::string &motionsFile,
     // motions[idx].last_state_translated = motions[idx].traj.states.back();
   }
 }
-
+// mreged AABB for collision
 void traj_to_motion(const dynobench::Trajectory &traj,
                     dynobench::Model_robot &robot, Motion &motion_out,
-                    bool compute_col) {
+                    bool compute_col, bool merged) {
 
   motion_out.states.resize(traj.states.size());
   motion_out.traj = traj;
@@ -3183,38 +3183,11 @@ void traj_to_motion(const dynobench::Trajectory &traj,
   motion_out.actions.resize(traj.actions.size());
 
   if (compute_col)
-    compute_col_shape_joint(motion_out, robot);
+    compute_col_shape(motion_out, robot, merged);
   motion_out.cost = traj.cost;
 }
 
-void compute_col_shape(Motion &m, dynobench::Model_robot &robot) {
-  for (auto &x : m.traj.states) {
-
-    auto &ts_data = robot.ts_data;
-    auto &col_geo = robot.collision_geometries;
-    robot.transformation_collision_geometries(x, ts_data);
-
-    for (size_t i = 0; i < ts_data.size(); i++) {
-      auto &transform = ts_data.at(i);
-      auto co = std::make_unique<fcl::CollisionObjectd>(col_geo.at(i));
-      co->setTranslation(transform.translation());
-      co->setRotation(transform.rotation());
-      co->computeAABB();
-      m.collision_objects.push_back(std::move(co));
-    }
-  }
-
-  std::vector<fcl::CollisionObjectd *> cols_ptrs(m.collision_objects.size());
-  std::transform(m.collision_objects.begin(), m.collision_objects.end(),
-                 cols_ptrs.begin(), [](auto &ptr) { return ptr.get(); });
-
-  m.collision_manager.reset(
-      new ShiftableDynamicAABBTreeCollisionManager<double>());
-  // TODO: double check that fcl doesn't take ownership of the objects
-  m.collision_manager->registerObjects(cols_ptrs);
-};
-
-void compute_col_shape_joint(Motion &m, dynobench::Model_robot &robot) {
+void compute_col_shape(Motion &m, dynobench::Model_robot &robot, bool merged) {
   std::vector<std::unique_ptr<fcl::CollisionObjectd>> collision_objects_tmp;
   for (auto &x : m.traj.states) {
 
@@ -3228,26 +3201,29 @@ void compute_col_shape_joint(Motion &m, dynobench::Model_robot &robot) {
       co->setTranslation(transform.translation());
       co->setRotation(transform.rotation());
       co->computeAABB();
-      collision_objects_tmp.push_back(std::move(co));
+      if(merged) // maybe better way ?
+        collision_objects_tmp.push_back(std::move(co));
+      else
+        m.collision_objects.push_back(std::move(co));
     }
   }
-  // get the merged one
-  fcl::AABB<double> aabb_merged;
-  for (auto& tmp_co : collision_objects_tmp){
-    auto aabb_tmp = tmp_co->getAABB();
-    aabb_merged += aabb_tmp;
-  }
-  
-  fcl::Vector3<double>& max_coords = aabb_merged.max_;
-  fcl::Vector3<double>& min_coords = aabb_merged.min_;
-  std::shared_ptr<fcl::CollisionGeometryd> tmp_geom = std::make_shared<fcl::Boxd>((max_coords[0] - min_coords[0]), 
+  if(merged){
+    // get the merged AABB
+    fcl::AABB<double> aabb_merged;
+    for (auto& tmp_co : collision_objects_tmp){
+      auto aabb_tmp = tmp_co->getAABB();
+      aabb_merged += aabb_tmp;
+    }
+    // extract min, max of the merged AABB
+    fcl::Vector3<double>& max_coords = aabb_merged.max_;
+    fcl::Vector3<double>& min_coords = aabb_merged.min_;
+    // create a Box with using min, max as boundaries
+    std::shared_ptr<fcl::CollisionGeometryd> tmp_geom = std::make_shared<fcl::Boxd>((max_coords[0] - min_coords[0]), 
                                                                   (max_coords[1] - min_coords[1]), 
                                                                   (max_coords[2] - min_coords[2]));
-  auto co = std::make_unique<fcl::CollisionObjectd>(tmp_geom);
-  m.collision_objects.push_back(std::move(co));
-  // Print the merged AABB's minimum and maximum points
-  // std::cout << "Merged AABB Minimum: " << aabb_merged.min_.transpose() << std::endl;
-  // std::cout << "Merged AABB Maximum: " << aabb_merged.max_.transpose() << std::endl;
+    auto co = std::make_unique<fcl::CollisionObjectd>(tmp_geom);
+    m.collision_objects.push_back(std::move(co));
+  }
 
   std::vector<fcl::CollisionObjectd *> cols_ptrs(m.collision_objects.size());
   std::transform(m.collision_objects.begin(), m.collision_objects.end(),
