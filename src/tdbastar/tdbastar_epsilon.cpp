@@ -50,7 +50,7 @@ namespace ob = ompl::base;
 
 using Sample = std::vector<double>;
 using Sample_ = ob::State;
-// checks ffor collision the final state of the motion with the 1) environment, 2) constraints
+// checks for collision the final state of the motion with the 1) environment
 bool lazy_trajectory_to_wrapper(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
     Time_benchmark &time_bench,
@@ -62,6 +62,7 @@ bool lazy_trajectory_to_wrapper(
     int *num_valid_states, bool forward) {
 
   time_bench.time_alloc_primitive += 0; 
+  bool motion_valid = true;
   // preliminary check only on bounds of last state
   if (robot.transform_primitive_last_state_available) {
 
@@ -81,7 +82,6 @@ bool lazy_trajectory_to_wrapper(
   }
 
   Stopwatch wacht_tp;
-  bool motion_valid = true;
   lazy_traj.compute(tmp_traj, forward, check_state, num_valid_states);
   time_bench.time_transform_primitive += wacht_tp.elapsed_ms();
   // check for collision with the environment
@@ -105,17 +105,173 @@ bool lazy_trajectory_to_wrapper(
   col_mng->collide(robot.env.get(), &collision_data,
                                       fcl::DefaultCollisionFunction<double>);
   if (collision_data.result.isCollision()) // collides with the environment
+    motion_valid = false;
+
+  return motion_valid;
+};
+
+// check the motion based on the node's collision status
+bool check_lazy_trajectory_hybrid(
+    LazyTraj &lazy_traj, dynobench::Model_robot &robot,
+    const Eigen::Ref<const Eigen::VectorXd> &goal, Time_benchmark &time_bench,
+    dynobench::TrajWrapper &tmp_traj,
+    std::shared_ptr<AStarNode> node_to_check, const float gScore,
+    const std::vector<Constraint> &constraints, 
+    float delta, Eigen::Ref<Eigen::VectorXd> aux_last_state,
+    std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state,
+    int *num_valid_states, bool forward) {
+
+  time_bench.time_alloc_primitive += 0; // no memory allocation :)
+  // preliminary check only on bounds of last state
+  if (robot.transform_primitive_last_state_available) {
+
+    if (forward) {
+      robot.transform_primitive_last_state(
+          *lazy_traj.offset, lazy_traj.motion->traj.states,
+          lazy_traj.motion->traj.actions, aux_last_state);
+
+    } else {
+      robot.transform_primitive_last_state_backward(
+          *lazy_traj.offset, lazy_traj.motion->traj.states,
+          lazy_traj.motion->traj.actions, aux_last_state);
+    }
+
+    if (!robot.is_state_valid(aux_last_state))
+      return false;
+  }
+
+  Stopwatch wacht_tp;
+
+  lazy_traj.compute(tmp_traj, forward, check_state, num_valid_states);
+
+  time_bench.time_transform_primitive += wacht_tp.elapsed_ms();
+
+  Stopwatch watch_check_motion;
+
+  if (num_valid_states && *num_valid_states < 1) {
     return false;
-  // check with constraints
-  // for (const auto &constraint : constraints) {
-  //   if (constraint.time >= best_node_gScore - 1e-6) {
-  //     bool violation = robot.distance(x,
-  //                                       constraint.constrained_state) <= delta;
-  //     if (violation) {
-  //       motion_valid = false;
-  //     }
-  //   }
-  // }
+  }
+
+  if (check_state) {
+    // bounds are check when doing the rollout
+    if (forward)
+      assert(num_valid_states);
+    if (*num_valid_states < lazy_traj.motion->traj.states.size()) {
+      return false;
+    }
+
+  } else {
+    // checking backwards is usually faster
+    for (size_t i = 0; i < tmp_traj.get_size(); i++) {
+      if (!robot.is_state_valid(
+              tmp_traj.get_state(tmp_traj.get_size() - 1 - i))) {
+        return false;
+      }
+    }
+  }
+
+  time_bench.check_bounds += watch_check_motion.elapsed_ms();
+  bool motion_valid = true;
+  auto &motion = lazy_traj.motion;
+  // expansion step, don't check with constraints
+  if(node_to_check->collision_status == Collision_status::UNKNOWN){
+    //node is new 1)set its state, 2)check with ENV, 3)update its status
+    if (forward) {
+      node_to_check->state_eig = tmp_traj.get_state(tmp_traj.get_size() - 1);
+    }
+    else {
+      node_to_check->state_eig = tmp_traj.get_state(0);
+    }
+    bool collision = false;
+    if (robot.invariance_reuse_col_shape) {
+      Eigen::VectorXd offset = *lazy_traj.offset;
+      assert(offset.size() == 2 || offset.size() == 3);
+      Eigen::Vector3d __offset;
+      if (offset.size() == 2) {
+        __offset = Eigen::Vector3d(offset(0), offset(1), 0);
+      } else {
+        __offset = offset.head<3>();
+      }
+      assert(motion);
+      assert(motion->collision_manager);
+      assert(robot.env.get());
+      motion->collision_manager->shift(__offset);
+      fcl::DefaultCollisionData<double> collision_data;
+      motion->collision_manager->collide(robot.env.get(), &collision_data,
+                                         fcl::DefaultCollisionFunction<double>);
+      motion->collision_manager->shift(-__offset);
+      collision = collision_data.result.isCollision();
+      } else {
+        collision = !dynobench::is_motion_collision_free(tmp_traj, robot);
+      }
+    if (collision)
+      node_to_check->collision_status == Collision_status::CHECKED_AABB;
+    else
+      node_to_check->collision_status == Collision_status::CHECKED_ALL;
+    return true; // anyway goes to OPEN
+  }
+
+  if(node_to_check->collision_status == Collision_status::CHECKED_AABB){
+    // maybe better way of not declaring it every time ?
+    std::vector<std::unique_ptr<fcl::CollisionObjectd>> collision_objects;
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_motion;
+    col_mng_motion = std::make_shared<fcl::DynamicAABBTreeCollisionManagerd>();
+    col_mng_motion->setup(); 
+    auto &ts_data = robot.ts_data;
+    auto &col_geo = robot.collision_geometries;
+    for (auto &x : tmp_traj.get_states()) {
+      robot.transformation_collision_geometries(x, ts_data);
+      for (size_t i = 0; i < ts_data.size(); i++) {
+        auto &transform = ts_data.at(i);
+        auto co = std::make_unique<fcl::CollisionObjectd>(col_geo.at(i));
+        co->setTranslation(transform.translation());
+        co->setRotation(transform.rotation());
+        co->computeAABB();
+        collision_objects.push_back(std::move(co));
+      }
+    }
+    std::vector<fcl::CollisionObjectd *> cols_ptrs(collision_objects.size());
+    std::transform(collision_objects.begin(), collision_objects.end(),
+                 cols_ptrs.begin(), [](auto &ptr) { return ptr.get(); });
+    col_mng_motion->registerObjects(cols_ptrs);
+    fcl::DefaultCollisionData<double> collision_data;
+    col_mng_motion->collide(robot.env.get(), &collision_data,
+                                        fcl::DefaultCollisionFunction<double>);
+    if(collision_data.result.isCollision())
+      return false; // skip the motion, state-by-state failed
+    else
+      node_to_check->collision_status == Collision_status::CHECKED_ALL;
+  }
+  // for best node pick-up, motion is valid and has CHECKED_ALL status
+  bool reachesGoal;
+  if (!forward) {
+    reachesGoal = robot.distance(tmp_traj.get_state(tmp_traj.get_size() - 1),
+                                goal) <= delta;
+  } else {
+    reachesGoal = robot.distance(tmp_traj.get_state(0), goal) <= delta;
+  }
+  for (const auto &constraint : constraints) {
+    // a constraint violation can only occur between t in [current->gScore, tentative_gScore]
+    float time_offset = constraint.time - gScore;
+    int time_index = std::lround(time_offset / robot.ref_dt);
+    Eigen::VectorXd state_to_check;
+    if (reachesGoal && time_index >= (int)tmp_traj.get_size() - 1) {
+      state_to_check = tmp_traj.get_state(tmp_traj.get_size() - 1);
+    }
+    if (time_index >= 0 && time_index < (int)tmp_traj.get_size() - 1) {
+      state_to_check = tmp_traj.get_state(time_index);
+    }
+  
+    if (state_to_check.size() > 0) {
+      bool violation =
+          robot.distance(state_to_check, constraint.constrained_state) <= delta;
+      if (violation) {
+        motion_valid = false;
+        break;
+      }
+    }
+  }
+  
   return motion_valid;
 };
 
@@ -347,24 +503,9 @@ void tdbastar_epsilon(
   traj_out.actions.clear();
   traj_out.cost = 0;
   traj_out.fmin = 0;
-  // for best_node collision checking
-  size_t robot_parts = 1;
-  if (robot->name == "car_with_trailers") {
-    robot_parts = 2;
-  }
-  // create objs for a single robot
-  std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_;
-  col_mng_ = std::make_shared<fcl::DynamicAABBTreeCollisionManagerd>();
-  col_mng_->setup();
-  std::vector<fcl::CollisionObjectd*> objs_;
-  for (size_t i = 0; i < robot_parts; i++) {
-    auto geom = robot->collision_geometries.at(i);
-    auto obj = new fcl::CollisionObject(geom);
-    objs_.push_back(obj); 
-  }
-  col_mng_->registerObjects(objs_);
   
   Eigen::VectorXd node_offset(all_robots[robot_id]->get_offset_dim());
+
   CHECK(options_tdbastar.motions_ptr,
         "motions should be loaded before calling dbastar");
   std::vector<Motion> &motions = *options_tdbastar.motions_ptr;
@@ -461,6 +602,8 @@ void tdbastar_epsilon(
                                   .used_motion = (size_t)-1,
                                   .arrival_idx = (size_t)-1});
   start_node->current_arrival_idx = 0;
+  start_node->collision_status = Collision_status::UNKNOWN;
+
   DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
 
@@ -477,6 +620,7 @@ void tdbastar_epsilon(
 
   auto tmp_node = std::make_shared<AStarNode>();
   tmp_node->state_eig = Eigen::VectorXd::Zero(robot->nx);
+  tmp_node->collision_status = Collision_status::UNKNOWN;
 
   double best_distance_to_goal =
       robot->distance(start_node->state_eig, problem.goals[robot_id]);
@@ -610,9 +754,10 @@ void tdbastar_epsilon(
       LazyTraj lazy_traj_for_node{.offset = &node_offset, .robot = robot.get(), .motion = &motion_to_check};
       int num_valid_states_tmp = -1;
       traj_wrapper.set_size(lazy_traj_for_node.motion->traj.states.size());
-      best_node_valid = check_lazy_trajectory(
+    
+      best_node_valid = check_lazy_trajectory_hybrid(
             lazy_traj_for_node, *robot, problem.goals[robot_id], time_bench, traj_wrapper,
-            constraints, tmp_parent_node->gScore, options_tdbastar.delta, // assumed that the constraint.t is before the current node
+            best_node, tmp_parent_node->gScore, constraints, options_tdbastar.delta, // assumed that the constraint.t is before the current node
             aux_last_state, &ff, &num_valid_states_tmp, !reverse_search);
     }
     if (!best_node_valid){
@@ -662,24 +807,20 @@ void tdbastar_epsilon(
         [&] { expander.expand_lazy(best_node->state_eig, lazy_trajs); });
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
-
       int num_valid_states = -1;
       traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
-      // update the tmp_node state, check motion validity, collision check with env. for the last state of the motion
-      bool traj_valid = lazy_trajectory_to_wrapper(
-          lazy_traj, *robot, time_bench, traj_wrapper, tmp_node->state_eig, 
-          col_mng_, objs_,
+      // update the status for another new node for this lazy_traj
+      tmp_node->collision_status = Collision_status::UNKNOWN;
+      bool motion_valid = check_lazy_trajectory_hybrid(
+          lazy_traj, *robot, problem.goals[robot_id], time_bench, traj_wrapper, tmp_node,
+          /*gscore*/0, constraints, options_tdbastar.delta,
           aux_last_state, &ff, &num_valid_states, !reverse_search);
-      if (!traj_valid) {
+
+      if (!motion_valid) {
         continue;
       }
 
       int chosen_index = -1;
-      // check_goal(*robot, tmp_node->state_eig, problem.goals[robot_id],
-      //            traj_wrapper,
-      //            options_tdbastar.delta_factor_goal * options_tdbastar.delta,
-      //            num_check_goal, chosen_index, !reverse_search);
-      
       // for the Node, if it reaches after the motion being transferred
       bool reachesGoal =
           robot->distance(tmp_node->state_eig, problem.goals[robot_id]) <=
@@ -739,6 +880,7 @@ void tdbastar_epsilon(
              .used_motion = lazy_traj.motion->idx,
              .arrival_idx = best_node->current_arrival_idx});
         __node->current_arrival_idx = 0;
+        __node->collision_status = tmp_node->collision_status; // ? 
         time_bench.time_queue +=
             timed_fun_void([&] { __node->handle = open.push(__node); });
         time_bench.time_nearestNode_add +=
@@ -780,6 +922,8 @@ void tdbastar_epsilon(
                      .used_motion = lazy_traj.motion->idx,
                      .arrival_idx = best_node->current_arrival_idx});
                 ++n->current_arrival_idx; // keep track of which index of arrivals we are going to use with the current node
+                  n->collision_status = best_node->collision_status; // reset ?
+
                 if (n->is_in_open) {
                   time_bench.time_queue +=
                       timed_fun_void([&] { open.increase(n->handle); });

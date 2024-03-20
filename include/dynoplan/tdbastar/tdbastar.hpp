@@ -47,7 +47,14 @@ typedef typename boost::heap::d_ary_heap<
     std::shared_ptr<AStarNode>, boost::heap::arity<2>,
     boost::heap::compare<compareAStarNode>, boost::heap::mutable_<true>>
     open_t;
-// Node type (used for open and explored states)
+
+enum class Collision_status{
+  UNKNOWN = 0,
+  CHECKED_AABB = 1,
+  CHECKED_CONVEXHULL = 2,
+  CHECKED_ALL = 3,
+};
+
 struct AStarNode {
   const ob::State *state;
   Eigen::VectorXd state_eig;
@@ -57,6 +64,7 @@ struct AStarNode {
   double hScore;
   int focalHeuristic;         // ecbs
   std::vector<int> motions{}; // list of applicable motions
+  Collision_status collision_status; 
 
   double get_cost() const { return gScore; }
 
@@ -94,9 +102,6 @@ struct AStarNode {
         << " is_in_open: " << is_in_open << " valid: " << valid << std::endl;
   }
 };
-
-// float heuristic(std::shared_ptr<RobotOmpl> robot, const ob::State *s,
-//                 const ob::State *g);
 
 using Edge = std::pair<int, int>;
 // void backward_tree_with_dynamics(

@@ -97,4 +97,14 @@ bool lazy_trajectory_to_wrapper(
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
     int *num_valid_states = nullptr, bool forward = true);
 
+bool check_lazy_trajectory_hybrid(
+    LazyTraj &lazy_traj, dynobench::Model_robot &robot,
+    const Eigen::Ref<const Eigen::VectorXd> &goal, Time_benchmark &time_bench,
+    dynobench::TrajWrapper &tmp_traj,
+    std::shared_ptr<AStarNode> node_to_check, const float gscore,
+    const std::vector<Constraint> &constraints,
+    float delta, Eigen::Ref<Eigen::VectorXd> aux_last_state,
+    std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
+    int *num_valid_states = nullptr, bool forward = true);
+
 } // namespace dynoplan
