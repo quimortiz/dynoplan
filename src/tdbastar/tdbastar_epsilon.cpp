@@ -173,74 +173,54 @@ bool check_lazy_trajectory_hybrid(
   time_bench.check_bounds += watch_check_motion.elapsed_ms();
   bool motion_valid = true;
   auto &motion = lazy_traj.motion;
-  // expansion step, don't check with constraints
-  if(node_to_check->collision_status == Collision_status::UNKNOWN){
-    //node is new 1)set its state, 2)check with ENV, 3)update its status
-    if (forward) {
-      node_to_check->state_eig = tmp_traj.get_state(tmp_traj.get_size() - 1);
-    }
-    else {
-      node_to_check->state_eig = tmp_traj.get_state(0);
-    }
+  if(node_to_check->collision_status == Collision_status::UNKNOWN ||
+      node_to_check->collision_status == Collision_status::CHECKED_AABB){
     bool collision = false;
-    if (robot.invariance_reuse_col_shape) {
-      Eigen::VectorXd offset = *lazy_traj.offset;
-      assert(offset.size() == 2 || offset.size() == 3);
-      Eigen::Vector3d __offset;
-      if (offset.size() == 2) {
-        __offset = Eigen::Vector3d(offset(0), offset(1), 0);
-      } else {
-        __offset = offset.head<3>();
+    // we assume robot.invariance_reuse_col_shape
+    Eigen::VectorXd offset = *lazy_traj.offset;
+    assert(offset.size() == 2 || offset.size() == 3);
+    Eigen::Vector3d __offset;
+    if (offset.size() == 2) {
+      __offset = Eigen::Vector3d(offset(0), offset(1), 0);
+    } else {
+      __offset = offset.head<3>();
+    }
+    assert(motion);
+    assert(motion->collision_manager);
+    assert(robot.env.get());
+    //node is new 1)set its state, 2)check with ENV, 3)update its status
+    if (node_to_check->collision_status == Collision_status::UNKNOWN){
+      if (forward) {
+        node_to_check->state_eig = tmp_traj.get_state(tmp_traj.get_size() - 1);
       }
-      assert(motion);
-      assert(motion->collision_manager);
-      assert(robot.env.get());
+      else {
+        node_to_check->state_eig = tmp_traj.get_state(0);
+      }
+      // use merged_aabb for status update
+      motion->collision_manager_merged->shift(__offset);
+      fcl::DefaultCollisionData<double> collision_data;
+      motion->collision_manager_merged->collide(robot.env.get(), &collision_data,
+                                          fcl::DefaultCollisionFunction<double>);
+      motion->collision_manager_merged->shift(-__offset);
+      collision = collision_data.result.isCollision();
+      if (collision)
+        node_to_check->collision_status = Collision_status::CHECKED_AABB;
+      else
+        node_to_check->collision_status = Collision_status::CHECKED_ALL;
+      return true; // anyway goes to OPEN
+    // needs state-by-state check
+    } else {
       motion->collision_manager->shift(__offset);
       fcl::DefaultCollisionData<double> collision_data;
       motion->collision_manager->collide(robot.env.get(), &collision_data,
-                                         fcl::DefaultCollisionFunction<double>);
+                                        fcl::DefaultCollisionFunction<double>);
       motion->collision_manager->shift(-__offset);
       collision = collision_data.result.isCollision();
-      } else {
-        collision = !dynobench::is_motion_collision_free(tmp_traj, robot);
-      }
-    if (collision)
-      node_to_check->collision_status = Collision_status::CHECKED_AABB;
-    else
-      node_to_check->collision_status = Collision_status::CHECKED_ALL;
-    return true; // anyway goes to OPEN
-  }
-
-  if(node_to_check->collision_status == Collision_status::CHECKED_AABB){
-    // maybe better way of not declaring it every time ?
-    std::vector<std::unique_ptr<fcl::CollisionObjectd>> collision_objects;
-    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_motion;
-    col_mng_motion = std::make_shared<fcl::DynamicAABBTreeCollisionManagerd>();
-    col_mng_motion->setup(); 
-    auto &ts_data = robot.ts_data;
-    auto &col_geo = robot.collision_geometries;
-    for (auto &x : tmp_traj.get_states()) {
-      robot.transformation_collision_geometries(x, ts_data);
-      for (size_t i = 0; i < ts_data.size(); i++) {
-        auto &transform = ts_data.at(i);
-        auto co = std::make_unique<fcl::CollisionObjectd>(col_geo.at(i));
-        co->setTranslation(transform.translation());
-        co->setRotation(transform.rotation());
-        co->computeAABB();
-        collision_objects.push_back(std::move(co));
-      }
+      if(collision)
+        return false; // skip the motion, state-by-state failed
+      else
+        node_to_check->collision_status = Collision_status::CHECKED_ALL;
     }
-    std::vector<fcl::CollisionObjectd *> cols_ptrs(collision_objects.size());
-    std::transform(collision_objects.begin(), collision_objects.end(),
-                 cols_ptrs.begin(), [](auto &ptr) { return ptr.get(); });
-    col_mng_motion->registerObjects(cols_ptrs);
-    fcl::DefaultCollisionData<double> collision_data;
-    col_mng_motion->collide(robot.env.get(), &collision_data,
-                                        fcl::DefaultCollisionFunction<double>);
-    if(collision_data.result.isCollision())
-      return false; // skip the motion, state-by-state failed
-    else
-      node_to_check->collision_status = Collision_status::CHECKED_ALL;
   }
   // for best node pick-up, motion is valid and has CHECKED_ALL status
   bool reachesGoal;

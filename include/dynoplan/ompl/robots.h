@@ -215,6 +215,10 @@ public:
   std::shared_ptr<ShiftableDynamicAABBTreeCollisionManager<double>>
       collision_manager;
   std::vector<std::unique_ptr<fcl::CollisionObjectd>> collision_objects;
+ // for merged aabb
+  std::shared_ptr<ShiftableDynamicAABBTreeCollisionManager<double>>
+      collision_manager_merged;
+  std::vector<std::unique_ptr<fcl::CollisionObjectd>> collision_objects_merged;
 
   double cost;
   size_t idx;

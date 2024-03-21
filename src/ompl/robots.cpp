@@ -3188,7 +3188,7 @@ void traj_to_motion(const dynobench::Trajectory &traj,
 }
 
 void compute_col_shape(Motion &m, dynobench::Model_robot &robot, bool merged) {
-  std::vector<std::unique_ptr<fcl::CollisionObjectd>> collision_objects_tmp;
+  // std::vector<std::unique_ptr<fcl::CollisionObjectd>> collision_objects_tmp;
   for (auto &x : m.traj.states) {
 
     auto &ts_data = robot.ts_data;
@@ -3201,16 +3201,16 @@ void compute_col_shape(Motion &m, dynobench::Model_robot &robot, bool merged) {
       co->setTranslation(transform.translation());
       co->setRotation(transform.rotation());
       co->computeAABB();
-      if(merged) // maybe better way ?
-        collision_objects_tmp.push_back(std::move(co));
-      else
-        m.collision_objects.push_back(std::move(co));
+      // if(merged) 
+      //   collision_objects_tmp.push_back(std::move(co));
+      // always take
+      m.collision_objects.push_back(std::move(co));
     }
   }
   if(merged){
     // get the merged AABB
     fcl::AABB<double> aabb_merged;
-    for (auto& tmp_co : collision_objects_tmp){
+    for (auto& tmp_co : m.collision_objects){
       auto aabb_tmp = tmp_co->getAABB();
       aabb_merged += aabb_tmp;
     }
@@ -3222,12 +3222,19 @@ void compute_col_shape(Motion &m, dynobench::Model_robot &robot, bool merged) {
                                                                   (max_coords[1] - min_coords[1]), 
                                                                   (max_coords[2] - min_coords[2]));
     auto co = std::make_unique<fcl::CollisionObjectd>(tmp_geom);
-    m.collision_objects.push_back(std::move(co));
-  }
+    m.collision_objects_merged.push_back(std::move(co));
+    std::vector<fcl::CollisionObjectd *> cols_ptrs_merged(m.collision_objects_merged.size());
+    std::transform(m.collision_objects_merged.begin(), m.collision_objects_merged.end(),
+                  cols_ptrs_merged.begin(), [](auto &ptr) { return ptr.get(); });
 
+    m.collision_manager_merged.reset(
+        new ShiftableDynamicAABBTreeCollisionManager<double>());
+    m.collision_manager_merged->registerObjects(cols_ptrs_merged);
+  }
+  // state-by-state as usual
   std::vector<fcl::CollisionObjectd *> cols_ptrs(m.collision_objects.size());
   std::transform(m.collision_objects.begin(), m.collision_objects.end(),
-                 cols_ptrs.begin(), [](auto &ptr) { return ptr.get(); });
+                cols_ptrs.begin(), [](auto &ptr) { return ptr.get(); });
 
   m.collision_manager.reset(
       new ShiftableDynamicAABBTreeCollisionManager<double>());
