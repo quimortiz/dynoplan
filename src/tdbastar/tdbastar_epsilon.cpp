@@ -205,9 +205,9 @@ bool check_lazy_trajectory_hybrid(
         collision = !dynobench::is_motion_collision_free(tmp_traj, robot);
       }
     if (collision)
-      node_to_check->collision_status == Collision_status::CHECKED_AABB;
+      node_to_check->collision_status = Collision_status::CHECKED_AABB;
     else
-      node_to_check->collision_status == Collision_status::CHECKED_ALL;
+      node_to_check->collision_status = Collision_status::CHECKED_ALL;
     return true; // anyway goes to OPEN
   }
 
@@ -240,7 +240,7 @@ bool check_lazy_trajectory_hybrid(
     if(collision_data.result.isCollision())
       return false; // skip the motion, state-by-state failed
     else
-      node_to_check->collision_status == Collision_status::CHECKED_ALL;
+      node_to_check->collision_status = Collision_status::CHECKED_ALL;
   }
   // for best node pick-up, motion is valid and has CHECKED_ALL status
   bool reachesGoal;
@@ -602,7 +602,7 @@ void tdbastar_epsilon(
                                   .used_motion = (size_t)-1,
                                   .arrival_idx = (size_t)-1});
   start_node->current_arrival_idx = 0;
-  start_node->collision_status = Collision_status::UNKNOWN;
+  start_node->collision_status = Collision_status::CHECKED_ALL;
 
   DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
@@ -620,7 +620,6 @@ void tdbastar_epsilon(
 
   auto tmp_node = std::make_shared<AStarNode>();
   tmp_node->state_eig = Eigen::VectorXd::Zero(robot->nx);
-  tmp_node->collision_status = Collision_status::UNKNOWN;
 
   double best_distance_to_goal =
       robot->distance(start_node->state_eig, problem.goals[robot_id]);
@@ -754,7 +753,6 @@ void tdbastar_epsilon(
       LazyTraj lazy_traj_for_node{.offset = &node_offset, .robot = robot.get(), .motion = &motion_to_check};
       int num_valid_states_tmp = -1;
       traj_wrapper.set_size(lazy_traj_for_node.motion->traj.states.size());
-    
       best_node_valid = check_lazy_trajectory_hybrid(
             lazy_traj_for_node, *robot, problem.goals[robot_id], time_bench, traj_wrapper,
             best_node, tmp_parent_node->gScore, constraints, options_tdbastar.delta, // assumed that the constraint.t is before the current node
@@ -819,7 +817,7 @@ void tdbastar_epsilon(
       if (!motion_valid) {
         continue;
       }
-
+      // should be updated if it is a valid motion
       int chosen_index = -1;
       // for the Node, if it reaches after the motion being transferred
       bool reachesGoal =
@@ -880,7 +878,7 @@ void tdbastar_epsilon(
              .used_motion = lazy_traj.motion->idx,
              .arrival_idx = best_node->current_arrival_idx});
         __node->current_arrival_idx = 0;
-        __node->collision_status = tmp_node->collision_status; // ? 
+        __node->collision_status = tmp_node->collision_status; // YES
         time_bench.time_queue +=
             timed_fun_void([&] { __node->handle = open.push(__node); });
         time_bench.time_nearestNode_add +=
@@ -905,7 +903,7 @@ void tdbastar_epsilon(
                         robot->distance(n->state_eig,
                                         constraint.constrained_state) <=
                         options_tdbastar.delta;
-                    if (violation) {
+                    if (violation) { // how would it affect the status ?
                       update_valid = false;
                       break;
                     }
@@ -922,7 +920,7 @@ void tdbastar_epsilon(
                      .used_motion = lazy_traj.motion->idx,
                      .arrival_idx = best_node->current_arrival_idx});
                 ++n->current_arrival_idx; // keep track of which index of arrivals we are going to use with the current node
-                  n->collision_status = best_node->collision_status; // reset ?
+                  n->collision_status = Collision_status::CHECKED_ALL; // need to check with constraints
 
                 if (n->is_in_open) {
                   time_bench.time_queue +=
