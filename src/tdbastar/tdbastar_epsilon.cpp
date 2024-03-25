@@ -683,6 +683,7 @@ void tdbastar_epsilon(
       };
 
   int focalHeuristic = 0;
+  int collision_weight = 0;
   while (!stop_search()) {
 #ifdef REBUILT_FOCAL_LIST
     focal.clear();
@@ -830,8 +831,9 @@ void tdbastar_epsilon(
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
 
+      collision_weight = (best_node->collision_status == Collision_status::CHECKED_ALL) ? 0 : traj_wrapper.get_size();
       if (focal_heuristic_name == "volume_wise")
-        focalHeuristic = best_node->focalHeuristic +
+        focalHeuristic = best_node->focalHeuristic + collision_weight + 
                          lowLevelfocalHeuristicShape(
                              results, robot_motions, problem, lazy_traj,
                              robot_id, best_node->gScore, all_robots);
