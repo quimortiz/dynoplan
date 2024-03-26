@@ -494,6 +494,8 @@ void tdbastar_epsilon(
   traj_out.actions.clear();
   traj_out.cost = 0;
   traj_out.fmin = 0;
+
+  size_t max_ext_nodes = 10;
   
   Eigen::VectorXd node_offset(all_robots[robot_id]->get_offset_dim());
 
@@ -795,6 +797,7 @@ void tdbastar_epsilon(
     std::vector<LazyTraj> lazy_trajs;
     time_bench.time_lazy_expand += timed_fun_void(
         [&] { expander.expand_lazy(best_node->state_eig, lazy_trajs); });
+    max_ext_nodes = std::min(max_ext_nodes, lazy_trajs.size());
     for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
       int num_valid_states = -1;
