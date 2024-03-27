@@ -40,6 +40,10 @@ add_executable(test_tdbastar tdbastar/test_tdbastar_base.cpp
                              tdbastar/test_tdbastar_0.cpp)
 # tdbastar/test_tdbastar_cli.cpp)
 
+# tdb-A*_epsilon
+add_executable(test_tdbastar_epsilon tdbastar_epsilon/test_tdbastar_epsilon_base.cpp
+                             tdbastar_epsilon/test_tdbastar_epsilon_0.cpp)
+
 target_link_libraries(test_idbastar idbastar::idbastar
                       Boost::unit_test_framework)
 
@@ -60,6 +64,9 @@ target_link_libraries(test_dbrrt idbastar::dbrrt Boost::unit_test_framework
 target_link_libraries(test_tdbastar idbastar::tdbastar
                       Boost::unit_test_framework)
 
+target_link_libraries(test_tdbastar_epsilon idbastar::tdbastar
+                      Boost::unit_test_framework)
+
 add_test(NAME test_sst COMMAND test_sst)
 add_test(NAME test_rrt_to COMMAND test_rrt_to)
 add_test(NAME test_optimization COMMAND test_optimization)
@@ -68,3 +75,5 @@ add_test(NAME test_idbastar COMMAND test_idbastar)
 add_test(NAME test_dbrrt COMMAND test_dbrrt)
 add_test(NAME test_primitives COMMAND test_primitives)
 add_test(NAME test_tdbastar COMMAND test_tdbastar)
+add_test(NAME test_tdbastar_epsilon COMMAND test_tdbastar_epsilon)
+
