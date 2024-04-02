@@ -914,6 +914,7 @@ void tdbastar_epsilon(
                      .arrival_idx = best_node->current_arrival_idx});
                 ++n->current_arrival_idx; // keep track of which index of arrivals we are going to use with the current node
                 n->collision_status = Collision_status::CHECKED_AABB; //need to check with constraints
+                n->focalHeuristic = focalHeuristic;
 
                 if (n->is_in_open) {
                   time_bench.time_queue +=
