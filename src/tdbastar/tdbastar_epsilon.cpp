@@ -18,6 +18,7 @@
 
 #include "dynobench/motions.hpp"
 #include "dynobench/robot_models.hpp"
+#include "dynoplan/dbastar/heuristics.hpp"
 #include "dynoplan/ompl/robots.h"
 #include "ompl/base/Path.h"
 #include "ompl/base/ScopedState.h"
@@ -475,6 +476,12 @@ void tdbastar_epsilon(
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result,
     float w, std::string focal_heuristic_name) {
 
+  double h_fun_scale = 1.5;
+
+  std::cout << "options are" << std::endl;
+  options_tdbastar.print(std::cout);
+
+
   // #ifdef DBG_PRINTS
   std::cout << "Running tdbA* for robot " << robot_id << std::endl;
   for (const auto &constraint : constraints) {
@@ -574,9 +581,10 @@ void tdbastar_epsilon(
   if (reverse_search) {
     h_fun = std::make_shared<Heu_blind>();
   } else {
-    h_fun = std::make_shared<
-        Heu_roadmap_bwd<std::shared_ptr<AStarNode>, AStarNode>>(
-        robot, heuristic_nn, problem.goals[robot_id]);
+    h_fun = std::make_shared<Heu_euclidean>(robot, problem.goals[robot_id]);
+    // h_fun = std::make_shared<
+    //     Heu_roadmap_bwd<std::shared_ptr<AStarNode>, AStarNode>>(
+    //     robot, heuristic_nn, problem.goals[robot_id]);
   }
   std::vector<std::shared_ptr<AStarNode>> all_nodes;
   all_nodes.push_back(std::make_shared<AStarNode>());
@@ -584,7 +592,7 @@ void tdbastar_epsilon(
   auto start_node = all_nodes.at(0);
   start_node->gScore = 0;
   start_node->state_eig = problem.starts[robot_id];
-  start_node->hScore = h_fun->h(problem.starts[robot_id]);
+  start_node->hScore = h_fun_scale *  h_fun->h(problem.starts[robot_id]);
   start_node->fScore = start_node->gScore + start_node->hScore;
   start_node->is_in_open = true;
   start_node->reaches_goal =
@@ -821,7 +829,7 @@ void tdbastar_epsilon(
       // Tentative hScore, gScore
       double hScore;
       time_bench.time_hfun +=
-          timed_fun_void([&] { hScore = h_fun->h(tmp_node->state_eig); });
+          timed_fun_void([&] { hScore = h_fun_scale *  h_fun->h(tmp_node->state_eig); });
       assert(hScore >= 0);
       double cost_motion = chosen_index != -1
                                ? chosen_index * robot->ref_dt
