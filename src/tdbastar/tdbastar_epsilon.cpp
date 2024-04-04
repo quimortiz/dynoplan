@@ -795,8 +795,8 @@ void tdbastar_epsilon(
     std::vector<LazyTraj> lazy_trajs;
     time_bench.time_lazy_expand += timed_fun_void(
         [&] { expander.expand_lazy(best_node->state_eig, lazy_trajs); });
-    max_ext_nodes = std::min(max_ext_nodes, lazy_trajs.size());
-    for (size_t i = 0; i < max_ext_nodes; i++) {
+    // max_ext_nodes = std::min(max_ext_nodes, lazy_trajs.size());
+    for (size_t i = 0; i < lazy_trajs.size(); i++) {
       auto &lazy_traj = lazy_trajs[i];
       int num_valid_states = -1;
       traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
