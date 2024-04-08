@@ -595,6 +595,7 @@ void tdbastar_epsilon(
                                   .arrival_idx = (size_t)-1});
   start_node->current_arrival_idx = 0;
   start_node->collision_status = Collision_status::CHECKED_ALL;
+  start_node->focalHeuristic = 0;
 
   DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
