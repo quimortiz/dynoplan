@@ -87,6 +87,13 @@ int lowLevelfocalHeuristicShape(
     const float current_gscore,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots);
 
+int lowLevelfocalHeuristicStateInInterval(
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
+        &results,
+    dynobench::TrajWrapper &tmp_traj, size_t &robot_id,
+    float delta, const float motion_start, const float motion_end,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots);
+
 bool lazy_trajectory_to_wrapper(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
     Time_benchmark &time_bench,

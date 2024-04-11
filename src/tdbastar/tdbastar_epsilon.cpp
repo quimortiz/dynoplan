@@ -273,6 +273,50 @@ bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
   }
   return (*h1)->gScore > (*h2)->gScore; // cost
 }
+// new focal heuristic, when the conflicts count the number of states being in collision with the considered node
+int lowLevelfocalHeuristicStateInInterval(
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
+    dynobench::TrajWrapper &tmp_traj, 
+    size_t &current_robot_idx, float delta,
+    const float motion_start, const float motion_end,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots) {
+  int numConflicts = 0;
+  int time_index = 0;
+  size_t time_index_start = 0;
+  size_t time_index_end = 0;
+
+  Eigen::VectorXd node_state;
+  Eigen::VectorXd current_node_state;
+  size_t robot_idx = 0;
+  size_t max_size = 0;
+  // check the motion primitive for collision with each robots final solution
+  for (auto &r : results) { // for each neighbor
+    max_size = r.size() - 1;
+    if (robot_idx != current_robot_idx && !r.empty()) {
+      fcl::DefaultCollisionData<double> collision_data; // for each robot
+      // start and end interval in the neighbors final trajectory
+      time_index_start = std::lround(motion_start / all_robots[robot_idx]->ref_dt);
+      time_index_end = std::lround(motion_end / all_robots[robot_idx]->ref_dt);
+      if (time_index_end < 0){ // skip, unrelated
+        continue;
+      }
+      if (time_index_start >= 0 && time_index_end >= int(max_size - 1)){ // is this correct ? 
+        time_index_end = max_size - 1;
+        for(size_t i = time_index_start; i < time_index_end; i++){
+          node_state = r[i].first->state_eig; // from the neighbor solution traj
+          current_node_state = tmp_traj.get_state(i); // from the motion primitive I check
+          bool violation =
+          all_robots[robot_idx]->distance(node_state, current_node_state) <= delta;
+          if (violation){
+            numConflicts++;
+          }
+        }
+      }
+    }
+    ++robot_idx; // for neighbor robots
+  }
+  return numConflicts;
+}
 
 // focal heuristic based on shape
 // this function counts the number of conflicts between the motion (being
@@ -342,6 +386,7 @@ int lowLevelfocalHeuristicShape(
         numConflicts++;
       }
     }
+    ++idx;
   }
   current_motion->collision_manager->shift(-__offset);
   return numConflicts;
