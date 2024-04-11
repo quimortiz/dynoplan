@@ -48,7 +48,7 @@ typedef typename boost::heap::d_ary_heap<
     boost::heap::compare<compareAStarNode>, boost::heap::mutable_<true>>
     open_t;
 
-enum class Collision_status{
+enum class Collision_status {
   UNKNOWN = 0,
   CHECKED_AABB = 1,
   CHECKED_CONVEXHULL = 2,
@@ -64,7 +64,7 @@ struct AStarNode {
   double hScore;
   int focalHeuristic;         // ecbs
   std::vector<int> motions{}; // list of applicable motions
-  Collision_status collision_status; 
+  Collision_status collision_status;
 
   double get_cost() const { return gScore; }
 
