@@ -342,6 +342,7 @@ int lowLevelfocalHeuristicShape(
         numConflicts++;
       }
     }
+    ++idx;
   }
   current_motion->collision_manager->shift(-__offset);
   return numConflicts;
