@@ -878,14 +878,24 @@ void tdbastar_epsilon(
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
 
-      if (focal_heuristic_name == "volume_wise")
-        focalHeuristic = best_node->focalHeuristic +
-                         lowLevelfocalHeuristicShape(
-                             results, robot_motions, problem, lazy_traj,
-                             robot_id, best_node->gScore, all_robots);
+      if (focal_heuristic_name == "volume_wise"){
+          focalHeuristic = best_node->focalHeuristic +
+                    lowLevelfocalHeuristicShape(
+                        results, robot_motions, problem, lazy_traj,
+                        robot_id, best_node->gScore, all_robots);
+      }
+
+      else if (focal_heuristic_name == "state_in_interval"){
+        focalHeuristic = best_node->focalHeuristic + 
+                     lowLevelfocalHeuristicStateInInterval(
+                            results, traj_wrapper, 
+                            robot_id, options_tdbastar.delta,
+                            /*motion start time*/best_node->gScore, 
+                            /*motion end time*/gScore, all_robots);
+      }
+        
       else
-        focalHeuristic =
-            best_node->focalHeuristic +
+        focalHeuristic = best_node->focalHeuristic + 
             lowLevelfocalHeuristic(solution, tmp_node, robot_id, all_robots,
                                    col_mng_robots, robot_objs);
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
