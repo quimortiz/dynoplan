@@ -274,46 +274,57 @@ bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
   return (*h1)->gScore > (*h2)->gScore; // cost
 }
 // new focal heuristic, when the conflicts count the number of states being in collision with the considered node
+// collision checking between a pair of single states
+// does not assume car with trailer, ts_data ALWAYS 1
 int lowLevelfocalHeuristicStateInInterval(
     std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>> &results,
     dynobench::TrajWrapper &tmp_traj, 
     size_t &current_robot_idx, float delta,
-    const float motion_start, const float motion_end,
+    const float current_gScore, // start of the motion considered
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots) {
   int numConflicts = 0;
-  int time_index = 0;
-  size_t time_index_start = 0;
-  size_t time_index_end = 0;
+  // objects for the current motion
+  auto col_geom_1 = all_robots[current_robot_idx]->collision_geometries;
+  // fcl::CollisionObjectd* obj_1 = new fcl::CollisionObject(col_geom_1[0]);
+  fcl::CollisionObjectd obj_1(col_geom_1[0]);
+ // for the neighbor's state
+  Eigen::VectorXd state_2; // for the neighbor
+  size_t j = 0;
+  for (auto &state_1 : tmp_traj.get_states()){
+    // update the obj_1 with state_1, considering motion
+    std::vector<fcl::Transform3d> ts_data_1(1); 
+    all_robots[current_robot_idx]->transformation_collision_geometries(state_1, ts_data_1);
+    obj_1.setTranslation(ts_data_1[0].translation());
+    obj_1.setRotation(ts_data_1[0].rotation());
+    obj_1.computeAABB();
 
-  Eigen::VectorXd node_state;
-  Eigen::VectorXd current_node_state;
-  size_t robot_idx = 0;
-  size_t max_size = 0;
-  // check the motion primitive for collision with each robots final solution
-  for (auto &r : results) { // for each neighbor
-    max_size = r.size() - 1;
-    if (robot_idx != current_robot_idx && !r.empty()) {
-      fcl::DefaultCollisionData<double> collision_data; // for each robot
-      // start and end interval in the neighbors final trajectory
-      time_index_start = std::lround(motion_start / all_robots[robot_idx]->ref_dt);
-      time_index_end = std::lround(motion_end / all_robots[robot_idx]->ref_dt);
-      if (time_index_end < 0){ // skip, unrelated
-        continue;
-      }
-      if (time_index_start >= 0 && time_index_end >= int(max_size - 1)){ // is this correct ? 
-        time_index_end = max_size - 1;
-        for(size_t i = time_index_start; i < time_index_end; i++){
-          node_state = r[i].first->state_eig; // from the neighbor solution traj
-          current_node_state = tmp_traj.get_state(i); // from the motion primitive I check
-          bool violation =
-          all_robots[robot_idx]->distance(node_state, current_node_state) <= delta;
-          if (violation){
-            numConflicts++;
+    size_t time_idx = current_gScore + j * all_robots[current_robot_idx]->ref_dt; // shift among the motion considered
+    size_t robot_idx = 0;
+    for (auto &r : results){ // for each neighbor
+      if (robot_idx != current_robot_idx && !r.empty()){
+        size_t time_idx_to_check = std::lround(time_idx / all_robots[robot_idx]->ref_dt); // for each robot accordingly
+        if (time_idx_to_check < r.size()) { // belongs, check again !
+          state_2 = r[time_idx_to_check].first->state_eig;
+          // for the neighbor robot's state
+          std::vector<fcl::Transform3d> ts_data_2(1);
+          all_robots[robot_idx]->transformation_collision_geometries(state_2, ts_data_2);
+          auto col_geom_2 = all_robots[robot_idx]->collision_geometries;
+          // fcl::CollisionObjectd* obj_2 = new fcl::CollisionObjectd(col_geom_2[0]);
+          fcl::CollisionObjectd obj_2(col_geom_2[0]);
+          obj_2.setTranslation(ts_data_2[0].translation());
+          obj_2.setRotation(ts_data_2[0].rotation());
+          obj_2.computeAABB();
+          fcl::CollisionRequest<double> request;
+          fcl::CollisionResult<double> result;
+          collide(&obj_1, &obj_2, request, result);
+          if (result.isCollision()){
+            ++numConflicts;
           }
-        }
+        } 
       }
+      ++robot_idx; 
     }
-    ++robot_idx; // for neighbor robots
+    ++j;
   }
   return numConflicts;
 }
@@ -434,7 +445,7 @@ int highLevelfocalHeuristic(
     col_mng_robots->collide(&collision_data,
                             fcl::DefaultCollisionFunction<double>);
     if (collision_data.result.isCollision()) {
-      numConflicts++;
+      numConflicts++; // CHECK, you are giving ony +1 for all collisions at this state
     }
   }
   return numConflicts;
@@ -891,7 +902,7 @@ void tdbastar_epsilon(
                             results, traj_wrapper, 
                             robot_id, options_tdbastar.delta,
                             /*motion start time*/best_node->gScore, 
-                            /*motion end time*/gScore, all_robots);
+                            all_robots);
       }
         
       else
@@ -1045,7 +1056,7 @@ void tdbastar_epsilon(
     traj_out.goal = problem.goals[robot_id];
     traj_out.check(robot, false);
     traj_out.cost = traj_out.actions.size() * robot->ref_dt;
-    traj_out.fmin = open.top()->fScore;
+    traj_out.fmin = open.top()->fScore; // CHECK, what if you POP it already earlier ?
     dynobench::Feasibility_thresholds thresholds;
     thresholds.col_tol =
         5 * 1e-2; // NOTE: for the systems with 0.01 s integration step,

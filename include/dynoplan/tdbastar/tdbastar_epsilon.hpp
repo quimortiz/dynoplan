@@ -91,7 +91,7 @@ int lowLevelfocalHeuristicStateInInterval(
     std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
         &results,
     dynobench::TrajWrapper &tmp_traj, size_t &robot_id,
-    float delta, const float motion_start, const float motion_end,
+    float delta, const float gScore,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots);
 
 bool lazy_trajectory_to_wrapper(
