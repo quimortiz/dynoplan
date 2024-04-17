@@ -215,7 +215,7 @@ public:
   std::shared_ptr<ShiftableDynamicAABBTreeCollisionManager<double>>
       collision_manager;
   std::vector<std::unique_ptr<fcl::CollisionObjectd>> collision_objects;
- // for merged aabb
+  // for merged aabb
   std::shared_ptr<ShiftableDynamicAABBTreeCollisionManager<double>>
       collision_manager_merged;
   std::vector<std::unique_ptr<fcl::CollisionObjectd>> collision_objects_merged;
@@ -253,6 +253,7 @@ void traj_to_motion(const dynobench::Trajectory &traj,
                     dynobench::Model_robot &robot, Motion &motion_out,
                     bool compute_col, bool merged = false);
 
-void compute_col_shape(Motion &m, dynobench::Model_robot &robot, bool merged = false);
+void compute_col_shape(Motion &m, dynobench::Model_robot &robot,
+                       bool merged = false);
 
 } // namespace dynoplan

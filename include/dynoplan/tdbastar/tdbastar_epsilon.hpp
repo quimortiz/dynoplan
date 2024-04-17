@@ -96,8 +96,8 @@ int lowLevelfocalHeuristicStateInInterval(
 
 bool lazy_trajectory_to_wrapper(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
-    Time_benchmark &time_bench,
-    dynobench::TrajWrapper &tmp_traj, Eigen::Ref<Eigen::VectorXd> x,
+    Time_benchmark &time_bench, dynobench::TrajWrapper &tmp_traj,
+    Eigen::Ref<Eigen::VectorXd> x,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng,
     std::vector<fcl::CollisionObjectd *> &objs,
     Eigen::Ref<Eigen::VectorXd> aux_last_state,
@@ -107,10 +107,9 @@ bool lazy_trajectory_to_wrapper(
 bool check_lazy_trajectory_hybrid(
     LazyTraj &lazy_traj, dynobench::Model_robot &robot,
     const Eigen::Ref<const Eigen::VectorXd> &goal, Time_benchmark &time_bench,
-    dynobench::TrajWrapper &tmp_traj,
-    std::shared_ptr<AStarNode> node_to_check, const float gscore,
-    const std::vector<Constraint> &constraints,
-    float delta, Eigen::Ref<Eigen::VectorXd> aux_last_state,
+    dynobench::TrajWrapper &tmp_traj, std::shared_ptr<AStarNode> node_to_check,
+    const float gscore, const std::vector<Constraint> &constraints, float delta,
+    Eigen::Ref<Eigen::VectorXd> aux_last_state,
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
     int *num_valid_states = nullptr, bool forward = true);
 
