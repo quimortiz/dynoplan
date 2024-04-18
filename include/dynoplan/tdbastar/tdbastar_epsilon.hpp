@@ -72,6 +72,12 @@ int highLevelfocalHeuristic(
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs);
 
+int highLevelfocalHeuristicState(
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
+    std::vector<fcl::CollisionObjectd *> &robot_objs);
+
 int lowLevelfocalHeuristic(
     const std::vector<dynobench::Trajectory> &solution,
     const std::shared_ptr<AStarNode> node_to_check, size_t &robot_id,
