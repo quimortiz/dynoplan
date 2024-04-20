@@ -124,10 +124,10 @@ int lowLevelfocalHeuristicShape(
       current_motion->collision_manager->collide(
           motion_to_check.collision_manager.get(), &collision_data,
           fcl::DefaultCollisionFunction<double>);
-      motion_to_check.collision_manager->shift(-__offset_tmp);
       if (collision_data.result.isCollision()) {
         numConflicts++;
       }
+      motion_to_check.collision_manager->shift(-__offset_tmp);
     }
     ++idx;
   }
@@ -253,7 +253,7 @@ int highLevelfocalHeuristicState(
       return numConflicts;
     }
 // state-based heuristic for single node vs. results (maybe all motion states vs. results needed ?)
-int lowLevelfocalHeuristic(
+int lowLevelfocalHeuristicLazy(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::shared_ptr<AStarNode> current_node, size_t &current_robot_idx,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
@@ -673,7 +673,7 @@ void tdbastar_epsilon(
                              robot_id, best_node->gScore, all_robots);
       else
         focalHeuristic = best_node->focalHeuristic +
-            lowLevelfocalHeuristic(solution, tmp_node, robot_id, all_robots,
+            lowLevelfocalHeuristicLazy(solution, tmp_node, robot_id, all_robots,
                                    col_mng_robots, robot_objs);
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore;
