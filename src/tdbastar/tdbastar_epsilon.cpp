@@ -206,7 +206,7 @@ int highLevelfocalHeuristicState(
             // state-by-state collision checking between trajectories
             for (size_t t = 0; t <= max_t; ++t){
               if (all_robots[j]->name == "car_with_trailers") {
-                tmp_ts1.resize(2);
+                tmp_ts2.resize(2);
               }
               // robot 1
               if (t >= solution[i].trajectory.states.size()) {
