@@ -54,9 +54,8 @@ void tdbastar_epsilon(
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
     std::vector<dynobench::Trajectory> &expanded_trajs,
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
-    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
-        &results,
-    // std::vector<std::map<size_t, Motion*>> &result_motions,
+    // std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
+    //     &results,
     std::map<std::string, std::vector<Motion>> &robot_motions,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
@@ -66,13 +65,20 @@ void tdbastar_epsilon(
         nullptr,
     float w = 0.0, std::string focal_heuristic_name = "volume_wise");
 
-int highLevelfocalHeuristic(
+// takes all robot states for the time, and does one collision checking for all
+int highLevelfocalHeuristicLazy(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs);
-
+// R1 with (R2,R3,R4), R2 with (R3,R4) and R3 with R4, state-by-state
+// not for car with trailer
 int highLevelfocalHeuristicState(
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
+    std::vector<fcl::CollisionObjectd *> &robot_objs);
+// R1 with (R2,R3,R4), R2 with (R3,R4) and R3 with R4, state-by-state
+int highLevelfocalHeuristicState2(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
@@ -89,8 +95,16 @@ int lowLevelfocalHeuristicShape(
     std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
         &results,
     std::map<std::string, std::vector<Motion>> &robot_motions,
-    const dynobench::Problem &problem, LazyTraj &lazy_traj, size_t &robot_id,
+    const dynobench::Problem &problem, LazyTraj &lazy_traj, 
+     dynobench::TrajWrapper &tmp_traj, size_t &robot_id,
     const float current_gscore,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots);
+
+int lowLevelfocalHeuristicState(
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
+    dynobench::TrajWrapper &current_tmp_traj,
+    size_t &current_robot_idx, const float current_gScore,
+    std::vector<fcl::CollisionObjectd *> &robot_objs);
 
 } // namespace dynoplan

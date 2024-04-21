@@ -61,82 +61,10 @@ bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
   return (*h1)->gScore > (*h2)->gScore; // cost
 }
 
-// focal heuristic based on shape
-// this function counts the number of conflicts between the motion (being
-// considered as applicable for expansion) with the solution of other neighbor
-// robots. Here each neighbors solution is given in &results vector, and
-// robot_motions are used to retrieve the exact motion primitive from &results
-// vector. (Still state-to-state based)
-int lowLevelfocalHeuristicShape(
-    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
-        &results,
-    std::map<std::string, std::vector<Motion>> &robot_motions,
-    const dynobench::Problem &problem, LazyTraj &current_lazy_traj,
-    size_t &current_robot_idx, const float current_gscore,
-    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots) {
-  int numConflicts = 0;
-  int time_index = 0;
-  Eigen::VectorXd node_state;
-  // motion primitve being considered as applicable for expansion
-  auto &current_motion = current_lazy_traj.motion;
-  Eigen::VectorXd offset = *current_lazy_traj.offset;
-  assert(offset.size() == 2 || offset.size() == 3);
-  Eigen::Vector3d __offset;
-  if (offset.size() == 2) {
-    __offset = Eigen::Vector3d(offset(0), offset(1), 0);
-  } else {
-    __offset = offset.head<3>();
-  }
-  assert(current_motion);
-  assert(current_motion->collision_manager);
-  current_motion->collision_manager->shift(__offset);
-  size_t idx = 0;
-  size_t motion_idx = 0;
-  size_t max_size = 0;
-  Eigen::Vector3d __offset_tmp;
-  // check the motion primitive for collision with each robots final solution
-  for (auto &r : results) { // for each neighbor
-    Eigen::VectorXd offset_tmp(all_robots[idx]->get_offset_dim());
-    max_size = r.size() - 1;
-    if (idx != current_robot_idx && !r.empty()) {
-      fcl::DefaultCollisionData<double> collision_data;
-      // get the time index for other robots solution trajectory
-      time_index = std::lround(current_gscore / all_robots[idx]->ref_dt);
-      if (time_index >= int(max_size - 1)) {
-        time_index = max_size - 1;
-      }
-      node_state = r[time_index].first->state_eig;
-      motion_idx = r[time_index + 1]
-                       .first->arrivals[r[time_index + 1].second]
-                       .used_motion;
-      // get the motion primitive corresponding to the time_index from
-      // results[current_robot]
-      auto &motion_to_check =
-          robot_motions[problem.robotTypes[idx]].at(motion_idx);
-      all_robots[idx]->offset(node_state, offset_tmp);
-      if (offset_tmp.size() == 2) {
-        __offset_tmp = Eigen::Vector3d(offset_tmp(0), offset_tmp(1), 0);
-      } else {
-        __offset_tmp = offset_tmp.head<3>();
-      }
-      motion_to_check.collision_manager->shift(__offset_tmp);
-      // check for collision two motion primitives
-      current_motion->collision_manager->collide(
-          motion_to_check.collision_manager.get(), &collision_data,
-          fcl::DefaultCollisionFunction<double>);
-      if (collision_data.result.isCollision()) {
-        numConflicts++;
-      }
-      motion_to_check.collision_manager->shift(-__offset_tmp);
-    }
-    ++idx;
-  }
-  current_motion->collision_manager->shift(-__offset);
-  return numConflicts;
-}
+
 
 // state-based focal heuristic 
-int highLevelfocalHeuristic(
+int highLevelfocalHeuristicLazy(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
@@ -184,7 +112,63 @@ int highLevelfocalHeuristic(
 }
 
 // state-based focal heuristic 
+// assumes robot_objs = robot_number
 int highLevelfocalHeuristicState(
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
+    std::vector<fcl::CollisionObjectd *> &robot_objs){
+    size_t max_t1 = 0;
+    int numConflicts = 0;
+    Eigen::VectorXd state1;
+    Eigen::VectorXd state2;
+    std::vector<fcl::Transform3d> tmp_ts1(1);
+    std::vector<fcl::Transform3d> tmp_ts2(1);
+
+    for (size_t i = 0; i < solution.size()-1; i++){
+      max_t1 = solution.at(i).trajectory.states.size() - 1;
+      for (size_t j = i + 1; j < solution.size(); j++){
+        size_t max_t = std::max(max_t1, solution.at(j).trajectory.states.size() - 1);
+        // state-by-state collision checking between trajectories
+        for (size_t t = 0; t <= max_t; ++t){
+          // robot 1
+          if (t >= solution[i].trajectory.states.size()) {
+            state1 = solution[i].trajectory.states.back();
+          } else {
+            state1 = solution[i].trajectory.states[t];
+          }
+          // robot 2
+          if (t >= solution[j].trajectory.states.size()) {
+            state2 = solution[j].trajectory.states.back();
+          } else {
+            state2 = solution[j].trajectory.states[t];
+          }
+          // update robot objects for robot 1
+          all_robots[i]->transformation_collision_geometries(state1, tmp_ts1);
+          fcl::Transform3d &transform1 = tmp_ts1[0];
+          robot_objs[i]->setTranslation(transform1.translation());
+          robot_objs[i]->setRotation(transform1.rotation());
+          robot_objs[i]->computeAABB();
+          // update for robot 2
+          all_robots[j]->transformation_collision_geometries(state2, tmp_ts2);
+          fcl::Transform3d &transform2 = tmp_ts2[0];
+          robot_objs[j]->setTranslation(transform2.translation());
+          robot_objs[j]->setRotation(transform2.rotation());
+          robot_objs[j]->computeAABB();
+
+          // check for collision
+          fcl::CollisionRequest<double> request;
+          fcl::CollisionResult<double> result;
+          fcl::collide(robot_objs[i], robot_objs[j], request, result);
+          if (result.isCollision()){
+            ++numConflicts;
+          }
+        }
+      }
+    }
+    return numConflicts;
+  }
+// support car with trailer
+int highLevelfocalHeuristicState2(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
@@ -252,6 +236,7 @@ int highLevelfocalHeuristicState(
       }
       return numConflicts;
     }
+
 // state-based heuristic for single node vs. results (maybe all motion states vs. results needed ?)
 int lowLevelfocalHeuristicLazy(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
@@ -317,14 +302,161 @@ int lowLevelfocalHeuristicLazy(
   return numConflicts;
 }
 
+// focal heuristic based on shape
+// this function counts the number of conflicts between the motion (being
+// considered as applicable for expansion) with the solution of other neighbor
+// robots. Here each neighbors solution is given in &results vector, and
+// robot_motions are used to retrieve the exact motion primitive from &results
+// vector. (Still state-to-state based)
+// TO DO: use trajectory as solution
+int lowLevelfocalHeuristicShape(
+    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
+        &results,
+    std::map<std::string, std::vector<Motion>> &robot_motions,
+    const dynobench::Problem &problem, LazyTraj &current_lazy_traj,
+    dynobench::TrajWrapper &current_tmp_traj,
+    size_t &current_robot_idx, const float current_gscore,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots) {
+  int numConflicts = 0;
+  int time_index = 0;
+  Eigen::VectorXd node_state;
+  // motion primitve being considered as applicable for expansion
+  auto &current_motion = current_lazy_traj.motion;
+  Eigen::VectorXd offset = *current_lazy_traj.offset;
+  assert(offset.size() == 2 || offset.size() == 3);
+  Eigen::Vector3d __offset;
+  if (offset.size() == 2) {
+    __offset = Eigen::Vector3d(offset(0), offset(1), 0);
+  } else {
+    __offset = offset.head<3>();
+  }
+  assert(current_motion);
+  assert(current_motion->collision_manager);
+  current_motion->collision_manager->shift(__offset);
+  size_t idx = 0;
+  size_t motion_idx = 0;
+  size_t max_size = 0;
+  Eigen::Vector3d __offset_tmp;
+  
+  // check the motion primitive for collision with each robots final solution
+  for (auto &r : results) { // for each neighbor
+    Eigen::VectorXd offset_tmp(all_robots[idx]->get_offset_dim());
+    max_size = r.size() - 1;
+    if (idx != current_robot_idx && !r.empty()) {
+
+      fcl::DefaultCollisionData<double> collision_data;
+      // get the time index for other robots solution trajectory
+      time_index = std::lround(current_gscore / all_robots[idx]->ref_dt);
+      if (time_index >= int(max_size - 1)) {
+        time_index = max_size - 1;
+      }
+      node_state = r[time_index].first->state_eig;
+      motion_idx = r[time_index + 1]
+                       .first->arrivals[r[time_index + 1].second]
+                       .used_motion;
+      // get the motion primitive corresponding to the time_index from
+      // results[current_robot]
+      auto &motion_to_check =
+          robot_motions[problem.robotTypes[idx]].at(motion_idx);
+
+      all_robots[idx]->offset(node_state, offset_tmp);
+      if (offset_tmp.size() == 2) {
+        __offset_tmp = Eigen::Vector3d(offset_tmp(0), offset_tmp(1), 0);
+      } else {
+        __offset_tmp = offset_tmp.head<3>();
+      }
+      motion_to_check.collision_manager->shift(__offset_tmp);
+      // check for collision two motion primitives
+      current_motion->collision_manager->collide(
+          motion_to_check.collision_manager.get(), &collision_data,
+          fcl::DefaultCollisionFunction<double>);
+      motion_to_check.collision_manager->shift(-__offset_tmp);
+      if (collision_data.result.isCollision()) {
+        // std::cout << "current gscore: " << current_gscore << std::endl;
+        // std::cout << "current tmp traj: " << std::endl;
+        // for (auto tr : current_tmp_traj.get_states()){
+        //     std::cout << tr.format(dynobench::FMT) << std::endl;
+        // }
+        // // motion from the result
+        // dynobench::TrajWrapper tmp;
+        // tmp.allocate_size(50, all_robots[idx]->nx, all_robots[idx]->nu);
+        // tmp.set_size(motion_to_check.traj.states.size());
+        // all_robots[idx]->transform_primitive(offset_tmp, motion_to_check.traj.states,
+        //                          motion_to_check.traj.actions, tmp);
+        // std::cout << "time index: " << time_index << std::endl;
+        // std::cout << "neighbor tmp traj: " << std::endl;
+        // for (auto tr : tmp.get_states()){
+        //     std::cout << tr.format(dynobench::FMT) << std::endl;
+        // }
+        numConflicts++;
+      }
+    }
+    ++idx;
+  }
+  current_motion->collision_manager->shift(-__offset);
+  return numConflicts;
+}
+// state-based focal heuristic, doesn't work with car with trailer
+// for simplicity I assume robot_objs.size() = robot number
+int lowLevelfocalHeuristicState(
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
+    dynobench::TrajWrapper &current_tmp_traj,
+    size_t &current_robot_idx, const float current_gScore,
+    std::vector<fcl::CollisionObjectd *> &robot_objs){
+
+    int numConflicts = 0;
+    // other motion/robot
+    Eigen::VectorXd state2;
+    std::vector<fcl::Transform3d> tmp_ts1(1);
+    std::vector<fcl::Transform3d> tmp_ts2(1);
+    size_t j = 0;
+    for (auto &state1 : current_tmp_traj.get_states()){
+      // for state 1
+      all_robots[current_robot_idx]->transformation_collision_geometries(state1, tmp_ts1);
+      fcl::Transform3d &transform = tmp_ts1[0];
+      robot_objs[current_robot_idx]->setTranslation(transform.translation());
+      robot_objs[current_robot_idx]->setRotation(transform.rotation());
+      robot_objs[current_robot_idx]->computeAABB();
+
+      size_t t = current_gScore + j * all_robots[current_robot_idx]->ref_dt; 
+      size_t robot_idx = 0;
+      for (auto &sol : solution){
+        if (robot_idx != current_robot_idx && !sol.trajectory.states.empty()){
+          if (t >= sol.trajectory.states.size()) {
+            state2 = sol.trajectory.states.back();
+          } else {
+            state2 = sol.trajectory.states[t];
+          }
+          // for state 2
+          all_robots[robot_idx]->transformation_collision_geometries(state2, tmp_ts2);
+          fcl::Transform3d &transform = tmp_ts2[0];
+          robot_objs[robot_idx]->setTranslation(transform.translation());
+          robot_objs[robot_idx]->setRotation(transform.rotation());
+          robot_objs[robot_idx]->computeAABB();
+          // check for collision 
+          fcl::CollisionRequest<double> request;
+          fcl::CollisionResult<double> result;
+          fcl::collide(robot_objs[current_robot_idx], robot_objs[robot_idx], request, result);
+          if (result.isCollision()){
+            ++numConflicts;
+          }
+        }
+        ++robot_idx;
+      }
+      ++j;
+    }
+    return numConflicts;
+  }
+
 void tdbastar_epsilon(
     dynobench::Problem &problem, Options_tdbastar options_tdbastar,
     Trajectory &traj_out, const std::vector<Constraint> &constraints,
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
     std::vector<dynobench::Trajectory> &expanded_trajs,
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
-    std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
-        &results,
+    // std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
+    //     &results,
     std::map<std::string, std::vector<Motion>> &robot_motions,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
@@ -666,15 +798,10 @@ void tdbastar_epsilon(
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
 
-      if (focal_heuristic_name == "volume_wise")
-        focalHeuristic = best_node->focalHeuristic +
-                         lowLevelfocalHeuristicShape(
-                             results, robot_motions, problem, lazy_traj,
-                             robot_id, best_node->gScore, all_robots);
-      else
-        focalHeuristic = best_node->focalHeuristic +
-            lowLevelfocalHeuristicLazy(solution, tmp_node, robot_id, all_robots,
-                                   col_mng_robots, robot_objs);
+      focalHeuristic = best_node->focalHeuristic +
+                        lowLevelfocalHeuristicState(solution, all_robots, traj_wrapper, 
+                        robot_id, best_node->gScore, robot_objs);
+     
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore;
       expanded_trajs.push_back(tmp_traj);
@@ -849,15 +976,15 @@ void tdbastar_epsilon(
       assert(dist > options_tdbastar.delta);
     }
     // get results filled with updated new solution
-    results[robot_id].clear();
-    size_t arrival_idx = solution_node->current_arrival_idx;
-    while (solution_node != nullptr) {
-      results[robot_id].push_back(std::make_pair(solution_node, arrival_idx));
-      const auto &arrival = solution_node->arrivals[arrival_idx];
-      solution_node = arrival.came_from;
-      arrival_idx = arrival.arrival_idx;
-    }
-    std::reverse(results[robot_id].begin(), results[robot_id].end());
+    // results[robot_id].clear();
+    // size_t arrival_idx = solution_node->current_arrival_idx;
+    // while (solution_node != nullptr) {
+    //   results[robot_id].push_back(std::make_pair(solution_node, arrival_idx));
+    //   const auto &arrival = solution_node->arrivals[arrival_idx];
+    //   solution_node = arrival.came_from;
+    //   arrival_idx = arrival.arrival_idx;
+    // }
+    // std::reverse(results[robot_id].begin(), results[robot_id].end());
   }
 
   out_info_tdb.solved = status == Terminate_status::SOLVED;
