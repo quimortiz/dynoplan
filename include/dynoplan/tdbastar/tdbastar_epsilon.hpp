@@ -73,8 +73,8 @@ int highLevelfocalHeuristicState(
 int lowLevelfocalHeuristicState(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
-    dynobench::TrajWrapper &current_tmp_traj,
-    size_t &current_robot_idx, const float current_gScore,
+    dynobench::TrajWrapper &current_tmp_traj, size_t &current_robot_idx,
+    const float current_gScore,
     std::vector<fcl::CollisionObjectd *> &robot_objs);
 
 } // namespace dynoplan

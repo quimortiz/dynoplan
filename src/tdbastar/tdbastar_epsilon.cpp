@@ -61,115 +61,119 @@ bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
   return (*h1)->gScore > (*h2)->gScore; // cost
 }
 
-// state-based focal heuristic 
+// state-based focal heuristic
 // assumes robot_objs = robot_number
 int highLevelfocalHeuristicState(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
-    std::vector<fcl::CollisionObjectd *> &robot_objs){
-    size_t max_t1 = 0;
-    int numConflicts = 0;
-    Eigen::VectorXd state1;
-    Eigen::VectorXd state2;
-    std::vector<fcl::Transform3d> tmp_ts1(1);
-    std::vector<fcl::Transform3d> tmp_ts2(1);
+    std::vector<fcl::CollisionObjectd *> &robot_objs) {
+  size_t max_t1 = 0;
+  int numConflicts = 0;
+  Eigen::VectorXd state1;
+  Eigen::VectorXd state2;
+  std::vector<fcl::Transform3d> tmp_ts1(1);
+  std::vector<fcl::Transform3d> tmp_ts2(1);
 
-    for (size_t i = 0; i < solution.size()-1; i++){
-      max_t1 = solution.at(i).trajectory.states.size() - 1;
-      for (size_t j = i + 1; j < solution.size(); j++){
-        size_t max_t = std::max(max_t1, solution.at(j).trajectory.states.size() - 1);
-        // state-by-state collision checking between trajectories
-        for (size_t t = 0; t <= max_t; ++t){
-          // robot 1
-          if (t >= solution[i].trajectory.states.size()) {
-            state1 = solution[i].trajectory.states.back();
-          } else {
-            state1 = solution[i].trajectory.states[t];
-          }
-          // robot 2
-          if (t >= solution[j].trajectory.states.size()) {
-            state2 = solution[j].trajectory.states.back();
-          } else {
-            state2 = solution[j].trajectory.states[t];
-          }
-          // update robot objects for robot 1
-          all_robots[i]->transformation_collision_geometries(state1, tmp_ts1);
-          fcl::Transform3d &transform1 = tmp_ts1[0];
-          robot_objs[i]->setTranslation(transform1.translation());
-          robot_objs[i]->setRotation(transform1.rotation());
-          robot_objs[i]->computeAABB();
-          // update for robot 2
-          all_robots[j]->transformation_collision_geometries(state2, tmp_ts2);
-          fcl::Transform3d &transform2 = tmp_ts2[0];
-          robot_objs[j]->setTranslation(transform2.translation());
-          robot_objs[j]->setRotation(transform2.rotation());
-          robot_objs[j]->computeAABB();
+  for (size_t i = 0; i < solution.size() - 1; i++) {
+    max_t1 = solution.at(i).trajectory.states.size() - 1;
+    for (size_t j = i + 1; j < solution.size(); j++) {
+      size_t max_t =
+          std::max(max_t1, solution.at(j).trajectory.states.size() - 1);
+      // state-by-state collision checking between trajectories
+      for (size_t t = 0; t <= max_t; ++t) {
+        // robot 1
+        if (t >= solution[i].trajectory.states.size()) {
+          state1 = solution[i].trajectory.states.back();
+        } else {
+          state1 = solution[i].trajectory.states[t];
+        }
+        // robot 2
+        if (t >= solution[j].trajectory.states.size()) {
+          state2 = solution[j].trajectory.states.back();
+        } else {
+          state2 = solution[j].trajectory.states[t];
+        }
+        // update robot objects for robot 1
+        all_robots[i]->transformation_collision_geometries(state1, tmp_ts1);
+        fcl::Transform3d &transform1 = tmp_ts1[0];
+        robot_objs[i]->setTranslation(transform1.translation());
+        robot_objs[i]->setRotation(transform1.rotation());
+        robot_objs[i]->computeAABB();
+        // update for robot 2
+        all_robots[j]->transformation_collision_geometries(state2, tmp_ts2);
+        fcl::Transform3d &transform2 = tmp_ts2[0];
+        robot_objs[j]->setTranslation(transform2.translation());
+        robot_objs[j]->setRotation(transform2.rotation());
+        robot_objs[j]->computeAABB();
 
-          // check for collision
-          fcl::CollisionRequest<double> request;
-          fcl::CollisionResult<double> result;
-          fcl::collide(robot_objs[i], robot_objs[j], request, result);
-          if (result.isCollision()){
-            ++numConflicts;
-          }
+        // check for collision
+        fcl::CollisionRequest<double> request;
+        fcl::CollisionResult<double> result;
+        fcl::collide(robot_objs[i], robot_objs[j], request, result);
+        if (result.isCollision()) {
+          ++numConflicts;
         }
       }
     }
-    return numConflicts;
   }
+  return numConflicts;
+}
 
 // state-based focal heuristic, doesn't work with car with trailer
 // for simplicity I assume robot_objs.size() = robot number
 int lowLevelfocalHeuristicState(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
-    dynobench::TrajWrapper &current_tmp_traj,
-    size_t &current_robot_idx, const float current_gScore,
-    std::vector<fcl::CollisionObjectd *> &robot_objs){
+    dynobench::TrajWrapper &current_tmp_traj, size_t &current_robot_idx,
+    const float current_gScore,
+    std::vector<fcl::CollisionObjectd *> &robot_objs) {
 
-    int numConflicts = 0;
-    // other motion/robot
-    Eigen::VectorXd state2;
-    std::vector<fcl::Transform3d> tmp_ts1(1);
-    std::vector<fcl::Transform3d> tmp_ts2(1);
-    size_t j = 0;
-    for (auto &state1 : current_tmp_traj.get_states()){
-      // for state 1
-      all_robots[current_robot_idx]->transformation_collision_geometries(state1, tmp_ts1);
-      fcl::Transform3d &transform = tmp_ts1[0];
-      robot_objs[current_robot_idx]->setTranslation(transform.translation());
-      robot_objs[current_robot_idx]->setRotation(transform.rotation());
-      robot_objs[current_robot_idx]->computeAABB();
+  int numConflicts = 0;
+  // other motion/robot
+  Eigen::VectorXd state2;
+  std::vector<fcl::Transform3d> tmp_ts1(1);
+  std::vector<fcl::Transform3d> tmp_ts2(1);
+  size_t j = 0;
+  for (auto &state1 : current_tmp_traj.get_states()) {
+    // for state 1
+    all_robots[current_robot_idx]->transformation_collision_geometries(state1,
+                                                                       tmp_ts1);
+    fcl::Transform3d &transform = tmp_ts1[0];
+    robot_objs[current_robot_idx]->setTranslation(transform.translation());
+    robot_objs[current_robot_idx]->setRotation(transform.rotation());
+    robot_objs[current_robot_idx]->computeAABB();
 
-      size_t t = current_gScore + j * all_robots[current_robot_idx]->ref_dt; 
-      size_t robot_idx = 0;
-      for (auto &sol : solution){
-        if (robot_idx != current_robot_idx && !sol.trajectory.states.empty()){
-          if (t >= sol.trajectory.states.size()) {
-            state2 = sol.trajectory.states.back();
-          } else {
-            state2 = sol.trajectory.states[t];
-          }
-          // for state 2
-          all_robots[robot_idx]->transformation_collision_geometries(state2, tmp_ts2);
-          fcl::Transform3d &transform = tmp_ts2[0];
-          robot_objs[robot_idx]->setTranslation(transform.translation());
-          robot_objs[robot_idx]->setRotation(transform.rotation());
-          robot_objs[robot_idx]->computeAABB();
-          // check for collision 
-          fcl::CollisionRequest<double> request;
-          fcl::CollisionResult<double> result;
-          fcl::collide(robot_objs[current_robot_idx], robot_objs[robot_idx], request, result);
-          if (result.isCollision()){
-            ++numConflicts;
-          }
+    size_t t = current_gScore + j * all_robots[current_robot_idx]->ref_dt;
+    size_t robot_idx = 0;
+    for (auto &sol : solution) {
+      if (robot_idx != current_robot_idx && !sol.trajectory.states.empty()) {
+        if (t >= sol.trajectory.states.size()) {
+          state2 = sol.trajectory.states.back();
+        } else {
+          state2 = sol.trajectory.states[t];
         }
-        ++robot_idx;
+        // for state 2
+        all_robots[robot_idx]->transformation_collision_geometries(state2,
+                                                                   tmp_ts2);
+        fcl::Transform3d &transform = tmp_ts2[0];
+        robot_objs[robot_idx]->setTranslation(transform.translation());
+        robot_objs[robot_idx]->setRotation(transform.rotation());
+        robot_objs[robot_idx]->computeAABB();
+        // check for collision
+        fcl::CollisionRequest<double> request;
+        fcl::CollisionResult<double> result;
+        fcl::collide(robot_objs[current_robot_idx], robot_objs[robot_idx],
+                     request, result);
+        if (result.isCollision()) {
+          ++numConflicts;
+        }
       }
-      ++j;
+      ++robot_idx;
     }
-    return numConflicts;
+    ++j;
   }
+  return numConflicts;
+}
 
 void tdbastar_epsilon(
     dynobench::Problem &problem, Options_tdbastar options_tdbastar,
@@ -520,10 +524,11 @@ void tdbastar_epsilon(
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
 
-      focalHeuristic = best_node->focalHeuristic +
-                        lowLevelfocalHeuristicState(solution, all_robots, traj_wrapper, 
-                        robot_id, best_node->gScore, robot_objs);
-     
+      focalHeuristic =
+          best_node->focalHeuristic +
+          lowLevelfocalHeuristicState(solution, all_robots, traj_wrapper,
+                                      robot_id, best_node->gScore, robot_objs);
+
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore;
       expanded_trajs.push_back(tmp_traj);
