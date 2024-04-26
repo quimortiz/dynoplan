@@ -61,18 +61,18 @@ bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
   return (*h1)->gScore > (*h2)->gScore; // cost
 }
 
-// state-based focal heuristic 
+// state-based focal heuristic
 // assumes robot_objs = robot_number
 int highLevelfocalHeuristicState(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
-    std::vector<fcl::CollisionObjectd *> &robot_objs){
-    size_t max_t1 = 0;
-    int numConflicts = 0;
-    Eigen::VectorXd state1;
-    Eigen::VectorXd state2;
-    std::vector<fcl::Transform3d> tmp_ts1(1);
-    std::vector<fcl::Transform3d> tmp_ts2(1);
+    std::vector<fcl::CollisionObjectd *> &robot_objs) {
+  size_t max_t1 = 0;
+  int numConflicts = 0;
+  Eigen::VectorXd state1;
+  Eigen::VectorXd state2;
+  std::vector<fcl::Transform3d> tmp_ts1(1);
+  std::vector<fcl::Transform3d> tmp_ts2(1);
 
     size_t max_t = 0;
     for (const auto& sol : solution){
@@ -107,18 +107,18 @@ int highLevelfocalHeuristicState(
           robot_objs[j]->setRotation(transform2.rotation());
           robot_objs[j]->computeAABB();
 
-          // check for collision
-          fcl::CollisionRequest<double> request;
-          fcl::CollisionResult<double> result;
-          fcl::collide(robot_objs[i], robot_objs[j], request, result);
-          if (result.isCollision()){
-            ++numConflicts;
-          }
+        // check for collision
+        fcl::CollisionRequest<double> request;
+        fcl::CollisionResult<double> result;
+        fcl::collide(robot_objs[i], robot_objs[j], request, result);
+        if (result.isCollision()) {
+          ++numConflicts;
         }
       }
     }
-    return numConflicts;
   }
+  return numConflicts;
+}
 
 // state-based focal heuristic, doesn't work with car with trailer
 // for simplicity I assume robot_objs.size() = robot number
