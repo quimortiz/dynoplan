@@ -78,6 +78,7 @@ int highLevelfocalHeuristicState(
     for (const auto& sol : solution){
       max_t = std::max(max_t, sol.trajectory.states.size() - 1);
     }
+    // std::cout << "high-level focal heuristic" << std::endl;
     for (size_t i = 0; i < solution.size()-1; i++){
       for (size_t j = i + 1; j < solution.size(); j++){
         // state-by-state collision checking between trajectories
@@ -113,6 +114,7 @@ int highLevelfocalHeuristicState(
         fcl::collide(robot_objs[i], robot_objs[j], request, result);
         if (result.isCollision()) {
           ++numConflicts;
+          // std::cout << t << std::endl;
         }
       }
     }
@@ -187,6 +189,73 @@ int lowLevelfocalHeuristicState(
     return numConflicts;
   }
 
+int lowLevelfocalHeuristicStateDebug(
+  std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+  const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
+  dynobench::TrajWrapper &current_tmp_traj,
+  size_t &current_robot_idx, const float current_gScore,
+  std::vector<int> &tmp_node_conflicts,
+  std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal){
+
+  int numConflicts = 0;
+  tmp_node_conflicts.clear();
+  // other motion/robot
+  Eigen::VectorXd state1, state2;
+  std::vector<fcl::Transform3d> tmp_ts1(1);
+  std::vector<fcl::Transform3d> tmp_ts2(1);
+  size_t max_t = 0;
+
+  if(reachesGoal){
+    for (const auto& sol : solution){
+      if (!sol.trajectory.states.empty())
+        max_t = std::max(max_t, sol.trajectory.states.size() - 1);
+    }
+  }
+  size_t primitive_starting_index = std::lround(current_gScore / all_robots[current_robot_idx]->ref_dt);
+
+  max_t = std::max(max_t, primitive_starting_index + current_tmp_traj.get_size());
+  for (size_t t = primitive_starting_index; t <= max_t; t++){
+    if (t-primitive_starting_index >= current_tmp_traj.get_size()) {
+      state1 = current_tmp_traj.get_state(current_tmp_traj.get_size()-1);
+    } else {
+      state1 = current_tmp_traj.get_state(t-primitive_starting_index);
+    }
+    // for state 1
+    all_robots[current_robot_idx]->transformation_collision_geometries(state1, tmp_ts1);
+    fcl::Transform3d &transform = tmp_ts1[0];
+    robot_objs[current_robot_idx]->setTranslation(transform.translation());
+    robot_objs[current_robot_idx]->setRotation(transform.rotation());
+    robot_objs[current_robot_idx]->computeAABB();
+
+    size_t robot_idx = 0;
+    for (auto &sol : solution){
+      if (robot_idx != current_robot_idx && !sol.trajectory.states.empty()){
+        if (t >= sol.trajectory.states.size()) {
+          state2 = sol.trajectory.states.back();
+        }
+        else{
+          state2 = sol.trajectory.states.at(t);
+        }
+        // for state 2
+        all_robots[robot_idx]->transformation_collision_geometries(state2, tmp_ts2);
+        fcl::Transform3d &transform = tmp_ts2[0];
+        robot_objs[robot_idx]->setTranslation(transform.translation());
+        robot_objs[robot_idx]->setRotation(transform.rotation());
+        robot_objs[robot_idx]->computeAABB();
+        // check for collision 
+        fcl::CollisionRequest<double> request;
+        fcl::CollisionResult<double> result;
+        fcl::collide(robot_objs[current_robot_idx], robot_objs[robot_idx], request, result);
+        if (result.isCollision()){
+          ++numConflicts;
+          tmp_node_conflicts.push_back(t);
+        }
+      }
+      ++robot_idx;
+    }
+  }
+  return numConflicts;
+}
 
 void tdbastar_epsilon(
     dynobench::Problem &problem, Options_tdbastar options_tdbastar,
@@ -194,8 +263,6 @@ void tdbastar_epsilon(
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
     std::vector<dynobench::Trajectory> &expanded_trajs,
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
-    // std::vector<std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>>>
-    //     &results,
     std::map<std::string, std::vector<Motion>> &robot_motions,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
@@ -205,6 +272,9 @@ void tdbastar_epsilon(
     float w, std::string focal_heuristic_name) {
 
   // #ifdef DBG_PRINTS
+  std::cout << "*** options_tdbastar ***" << std::endl;
+  options_tdbastar.print(std::cout);
+  std::cout << "***" << std::endl;
   std::cout << "Running tdbA* for robot " << robot_id << std::endl;
   for (const auto &constraint : constraints) {
     std::cout << "constraint at time: " << constraint.time << " ";
@@ -450,8 +520,9 @@ void tdbastar_epsilon(
     best_node = *best_handle;
     last_f_score = best_node->fScore;
     best_node->is_in_open = false;
-    std::cout << "best node focalheuristic: " << best_node->focalHeuristic << std::endl;
-    std::cout << "best node fscore: " << best_node->fScore << std::endl;
+    // std::cout << "best node state: " << best_node->state_eig.format(FMT) << std::endl;
+    // std::cout << "best node focalheuristic: " << best_node->focalHeuristic << std::endl;
+    // std::cout << "best node fscore: " << best_node->fScore << std::endl;
 
     if (time_bench.expands % print_every == 0) {
       print_search_status();
@@ -542,7 +613,10 @@ void tdbastar_epsilon(
       focalHeuristic = best_node->focalHeuristic +
                         lowLevelfocalHeuristicState(solution, all_robots, traj_wrapper, 
                         robot_id, best_node->gScore, robot_objs, reachesGoal);
-     
+      // focalHeuristic = best_node->focalHeuristic +
+      //                   lowLevelfocalHeuristicStateDebug(solution, all_robots, traj_wrapper, 
+      //                   robot_id, best_node->gScore, tmp_node->conflicts, robot_objs, reachesGoal);
+
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore;
       expanded_trajs.push_back(tmp_traj);
@@ -572,6 +646,7 @@ void tdbastar_epsilon(
              .used_motion = lazy_traj.motion->idx,
              .arrival_idx = best_node->current_arrival_idx});
         __node->current_arrival_idx = 0;
+        // __node->conflicts = tmp_node->conflicts;
         time_bench.time_queue +=
             timed_fun_void([&] { __node->handle = open.push(__node); });
         time_bench.time_nearestNode_add +=
@@ -608,6 +683,7 @@ void tdbastar_epsilon(
                 n->fScore = tentative_g + n->hScore;
                 n->intermediate_state = -1; // reset intermediate state.
                 n->focalHeuristic = focalHeuristic;
+                // n->conflicts = tmp_node->conflicts; 
                 n->arrivals.push_back(
                     {.gScore = tentative_g,
                      .came_from = best_node,
