@@ -273,7 +273,7 @@ void tdbastar_epsilon(
     std::vector<fcl::CollisionObjectd *> &robot_objs,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> *heuristic_nn,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result,
-    float w, std::string focal_heuristic_name) {
+    float w) {
 
   // #ifdef DBG_PRINTS
   std::cout << "*** options_tdbastar ***" << std::endl;
