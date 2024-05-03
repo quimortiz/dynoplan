@@ -156,6 +156,9 @@ int lowLevelfocalHeuristicState(
       state1 = current_tmp_traj.get_state(t - primitive_starting_index);
     }
     // for state 1
+    // std::cout << "state 1:" << std::endl;
+    // std::cout << state1.format(FMT)<< std::endl;
+
     all_robots[current_robot_idx]->transformation_collision_geometries(state1,
                                                                        tmp_ts1);
     fcl::Transform3d &transform = tmp_ts1[0];
@@ -172,6 +175,8 @@ int lowLevelfocalHeuristicState(
           state2 = sol.trajectory.states.at(t);
         }
         // for state 2
+        // std::cout << "state 2: " << std::endl;
+        // std::cout << state2.format(FMT)<< std::endl;
         all_robots[robot_idx]->transformation_collision_geometries(state2,
                                                                    tmp_ts2);
         fcl::Transform3d &transform = tmp_ts2[0];
@@ -184,6 +189,7 @@ int lowLevelfocalHeuristicState(
         fcl::collide(robot_objs[current_robot_idx], robot_objs[robot_idx],
                      request, result);
         if (result.isCollision()) {
+          // std::cout << "collision" << std::endl;
           ++numConflicts;
         }
       }
@@ -279,7 +285,7 @@ void tdbastar_epsilon(
   std::cout << "*** options_tdbastar ***" << std::endl;
   options_tdbastar.print(std::cout);
   std::cout << "***" << std::endl;
-  std::cout << "Running tdbA* for robot " << robot_id << std::endl;
+  std::cout << "Running tdbA*-epsilon for robot " << robot_id << std::endl;
   for (const auto &constraint : constraints) {
     std::cout << "constraint at time: " << constraint.time << " ";
     std::cout << constraint.constrained_state.format(dynobench::FMT)
@@ -357,9 +363,10 @@ void tdbastar_epsilon(
   if (reverse_search) {
     h_fun = std::make_shared<Heu_blind>();
   } else {
-    h_fun = std::make_shared<
-        Heu_roadmap_bwd<std::shared_ptr<AStarNode>, AStarNode>>(
-        robot, heuristic_nn, problem.goals[robot_id]);
+    h_fun = std::make_shared<Heu_euclidean>(robot, problem.goals[robot_id]);
+    // h_fun = std::make_shared<
+    //     Heu_roadmap_bwd<std::shared_ptr<AStarNode>, AStarNode>>(
+    //     robot, heuristic_nn, problem.goals[robot_id]);
   }
   std::vector<std::shared_ptr<AStarNode>> all_nodes;
   all_nodes.push_back(std::make_shared<AStarNode>());
@@ -524,9 +531,16 @@ void tdbastar_epsilon(
     best_node = *best_handle;
     last_f_score = best_node->fScore;
     best_node->is_in_open = false;
-    // std::cout << "best node state: " << best_node->state_eig.format(FMT) << std::endl;
-    // std::cout << "best node focalheuristic: " << best_node->focalHeuristic << std::endl;
-    // std::cout << "best node fscore: " << best_node->fScore << std::endl;
+    // std::cout << "checking the focal set" << std::endl;
+    // for (auto &f : focal) {
+    //   auto f2 = *f;
+    //   std::cout << f2->focalHeuristic << std::endl;
+    // }
+    std::cout << "open set size: " << open.size() << std::endl;
+    std::cout << "focal set size: " << focal.size() << std::endl;
+    std::cout << "best node state: " << best_node->state_eig.format(FMT) << std::endl;
+    std::cout << "best node focalheuristic: " << best_node->focalHeuristic << std::endl;
+    std::cout << "best node fscore: " << best_node->fScore << std::endl;
 
     if (time_bench.expands % print_every == 0) {
       print_search_status();
