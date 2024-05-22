@@ -77,6 +77,14 @@ int lowLevelfocalHeuristicState(
     const float current_gScore,
     std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal = false);
 
+int lowLevelfocalHeuristicSingleState(
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
+    Eigen::VectorXd state1, size_t &current_robot_idx,
+    const float current_gScore,
+    std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal = false);
+
+
 int lowLevelfocalHeuristicStateDebug(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
