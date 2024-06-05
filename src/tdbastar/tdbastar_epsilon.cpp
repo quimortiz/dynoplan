@@ -650,9 +650,32 @@ namespace dynoplan
       auto iterEnd = open.ordered_end();
       for (; iter != iterEnd; ++iter)
       {
-        auto cost = (*iter)->fScore;
-        if (cost <= best_cost * w)
+        // auto cost = (*iter)->fScore;
+        // find/compute lowest focalHeuristic that fulfills suboptimality condition
+        int bestFocalHeuristic = std::numeric_limits<int>::max();
+        size_t best_focal_arrival_idx = 0;
+        size_t idx = 0;
+        bool found = false;
+        for(const auto& arrival : (*iter)->arrivals) {
+          double cost = arrival.gScore + (*iter)->hScore; // fScore
+          if (cost <= best_cost * w) {
+            if (arrival.focalHeuristic < bestFocalHeuristic) {
+              bestFocalHeuristic = arrival.focalHeuristic;
+              best_focal_arrival_idx = idx;
+            } else if (arrival.focalHeuristic == bestFocalHeuristic) {
+              // TODO: add tie braking: same focalheuristic value -> prefer lower gScore
+            }
+            found = true;
+          }
+          ++idx;
+        }
+
+        if (found)
         {
+          (*iter)->bestFocalHeuristic = bestFocalHeuristic;
+          (*iter)->best_focal_arrival_idx = best_focal_arrival_idx;
+          // (*iter)->arrival_idx = best_focal_arrival_idx;
+
           std::shared_ptr<AStarNode> n = *iter;
           focal.push(n->handle);
         }
@@ -849,6 +872,7 @@ namespace dynoplan
           __node->reaches_goal = reachesGoal;
           __node->arrivals.push_back(
               {.gScore = gScore,
+               .focalHeuristic = focalHeuristic,
                .came_from = best_node,
                .used_motion = lazy_traj.motion->idx,
                .arrival_idx = best_node->current_arrival_idx});
@@ -911,6 +935,7 @@ namespace dynoplan
                   // n->conflicts = tmp_node->conflicts;
                   n->arrivals.push_back(
                       {.gScore = tentative_g,
+                       .focalHeuristic = focalHeuristic,
                        .came_from = best_node,
                        .used_motion = lazy_traj.motion->idx,
                        .arrival_idx = best_node->current_arrival_idx});
@@ -959,6 +984,7 @@ namespace dynoplan
             __node->reaches_goal = reachesGoal;
             __node->arrivals.push_back(
                 {.gScore = gScore,
+                 .focalHeuristic = focalHeuristic,
                  .came_from = best_node,
                  .used_motion = lazy_traj.motion->idx,
                  .arrival_idx = best_node->current_arrival_idx});
