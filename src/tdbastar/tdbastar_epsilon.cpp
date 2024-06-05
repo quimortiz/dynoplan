@@ -720,11 +720,11 @@ namespace dynoplan
       {
         print_search_status();
       }
-      if (best_node->focalHeuristic >= 1)
-      {
-        std::cout << "best node has focal heuristic = 1!, quitting!" << std::endl;
-        break;
-      }
+      // if (best_node->focalHeuristic >= 1)
+      // {
+      //   std::cout << "best node has focal heuristic = 1!, quitting!" << std::endl;
+      //   break;
+      // }
       time_bench.expands++;
 
       // CHECK if best node is close ENOUGH to goal
