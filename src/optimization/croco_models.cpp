@@ -165,21 +165,21 @@ void check_input_calc(Eigen::Ref<Eigen::VectorXd> xnext,
                       const Eigen::Ref<const Vxd> &u, size_t nx, size_t nu) {
 
   if (static_cast<std::size_t>(x.size()) != nx) {
-    throw_pretty(
-        "Invalid argument: " << "x has wrong dimension (it should be " +
-                                    std::to_string(nx) + ")");
+    throw_pretty("Invalid argument: "
+                 << "x has wrong dimension (it should be " +
+                        std::to_string(nx) + ")");
   }
 
   if (static_cast<std::size_t>(u.size()) != nu) {
-    throw_pretty(
-        "Invalid argument: " << "x has wrong dimension (it should be " +
-                                    std::to_string(nu) + ")");
+    throw_pretty("Invalid argument: "
+                 << "x has wrong dimension (it should be " +
+                        std::to_string(nu) + ")");
   }
 
   if (static_cast<std::size_t>(xnext.size()) != nx) {
-    throw_pretty(
-        "Invalid argument: " << "xnext has wrong dimension (it should be " +
-                                    std::to_string(nx) + ")");
+    throw_pretty("Invalid argument: "
+                 << "xnext has wrong dimension (it should be " +
+                        std::to_string(nx) + ")");
   }
 };
 
@@ -190,38 +190,38 @@ void check_input_calcdiff(Eigen::Ref<Eigen::MatrixXd> Fx,
                           size_t nu) {
 
   if (static_cast<std::size_t>(x.size()) != nx) {
-    throw_pretty(
-        "Invalid argument: " << "x has wrong dimension (it should be " +
-                                    std::to_string(nx) + ")");
+    throw_pretty("Invalid argument: "
+                 << "x has wrong dimension (it should be " +
+                        std::to_string(nx) + ")");
   }
   if (static_cast<std::size_t>(u.size()) != nu) {
-    throw_pretty(
-        "Invalid argument: " << "u has wrong dimension (it should be " +
-                                    std::to_string(nu) + ")");
+    throw_pretty("Invalid argument: "
+                 << "u has wrong dimension (it should be " +
+                        std::to_string(nu) + ")");
   }
 
   if (static_cast<std::size_t>(Fx.cols()) != nx) {
-    throw_pretty(
-        "Invalid argument: " << "Fx has wrong dimension (it should be " +
-                                    std::to_string(nx) + ")");
+    throw_pretty("Invalid argument: "
+                 << "Fx has wrong dimension (it should be " +
+                        std::to_string(nx) + ")");
   }
 
   if (static_cast<std::size_t>(Fx.rows()) != nx) {
-    throw_pretty(
-        "Invalid argument: " << "Fx has wrong dimension (it should be " +
-                                    std::to_string(nx) + ")");
+    throw_pretty("Invalid argument: "
+                 << "Fx has wrong dimension (it should be " +
+                        std::to_string(nx) + ")");
   }
 
   if (static_cast<std::size_t>(Fu.cols()) != nu) {
-    throw_pretty(
-        "Invalid argument: " << "Fu has wrong dimension (it should be " +
-                                    std::to_string(nx) + ")");
+    throw_pretty("Invalid argument: "
+                 << "Fu has wrong dimension (it should be " +
+                        std::to_string(nx) + ")");
   }
 
   if (static_cast<std::size_t>(Fu.rows()) != nx) {
-    throw_pretty(
-        "Invalid argument: " << "Fu has wrong dimension (it should be " +
-                                    std::to_string(nx) + ")");
+    throw_pretty("Invalid argument: "
+                 << "Fu has wrong dimension (it should be " +
+                        std::to_string(nx) + ")");
   }
 }
 
