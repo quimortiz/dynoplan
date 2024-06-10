@@ -85,12 +85,4 @@ int lowLevelfocalHeuristicSingleState(
     std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal = false);
 
 
-int lowLevelfocalHeuristicStateDebug(
-    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
-    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
-    dynobench::TrajWrapper &current_tmp_traj,
-    size_t &current_robot_idx, const float current_gScore,
-    std::vector<int> &tmp_node_conflicts,
-    std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal=false);
-
 } // namespace dynoplan
