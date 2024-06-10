@@ -84,5 +84,4 @@ int lowLevelfocalHeuristicSingleState(
     const float current_gScore,
     std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal = false);
 
-
 } // namespace dynoplan

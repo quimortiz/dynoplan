@@ -57,8 +57,8 @@ struct AStarNode {
   double hScore;
 
   std::vector<int> motions{}; // list of applicable motions
-  // std::vector<int> conflicts{}; 
-  
+  // std::vector<int> conflicts{};
+
   double get_cost() const { return gScore; }
 
   // const AStarNode *came_from;
@@ -85,7 +85,7 @@ struct AStarNode {
   size_t current_arrival_idx;
 
   // These two values are updated when we reconstruct the FOCAL list from OPEN
-  int bestFocalHeuristic;         // ecbs
+  int bestFocalHeuristic; // ecbs
   size_t best_focal_arrival_idx;
 
   const ob::State *getState() { return state; }
