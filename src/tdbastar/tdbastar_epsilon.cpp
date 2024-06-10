@@ -711,22 +711,9 @@ namespace dynoplan
         std::cout << "x: " << best_node->state_eig.format(FMT) << std::endl;
         std::cout << "d: " << distance_to_goal << std::endl;
         std::cout << "focal: " << best_node_bestFocalHeuristic << std::endl;
-        if (all_print){
-          std::cout << "Inspecting the solution!" << std::endl;
-          std::shared_ptr<AStarNode> n = best_node;
-          size_t arrival_idx = n->best_focal_arrival_idx;
-          std::cout << n->state_eig.format(dynobench::FMT) << std::endl;
-          while (n != nullptr) {
-            std::cout << "//////////////////" << std::endl;
-            std::cout << "arrival_id: " << arrival_idx << std::endl;
-            const auto &arrival = n->arrivals[arrival_idx]; // get the struct, exact one using arrival_idx
-            n = arrival.came_from; // get the parent
-            if (n != nullptr){
-              std::cout << "came_from: " << n->state_eig.format(dynobench::FMT) << std::endl;
-            }
-            arrival_idx = arrival.arrival_idx; // get the best_node.current_arrival_idx in order to get the exact element of the current node's arrivals vector.
-          }
-        }
+        // for extracting the solution, for the consistency in order to use the same from_solution_to_yaml_and_traj
+        // function. Otherwise, current_arrival_idx doesn't point to any useful index/info.
+        best_node->current_arrival_idx = best_node->best_focal_arrival_idx;
         status = Terminate_status::SOLVED;
         break;
       }

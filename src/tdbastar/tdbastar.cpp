@@ -129,8 +129,8 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
   // TODO: check what happens if a solution is a single state?
 
   std::shared_ptr<AStarNode> n = solution;
-  // size_t arrival_idx = n->current_arrival_idx;
-  size_t arrival_idx = n->best_focal_arrival_idx;
+  size_t arrival_idx = n->current_arrival_idx;
+  // size_t arrival_idx = n->best_focal_arrival_idx;
   while (n != nullptr) {
     result.push_back(std::make_pair(n, arrival_idx));
     const auto &arrival = n->arrivals[arrival_idx]; // get the struct, exact one using arrival_idx
