@@ -126,7 +126,7 @@ struct Heu_euclidean : Heu_fun {
     return robot->lower_bound_time(x, goal);
   }
 
-  virtual ~Heu_euclidean() override{};
+  virtual ~Heu_euclidean() override {};
 };
 
 struct Heu_blind : Heu_fun {
@@ -138,7 +138,7 @@ struct Heu_blind : Heu_fun {
     return 0;
   }
 
-  virtual ~Heu_blind() override{};
+  virtual ~Heu_blind() override {};
 };
 
 struct Heu_roadmap : Heu_fun {
@@ -181,12 +181,12 @@ struct Heu_roadmap : Heu_fun {
     return std::max(vel_h, pos_h);
   }
 
-  virtual ~Heu_roadmap() override{
+  virtual ~Heu_roadmap() override {
 
-      // robot->getSpaceInformation()->freeState(__x_zero_vel);
+    // robot->getSpaceInformation()->freeState(__x_zero_vel);
 
-      // TODO: memory leak
-      // I have to delete more stuff!!!
+    // TODO: memory leak
+    // I have to delete more stuff!!!
   };
 };
 
@@ -213,7 +213,7 @@ template <typename _T, typename _Node> struct Heu_roadmap_bwd : Heu_fun {
     }
   }
 
-  virtual ~Heu_roadmap_bwd() override{};
+  virtual ~Heu_roadmap_bwd() override {};
 };
 
 void build_heuristic_distance_new(

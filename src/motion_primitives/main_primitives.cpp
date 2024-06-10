@@ -379,7 +379,8 @@ int main(int argc, const char *argv[]) {
     }
     CSTR_(trajectories.data.size());
     trajectories.compute_stats(out_file.c_str());
-    std::cout << "writing stats to " << "/tmp/tmp_stats.yaml" << std::endl;
+    std::cout << "writing stats to "
+              << "/tmp/tmp_stats.yaml" << std::endl;
     std::filesystem::copy(out_file, "/tmp/tmp_stats.yaml",
                           std::filesystem::copy_options::overwrite_existing);
   }

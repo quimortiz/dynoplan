@@ -276,8 +276,8 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     }
     DYNO_CHECK_LEQ(take_num_actions, motion.actions.size(), AT);
     if (out) {
-      *out << space6 + "# " << "take_num_actions " << take_num_actions
-           << std::endl;
+      *out << space6 + "# "
+           << "take_num_actions " << take_num_actions << std::endl;
     }
 
     for (size_t k = 0; k < take_num_actions; ++k) {
@@ -675,19 +675,22 @@ void tdbastar(
     if (static_cast<size_t>(time_bench.expands) >=
         options_tdbastar.max_expands) {
       status = Terminate_status::MAX_EXPANDS;
-      std::cout << "BREAK search:" << "MAX_EXPANDS" << std::endl;
+      std::cout << "BREAK search:"
+                << "MAX_EXPANDS" << std::endl;
       return true;
     }
 
     if (watch.elapsed_ms() > options_tdbastar.search_timelimit) {
       status = Terminate_status::MAX_TIME;
-      std::cout << "BREAK search:" << "MAX_TIME" << std::endl;
+      std::cout << "BREAK search:"
+                << "MAX_TIME" << std::endl;
       return true;
     }
 
     if (open.empty()) {
       status = Terminate_status::EMPTY_QUEUE;
-      std::cout << "BREAK search:" << "EMPTY_QUEUE" << std::endl;
+      std::cout << "BREAK search:"
+                << "EMPTY_QUEUE" << std::endl;
       return true;
     }
 

@@ -117,7 +117,7 @@ public:
   bool use_pin = true;
   std::shared_ptr<dynobench::StateDyno> state;
   explicit StateCrocoDyno(const std::shared_ptr<dynobench::StateDyno> &state)
-      : StateAbstractTpl<Scalar>(state->nx, state->ndx), state(state){};
+      : StateAbstractTpl<Scalar>(state->nx, state->ndx), state(state) {};
 
   virtual ~StateCrocoDyno() {}
 
@@ -276,7 +276,7 @@ struct Dynamics {
   Eigen::VectorXd x_ub;
   Eigen::VectorXd x_weightb;
 
-  virtual ~Dynamics(){};
+  virtual ~Dynamics() {};
 };
 
 struct Cost {
@@ -479,7 +479,7 @@ struct Dynamics_free_time {
   Eigen::VectorXd x_ub;
   Eigen::VectorXd x_weightb;
 
-  virtual ~Dynamics_free_time(){};
+  virtual ~Dynamics_free_time() {};
 };
 
 struct Quaternion_cost : Cost {

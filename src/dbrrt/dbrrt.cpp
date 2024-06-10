@@ -497,14 +497,16 @@ void dbrrtConnect(const dynobench::Problem &problem,
   auto stop_search = [&] {
     if (static_cast<size_t>(time_bench.expands) >= options_dbrrt.max_expands) {
       status = Terminate_status::MAX_EXPANDS;
-      std::cout << "BREAK search:" << "MAX_EXPANDS" << std::endl;
+      std::cout << "BREAK search:"
+                << "MAX_EXPANDS" << std::endl;
 
       return true;
     }
 
     if (watch.elapsed_ms() > options_dbrrt.timelimit) {
       status = Terminate_status::MAX_TIME;
-      std::cout << "BREAK search:" << "MAX_TIME" << std::endl;
+      std::cout << "BREAK search:"
+                << "MAX_TIME" << std::endl;
       return true;
     }
     return false;
@@ -1049,14 +1051,16 @@ void dbrrt(const dynobench::Problem &problem,
   auto stop_search = [&] {
     if (static_cast<size_t>(time_bench.expands) >= options_dbrrt.max_expands) {
       status = Terminate_status::MAX_EXPANDS;
-      std::cout << "BREAK search:" << "MAX_EXPANDS" << std::endl;
+      std::cout << "BREAK search:"
+                << "MAX_EXPANDS" << std::endl;
 
       return true;
     }
 
     if (watch.elapsed_ms() > options_dbrrt.timelimit) {
       status = Terminate_status::MAX_TIME;
-      std::cout << "BREAK search:" << "MAX_TIME" << std::endl;
+      std::cout << "BREAK search:"
+                << "MAX_TIME" << std::endl;
       return true;
     }
     return false;
@@ -1116,8 +1120,9 @@ void dbrrt(const dynobench::Problem &problem,
     if (options_dbrrt.ao_rrt &&
         near_node->gScore + near_node->hScore >
             options_dbrrt.best_cost_prune_factor * cost_bound) {
-      std::cout << "warning! " << "cost of near is above bound -- "
-                << near_node->gScore << " " << cost_bound << std::endl;
+      std::cout << "warning! "
+                << "cost of near is above bound -- " << near_node->gScore << " "
+                << cost_bound << std::endl;
       continue;
     }
 

@@ -422,8 +422,10 @@ void solve_sst(const dynobench::Problem &problem,
       auto &state = states.at(i);
       auto &edge = edges.at(i);
       out << "- " << std::endl;
-      out << " " << "x: " << state.format(FMT) << std::endl;
-      out << " " << "e: ";
+      out << " "
+          << "x: " << state.format(FMT) << std::endl;
+      out << " "
+          << "e: ";
       print_vec(edge.data(), edge.size(), out);
     }
   }

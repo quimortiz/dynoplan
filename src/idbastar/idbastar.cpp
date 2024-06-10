@@ -280,8 +280,8 @@ void idbA(const dynobench::Problem &problem,
                          std::make_move_iterator(motions_out.end()));
 
           std::cout << "Afer insert " << motions.size() << std::endl;
-          std::cout << "Warning: " << "I am inserting at the beginning"
-                    << std::endl;
+          std::cout << "Warning: "
+                    << "I am inserting at the beginning" << std::endl;
 
           std::cout << "i update the idx of the motions " << std::endl;
           // Very important to update the idx of the motions
