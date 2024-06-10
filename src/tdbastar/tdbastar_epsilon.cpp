@@ -675,10 +675,6 @@ namespace dynoplan
         print_search_status();
       }
       time_bench.expands++;
-      if (best_node->bestFocalHeuristic >= 1){
-        std::cout << "Best node has focal heuristic 1!" << std::endl;
-        break;
-      }
       // CHECK if best node is close ENOUGH to goal
       double distance_to_goal =
           robot->distance(best_node->state_eig, problem.goals[robot_id]);
