@@ -417,36 +417,31 @@ bool check_lazy_trajectory(
   } else {
     reachesGoal = robot.distance(tmp_traj.get_state(0), goal) <= delta;
   }
-  for (const auto &constraint : constraints) {
-    // a constraint violation can only occur between t in [current->gScore,
-    // tentative_gScore]
-    float time_offset = constraint.time - best_node_gScore;
-    int time_index = std::lround(time_offset / robot.ref_dt);
-    Eigen::VectorXd state_to_check;
-    if (reachesGoal && time_index >= (int)tmp_traj.get_size() - 1) {
-      state_to_check = tmp_traj.get_state(tmp_traj.get_size() - 1);
-    }
-    if (time_index >= 0 && time_index < (int)tmp_traj.get_size() - 1) {
-      state_to_check = tmp_traj.get_state(time_index);
-    }
+  time_bench.time_check_constraints += timed_fun_void([&] {
+    for (const auto &constraint : constraints) {
+      // a constraint violation can only occur between t in [current->gScore,
+      // tentative_gScore]
+      float time_offset = constraint.time - best_node_gScore;
+      int time_index = std::lround(time_offset / robot.ref_dt);
+      Eigen::VectorXd state_to_check;
+      if (reachesGoal && time_index >= (int)tmp_traj.get_size() - 1) {
+        state_to_check = tmp_traj.get_state(tmp_traj.get_size() - 1);
+      }
+      if (time_index >= 0 && time_index < (int)tmp_traj.get_size() - 1) {
+        state_to_check = tmp_traj.get_state(time_index);
+      }
 
-    if (state_to_check.size() > 0) {
-      bool violation =
-          robot.distance(state_to_check, constraint.constrained_state) <= delta;
-      if (violation) {
-        motion_valid = false;
-        // std::cout << "VIOLATION inside lazy traj check" << time_index << " "
-        // << tmp_traj.get_size() << std::endl; std::cout << "State to check: "
-        // << state_to_check.format(dynobench::FMT) << std::endl; std::cout <<
-        // "Constraint state: " <<
-        // constraint.constrained_state.format(dynobench::FMT) << std::endl;
-        // throw std::runtime_error("Internal error: constraint violation in
-        // check lazy trajectory!");
-        break;
+      if (state_to_check.size() > 0) {
+        bool violation =
+            robot.distance(state_to_check, constraint.constrained_state) <= delta;
+        if (violation) {
+          motion_valid = false;
+          break;
+        }
       }
     }
-  }
-  // std::cout << "Motion validity: " << motion_valid << std::endl;
+  });
+ 
   return motion_valid;
 };
 

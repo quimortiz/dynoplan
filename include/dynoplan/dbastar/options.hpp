@@ -37,6 +37,8 @@ struct Time_benchmark {
   int motions_tree_size = 0;
   int states_tree_size = 0;
   double time_search = 0;
+  double time_collision_heuristic = 0;
+  double time_check_constraints = 0;
 
   void inline write(std::ostream &out) {
 
