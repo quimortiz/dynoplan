@@ -315,18 +315,18 @@ int lowLevelfocalHeuristicState(
 }
 
 // low-levle focal heuristic needed for rewiring
+// TO DO: combine with lowLevelfocalHeuristicState
 int lowLevelfocalHeuristicSingleState(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     Eigen::VectorXd state1, size_t &current_robot_idx,
     const float current_gScore,
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal) {
 
   int numConflicts = 0;
   // other motion/robot
-  Eigen::VectorXd state2;
-  std::vector<fcl::Transform3d> tmp_ts1(1);
-  std::vector<fcl::Transform3d> tmp_ts2(1);
+  Eigen::VectorXd state;
   size_t max_t = 0;
 
   if (reachesGoal) {
@@ -341,38 +341,42 @@ int lowLevelfocalHeuristicSingleState(
   max_t = std::max(max_t, primitive_starting_index + 1); // for a single state
 
   for (size_t t = primitive_starting_index; t <= max_t; t++) {
-
-    all_robots[current_robot_idx]->transformation_collision_geometries(state1,
-                                                                       tmp_ts1);
-    fcl::Transform3d &transform = tmp_ts1[0];
-    robot_objs[current_robot_idx]->setTranslation(transform.translation());
-    robot_objs[current_robot_idx]->setRotation(transform.rotation());
-    robot_objs[current_robot_idx]->computeAABB();
-
+    std::vector<fcl::Transform3d> ts_data;
     size_t robot_idx = 0;
-    for (auto &sol : solution) {
-      if (robot_idx != current_robot_idx && !sol.trajectory.states.empty()) {
-        if (t >= sol.trajectory.states.size()) {
-          state2 = sol.trajectory.states.back();
+    size_t obj_idx = 0;
+    for (auto &robot : all_robots){
+      if (robot_idx != current_robot_idx && !solution.at(robot_idx).trajectory.states.empty()){
+        if (t >= solution.at(robot_idx).trajectory.states.size()) {
+          state = solution.at(robot_idx).trajectory.states.back(); // state for the neighbor
         } else {
-          state2 = sol.trajectory.states.at(t);
-        }
-        all_robots[robot_idx]->transformation_collision_geometries(state2,
-                                                                   tmp_ts2);
-        fcl::Transform3d &transform = tmp_ts2[0];
-        robot_objs[robot_idx]->setTranslation(transform.translation());
-        robot_objs[robot_idx]->setRotation(transform.rotation());
-        robot_objs[robot_idx]->computeAABB();
-        // check for collision
-        fcl::CollisionRequest<double> request;
-        fcl::CollisionResult<double> result;
-        fcl::collide(robot_objs[current_robot_idx], robot_objs[robot_idx],
-                     request, result);
-        if (result.isCollision()) {
-          ++numConflicts;
+          state = solution.at(robot_idx).trajectory.states.at(t);
         }
       }
+      else { 
+        state = state1;
+      }
+      // all states into one vector
+      std::vector<fcl::Transform3d> tmp_ts(1);
+      if (robot->name == "car_with_trailers") {
+        tmp_ts.resize(2);
+      }
+      robot->transformation_collision_geometries(state, tmp_ts);
+      ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
       ++robot_idx;
+    }
+    // prepare/update the collision object vector
+    for (size_t i = 0; i < ts_data.size(); i++) {
+      fcl::Transform3d &transform = ts_data[i];
+      robot_objs[obj_idx]->setTranslation(transform.translation());
+      robot_objs[obj_idx]->setRotation(transform.rotation());
+      robot_objs[obj_idx]->computeAABB();
+      ++obj_idx;
+    }
+    col_mng_robots->update(robot_objs);
+    fcl::DefaultCollisionData<double> collision_data;
+    col_mng_robots->collide(&collision_data, fcl::DefaultCollisionFunction<double>);
+    if (collision_data.result.isCollision()){
+      ++numConflicts;
     }
   }
   return numConflicts;
@@ -900,7 +904,7 @@ void tdbastar_epsilon(
                     .focalHeuristic =
                         focalHeuristic + lowLevelfocalHeuristicSingleState(
                                              solution, all_robots, n->state_eig,
-                                             robot_id, n->gScore, robot_objs,
+                                             robot_id, n->gScore, col_mng_robots, robot_objs,
                                              reachesGoal),
                     .came_from = best_node,
                     .used_motion = lazy_traj.motion->idx,

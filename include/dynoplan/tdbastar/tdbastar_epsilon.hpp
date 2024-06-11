@@ -99,6 +99,7 @@ int lowLevelfocalHeuristicSingleState(
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     Eigen::VectorXd state1, size_t &current_robot_idx,
     const float current_gScore,
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal = false);
 
 } // namespace dynoplan
