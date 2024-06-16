@@ -65,16 +65,33 @@ void tdbastar_epsilon(
 
 // R1 with (R2,R3,R4), R2 with (R3,R4) and R3 with R4, state-by-state
 // not for car with trailer
-int highLevelfocalHeuristicState(
+int highLevelfocalHeuristicStatePrecise(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs);
 
+// less accurate, but faster
+int highLevelfocalHeuristicState(
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
+    std::vector<fcl::CollisionObjectd *> &robot_objs);
+
+// computationally less efficient version of the low-level focal heuristic
+int lowLevelfocalHeuristicStatePrecise(
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution, Time_benchmark &time_bench,
+    const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
+    dynobench::TrajWrapper &current_tmp_traj, size_t &current_robot_idx,
+    const float current_gScore,
+    std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal = false);
+
+// less accurate focal heuristic, but faster
 int lowLevelfocalHeuristicState(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution, Time_benchmark &time_bench,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     dynobench::TrajWrapper &current_tmp_traj, size_t &current_robot_idx,
     const float current_gScore,
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal = false);
 
 int lowLevelfocalHeuristicSingleState(
@@ -82,6 +99,7 @@ int lowLevelfocalHeuristicSingleState(
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     Eigen::VectorXd state1, size_t &current_robot_idx,
     const float current_gScore,
+    std::shared_ptr<fcl::BroadPhaseCollisionManagerd> col_mng_robots,
     std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal = false);
 
 } // namespace dynoplan
