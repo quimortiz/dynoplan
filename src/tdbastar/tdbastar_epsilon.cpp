@@ -339,13 +339,18 @@ int lowLevelfocalHeuristicSingleState(
         max_t = std::max(max_t, sol.trajectory.states.size() - 1);
     }
   }
-
+  // std::cout << "running lowlevelfocalheuristicSingleState" << std::endl;
+  // std::cout << state1.format(dynobench::FMT) << std::endl;
   size_t primitive_starting_index =
       std::lround(current_gScore / all_robots[current_robot_idx]->ref_dt);
-  max_t = std::max(max_t, primitive_starting_index + 1); // for a single state
+  max_t = std::max(max_t, primitive_starting_index); // for a single state
+  // std::cout << "primitive start index: " << primitive_starting_index << std::endl;
+  // std::cout << "max_t: " << max_t << std::endl;
+  // std::vector<Eigen::VectorXd> states;
 
   time_bench.time_collision_heuristic += timed_fun_void([&]{
     for (size_t t = primitive_starting_index; t <= max_t; t++) {
+      // states.clear();
       std::vector<fcl::Transform3d> ts_data;
       size_t robot_idx = 0;
       size_t obj_idx = 0;
@@ -361,6 +366,7 @@ int lowLevelfocalHeuristicSingleState(
           state = state1;
         }
         // all states into one vector
+        // states.push_back(state);
         std::vector<fcl::Transform3d> tmp_ts(1);
         if (robot->name == "car_with_trailers") {
           tmp_ts.resize(2);
@@ -381,11 +387,15 @@ int lowLevelfocalHeuristicSingleState(
       fcl::DefaultCollisionData<double> collision_data;
       col_mng_robots->collide(&collision_data, fcl::DefaultCollisionFunction<double>);
       if (collision_data.result.isCollision()){
+        // std::cout << t << std::endl;
+        // for (size_t i = 0; i < states.size(); i++){
+        //   std::cout << states.at(i).format(dynobench::FMT) << std::endl;
+        // }
         ++numConflicts;
       }
     }
   });
-  
+  // std::cout << "conflicts: " << numConflicts << std::endl;
   return numConflicts;
 }
 
@@ -695,6 +705,7 @@ void tdbastar_epsilon(
     best_node_bestFocalHeuristicIdx = best_node->best_focal_arrival_idx;
     best_node_bestFocalHeuristic =
         best_node->arrivals.at(best_node_bestFocalHeuristicIdx).focalHeuristic;
+    
     if (all_print) {
       std::cout << "/////////////////////" << std::endl;
       std::cout << "checking the open set" << std::endl;
@@ -900,17 +911,17 @@ void tdbastar_epsilon(
                 });
               }
               if (update_valid) {
-                auto tmp_focalHeuristic = 
                 n->gScore = tentative_g;
                 n->fScore = tentative_g + n->hScore;
                 n->intermediate_state = -1; // reset intermediate state.
-                n->arrivals.push_back({
-                    .gScore = tentative_g,
-                    .focalHeuristic =
-                        focalHeuristic + lowLevelfocalHeuristicSingleState(
+                // update the focalHeuristic
+                focalHeuristic = focalHeuristic + lowLevelfocalHeuristicSingleState(
                                              solution, time_bench, all_robots, n->state_eig,
                                              robot_id, n->gScore, col_mng_robots, robot_objs,
-                                             reachesGoal),
+                                             n->reaches_goal);
+                n->arrivals.push_back({
+                    .gScore = tentative_g,
+                    .focalHeuristic = focalHeuristic,
                     .came_from = best_node,
                     .used_motion = lazy_traj.motion->idx,
                     //  .arrival_idx = best_node->current_arrival_idx
