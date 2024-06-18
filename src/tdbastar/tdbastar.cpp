@@ -130,11 +130,13 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
 
   std::shared_ptr<AStarNode> n = solution;
   size_t arrival_idx = n->current_arrival_idx;
+  // size_t arrival_idx = n->best_focal_arrival_idx;
   while (n != nullptr) {
     result.push_back(std::make_pair(n, arrival_idx));
-    const auto &arrival = n->arrivals[arrival_idx];
-    n = arrival.came_from;
-    arrival_idx = arrival.arrival_idx;
+    const auto &arrival = n->arrivals[arrival_idx]; // get the struct, exact one using arrival_idx
+    n = arrival.came_from; // get the parent
+    arrival_idx = arrival.arrival_idx; // get the best_node.current_arrival_idx in order to get 
+    // the exact element of the current node's arrivals vector.
   }
 
   std::reverse(result.begin(), result.end());
@@ -624,8 +626,9 @@ void tdbastar(
   start_node->arrivals.push_back({.gScore = 0,
                                   .came_from = nullptr,
                                   .used_motion = (size_t)-1,
-                                  .arrival_idx = (size_t)-1});
-  start_node->current_arrival_idx = 0;
+                                  .arrival_idx = (size_t)-1}); // points where to look for the parent. When tracing back it is equal to the 
+  // current_arrival_idx of the current node, because it was used while creating/updating the node.
+  start_node->current_arrival_idx = 0; // which element of this node's arrivals vector, the last element/current one
 
   DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");

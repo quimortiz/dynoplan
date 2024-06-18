@@ -57,9 +57,9 @@ namespace dynoplan
   bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
                                          const open_t::handle_type &h2) const
   {
-    if ((*h1)->focalHeuristic != (*h2)->focalHeuristic)
+    if ((*h1)->bestFocalHeuristic != (*h2)->bestFocalHeuristic)
     {
-      return (*h1)->focalHeuristic > (*h2)->focalHeuristic;
+      return (*h1)->bestFocalHeuristic > (*h2)->bestFocalHeuristic;
     }
     return (*h1)->fScore > (*h2)->fScore; // cost
   }
@@ -177,9 +177,6 @@ namespace dynoplan
       {
         state1 = current_tmp_traj.get_state(t - primitive_starting_index);
       }
-      // for state 1
-      // std::cout << "state 1:" << std::endl;
-      // std::cout << state1.format(FMT)<< std::endl;
 
       all_robots[current_robot_idx]->transformation_collision_geometries(state1,
                                                                          tmp_ts1);
@@ -201,9 +198,6 @@ namespace dynoplan
           {
             state2 = sol.trajectory.states.at(t);
           }
-          // for state 2
-          // std::cout << "state 2: " << std::endl;
-          // std::cout << state2.format(FMT)<< std::endl;
           all_robots[robot_idx]->transformation_collision_geometries(state2,
                                                                      tmp_ts2);
           fcl::Transform3d &transform = tmp_ts2[0];
@@ -217,7 +211,6 @@ namespace dynoplan
                        request, result);
           if (result.isCollision())
           {
-            // std::cout << "collision" << std::endl;
             ++numConflicts;
           }
         }
@@ -255,7 +248,7 @@ namespace dynoplan
     size_t primitive_starting_index =
         std::lround(current_gScore / all_robots[current_robot_idx]->ref_dt);
     max_t =
-        std::max(max_t, primitive_starting_index + 1); // for a single state
+        std::max(max_t, primitive_starting_index); // for a single state
 
     for (size_t t = primitive_starting_index; t <= max_t; t++)
     {
@@ -280,9 +273,6 @@ namespace dynoplan
           {
             state2 = sol.trajectory.states.at(t);
           }
-          // for state 2
-          // std::cout << "state 2: " << std::endl;
-          // std::cout << state2.format(FMT)<< std::endl;
           all_robots[robot_idx]->transformation_collision_geometries(state2,
                                                                      tmp_ts2);
           fcl::Transform3d &transform = tmp_ts2[0];
@@ -296,7 +286,6 @@ namespace dynoplan
                        request, result);
           if (result.isCollision())
           {
-            // std::cout << "collision" << std::endl;
             ++numConflicts;
           }
         }
@@ -437,11 +426,13 @@ namespace dynoplan
         (robot->distance(problem.starts[robot_id], problem.goals[robot_id]) <=
          options_tdbastar.delta);
     start_node->arrivals.push_back({.gScore = 0,
+                                    .focalHeuristic = 0,
                                     .came_from = nullptr,
                                     .used_motion = (size_t)-1,
                                     .arrival_idx = (size_t)-1});
     start_node->current_arrival_idx = 0;
-    start_node->focalHeuristic = 0;
+    start_node->bestFocalHeuristic = 0; 
+    start_node->best_focal_arrival_idx = 0; 
 
     DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
     DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
@@ -561,6 +552,8 @@ namespace dynoplan
 
     Eigen::VectorXd aux_last_state(robot->nx);
     int focalHeuristic = 0;
+    size_t best_node_bestFocalHeuristicIdx = 0;
+    int best_node_bestFocalHeuristic = 0;
     while (!stop_search())
     {
 #ifdef REBUILT_FOCAL_LIST
@@ -568,11 +561,39 @@ namespace dynoplan
       double best_cost = open.top()->fScore;
       auto iter = open.ordered_begin();
       auto iterEnd = open.ordered_end();
-      for (; iter != iterEnd; ++iter)
+      for (; iter != iterEnd; ++iter) // each node in Open has only 1 bestFocalHeuristic
       {
-        auto cost = (*iter)->fScore;
-        if (cost <= best_cost * w)
+        // auto cost = (*iter)->fScore;
+        // find/compute lowest focalHeuristic that fulfills suboptimality condition
+        int bestFocalHeuristic = std::numeric_limits<int>::max();
+        size_t best_focal_arrival_idx = 0;
+        size_t best_gscore = 0;
+        size_t idx = 0;
+        bool found = false;
+        for(const auto& arrival : (*iter)->arrivals) {
+          double cost = arrival.gScore + (*iter)->hScore; // fScore
+          if (cost <= best_cost * w) {
+            if (arrival.focalHeuristic < bestFocalHeuristic) {
+              bestFocalHeuristic = arrival.focalHeuristic;
+              best_focal_arrival_idx = idx;
+            } else if (arrival.focalHeuristic == bestFocalHeuristic) {
+              // TODO: add tie braking: same focalheuristic value -> prefer lower gScore
+              size_t tmp_best_focal_arrival_idx = (arrival.gScore < (*iter)->arrivals.at(best_focal_arrival_idx).gScore) ? idx : best_focal_arrival_idx;
+              best_focal_arrival_idx = tmp_best_focal_arrival_idx; 
+            }
+            found = true;
+          }
+          ++idx;
+        }
+
+        if (found)
         {
+          // picking up from Focal is based on bestFocalHeuristic, but it doesn't mean my current_idx is pointing to this element
+          // that is why arrival_idx of the child node should have best_focal_arrival_idx.
+          // current_arrival_idx is good for tdbA*, since is gets updated ONLY if the gscore has been improved. At the moment 
+          // it might be updated if gscore OR focalHeuristic have been changed.
+          (*iter)->bestFocalHeuristic = bestFocalHeuristic;
+          (*iter)->best_focal_arrival_idx = best_focal_arrival_idx; // which element of the current node has the lowest focalHeuristic
           std::shared_ptr<AStarNode> n = *iter;
           focal.push(n->handle);
         }
@@ -605,10 +626,12 @@ namespace dynoplan
         }
       }
 #endif
-      auto best_handle = focal.top();
+      auto best_handle = focal.top(); // based on bestFocalHeuristic 
       best_node = *best_handle;
       last_f_score = best_node->fScore;
       best_node->is_in_open = false;
+      best_node_bestFocalHeuristicIdx = best_node->best_focal_arrival_idx;
+      best_node_bestFocalHeuristic = best_node->arrivals.at(best_node_bestFocalHeuristicIdx).focalHeuristic;
       if (all_print)
       {
         std::cout << "/////////////////////" << std::endl;
@@ -616,8 +639,8 @@ namespace dynoplan
         for (auto &f : open)
         {
           std::cout << f->state_eig.format(FMT) << std::endl;
-          std::cout << f->fScore << std::endl;
-          std::cout << f->focalHeuristic << std::endl;
+          // std::cout << f->fScore << std::endl;
+          std::cout << f->bestFocalHeuristic << std::endl;
         }
         std::cout << "/////////////////////" << std::endl;
         std::cout << "checking the focal set" << std::endl;
@@ -625,14 +648,14 @@ namespace dynoplan
         {
           auto f2 = *f1;
           std::cout << f2->state_eig.format(FMT) << std::endl;
-          std::cout << f2->fScore << std::endl;
-          std::cout << f2->focalHeuristic << std::endl;
+          // std::cout << f2->fScore << std::endl;
+          std::cout << f2->bestFocalHeuristic << std::endl;
         }
 
         std::cout << "open set size: " << open.size() << std::endl;
         std::cout << "focal set size: " << focal.size() << std::endl;
         std::cout << "best node state: " << best_node->state_eig.format(FMT) << std::endl;
-        std::cout << "best node focalheuristic: " << best_node->focalHeuristic << std::endl;
+        std::cout << "best node focalheuristic: " << best_node->bestFocalHeuristic << std::endl;
         std::cout << "best node fscore: " << best_node->fScore << std::endl;
       }
 
@@ -640,13 +663,7 @@ namespace dynoplan
       {
         print_search_status();
       }
-      // if (best_node->focalHeuristic >= 1)
-      // {
-      //   std::cout << "best node has focal heuristic = 1!, quitting!" << std::endl;
-      //   break;
-      // }
       time_bench.expands++;
-
       // CHECK if best node is close ENOUGH to goal
       double distance_to_goal =
           robot->distance(best_node->state_eig, problem.goals[robot_id]);
@@ -682,7 +699,10 @@ namespace dynoplan
                   << std::endl;
         std::cout << "x: " << best_node->state_eig.format(FMT) << std::endl;
         std::cout << "d: " << distance_to_goal << std::endl;
-        std::cout << "focal: " << best_node->focalHeuristic << std::endl;
+        std::cout << "focal: " << best_node_bestFocalHeuristic << std::endl;
+        // for the consistency in order to be able to use the same from_solution_to_yaml_and_traj function. 
+        // With focal search current_arrival_idx doesn't provide any useful info.
+        best_node->current_arrival_idx = best_node->best_focal_arrival_idx;
         status = Terminate_status::SOLVED;
         break;
       }
@@ -736,14 +756,10 @@ namespace dynoplan
                         options_tdbastar.cost_delta_factor *
                             robot->lower_bound_time(best_node->state_eig,
                                                     traj_wrapper.get_state(0));
-
-        focalHeuristic = best_node->focalHeuristic +
+        // it laso based on assumption that I am expanding from the version of the best node with least/min focalHeuristic
+        focalHeuristic = best_node_bestFocalHeuristic +
                          lowLevelfocalHeuristicState(solution, all_robots, traj_wrapper,
                                                      robot_id, best_node->gScore, robot_objs, reachesGoal);
-        // focalHeuristic = best_node->focalHeuristic +
-        //                   lowLevelfocalHeuristicStateDebug(solution, all_robots, traj_wrapper,
-        //                   robot_id, best_node->gScore, tmp_node->conflicts, robot_objs, reachesGoal);
-
         auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
         tmp_traj.cost = best_node->gScore;
         expanded_trajs.push_back(tmp_traj);
@@ -762,16 +778,19 @@ namespace dynoplan
           __node->gScore = gScore;
           __node->hScore = hScore;
           __node->fScore = gScore + hScore;
-          __node->focalHeuristic = focalHeuristic;
+
           if (chosen_index != -1)
             __node->intermediate_state = chosen_index;
           __node->is_in_open = true;
           __node->reaches_goal = reachesGoal;
           __node->arrivals.push_back(
               {.gScore = gScore,
+               .focalHeuristic = focalHeuristic,
                .came_from = best_node,
                .used_motion = lazy_traj.motion->idx,
-               .arrival_idx = best_node->current_arrival_idx});
+              //  .arrival_idx = best_node->current_arrival_idx
+              .arrival_idx = best_node->best_focal_arrival_idx // since the best node is picked from Focal based on bestFocalHeuristic.
+               }); 
           __node->current_arrival_idx = 0;
           // __node->conflicts = tmp_node->conflicts;
           time_bench.time_queue +=
@@ -798,7 +817,7 @@ namespace dynoplan
                       gScore + options_tdbastar.cost_delta_factor *
                                    robot->lower_bound_time(tmp_node->state_eig,
                                                            n->state_eig);
-                  tentative_g < n->gScore)
+                  tentative_g < n->gScore || focalHeuristic < n->bestFocalHeuristic)
               {
                 bool update_valid = true;
                 if (n->reaches_goal)
@@ -824,17 +843,20 @@ namespace dynoplan
                   n->gScore = tentative_g;
                   n->fScore = tentative_g + n->hScore;
                   n->intermediate_state = -1; // reset intermediate state.
-                  // do the heuristic checking again for the rewiring, check a single state, update its reaches goal state ?
-                  n->focalHeuristic = focalHeuristic;
-                  //  + lowLevelfocalHeuristicSingleState(solution, all_robots, n->state_eig,
-                  // robot_id, n->gScore, robot_objs, n->reaches_goal);
-                  // n->conflicts = tmp_node->conflicts;
+                  // update the focal heuristic
+                  focalHeuristic = focalHeuristic + lowLevelfocalHeuristicSingleState(
+                                             solution, all_robots, n->state_eig,
+                                             robot_id, n->gScore, robot_objs, n->reaches_goal);
                   n->arrivals.push_back(
                       {.gScore = tentative_g,
+                       .focalHeuristic = focalHeuristic,
                        .came_from = best_node,
                        .used_motion = lazy_traj.motion->idx,
-                       .arrival_idx = best_node->current_arrival_idx});
+                      //  .arrival_idx = best_node->current_arrival_idx
+                      .arrival_idx = best_node->best_focal_arrival_idx // since the best node is picked from Focal based on bestFocalHeuristic.
+                       }); 
                   ++n->current_arrival_idx;
+
                   if (n->is_in_open)
                   {
                     time_bench.time_queue +=
@@ -872,18 +894,19 @@ namespace dynoplan
             __node->gScore = gScore;
             __node->hScore = hScore;
             __node->fScore = gScore + hScore;
-            __node->focalHeuristic = focalHeuristic;
             if (chosen_index != -1)
               __node->intermediate_state = chosen_index;
             __node->is_in_open = true;
             __node->reaches_goal = reachesGoal;
             __node->arrivals.push_back(
                 {.gScore = gScore,
+                 .focalHeuristic = focalHeuristic,
                  .came_from = best_node,
                  .used_motion = lazy_traj.motion->idx,
-                 .arrival_idx = best_node->current_arrival_idx});
+                //  .arrival_idx = best_node->current_arrival_idx
+                .arrival_idx = best_node->best_focal_arrival_idx // since the best node is picked from Focal based on bestFocalHeuristic.
+                 }); 
             __node->current_arrival_idx = 0;
-            // __node->conflicts = tmp_node->conflicts;
             time_bench.time_queue +=
                 timed_fun_void([&]
                                { __node->handle = open.push(__node); });
