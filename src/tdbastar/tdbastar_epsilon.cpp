@@ -177,9 +177,6 @@ namespace dynoplan
       {
         state1 = current_tmp_traj.get_state(t - primitive_starting_index);
       }
-      // for state 1
-      // std::cout << "state 1:" << std::endl;
-      // std::cout << state1.format(FMT)<< std::endl;
 
       all_robots[current_robot_idx]->transformation_collision_geometries(state1,
                                                                          tmp_ts1);
@@ -201,9 +198,6 @@ namespace dynoplan
           {
             state2 = sol.trajectory.states.at(t);
           }
-          // for state 2
-          // std::cout << "state 2: " << std::endl;
-          // std::cout << state2.format(FMT)<< std::endl;
           all_robots[robot_idx]->transformation_collision_geometries(state2,
                                                                      tmp_ts2);
           fcl::Transform3d &transform = tmp_ts2[0];
@@ -217,7 +211,6 @@ namespace dynoplan
                        request, result);
           if (result.isCollision())
           {
-            // std::cout << "collision" << std::endl;
             ++numConflicts;
           }
         }
@@ -255,7 +248,7 @@ namespace dynoplan
     size_t primitive_starting_index =
         std::lround(current_gScore / all_robots[current_robot_idx]->ref_dt);
     max_t =
-        std::max(max_t, primitive_starting_index + 1); // for a single state
+        std::max(max_t, primitive_starting_index); // for a single state
 
     for (size_t t = primitive_starting_index; t <= max_t; t++)
     {
@@ -280,9 +273,6 @@ namespace dynoplan
           {
             state2 = sol.trajectory.states.at(t);
           }
-          // for state 2
-          // std::cout << "state 2: " << std::endl;
-          // std::cout << state2.format(FMT)<< std::endl;
           all_robots[robot_idx]->transformation_collision_geometries(state2,
                                                                      tmp_ts2);
           fcl::Transform3d &transform = tmp_ts2[0];
@@ -296,7 +286,6 @@ namespace dynoplan
                        request, result);
           if (result.isCollision())
           {
-            // std::cout << "collision" << std::endl;
             ++numConflicts;
           }
         }
@@ -854,10 +843,13 @@ namespace dynoplan
                   n->gScore = tentative_g;
                   n->fScore = tentative_g + n->hScore;
                   n->intermediate_state = -1; // reset intermediate state.
+                  // update the focal heuristic
+                  focalHeuristic = focalHeuristic + lowLevelfocalHeuristicSingleState(
+                                             solution, all_robots, n->state_eig,
+                                             robot_id, n->gScore, robot_objs, n->reaches_goal);
                   n->arrivals.push_back(
                       {.gScore = tentative_g,
-                       .focalHeuristic = focalHeuristic + lowLevelfocalHeuristicSingleState(solution, all_robots, n->state_eig,
-                                                     robot_id, n->gScore, robot_objs, reachesGoal),
+                       .focalHeuristic = focalHeuristic,
                        .came_from = best_node,
                        .used_motion = lazy_traj.motion->idx,
                       //  .arrival_idx = best_node->current_arrival_idx
