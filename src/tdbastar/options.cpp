@@ -40,7 +40,6 @@ void Options_tdbastar::__load_data(void *source, bool boost, bool write,
   loader.set(VAR_WITH_NAME(use_nigh_nn));
   loader.set(VAR_WITH_NAME(check_cols));
   loader.set(VAR_WITH_NAME(always_add_node));
-
 }
 
 void Options_tdbastar::add_options(po::options_description &desc) {
