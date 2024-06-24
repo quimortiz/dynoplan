@@ -61,6 +61,7 @@ struct Options_tdbastar {
   bool check_cols = true;
   bool rewire = true; // to allow rewiring during the search
   double w = 1.0;     // omega for ecbs
+  bool always_add_node = false;
 
   void add_options(po::options_description &desc);
 

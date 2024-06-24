@@ -55,10 +55,10 @@ using Sample_ = ob::State;
 
 bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
                                        const open_t::handle_type &h2) const {
-  if ((*h1)->focalHeuristic != (*h2)->focalHeuristic) {
-    return (*h1)->focalHeuristic > (*h2)->focalHeuristic;
+  if ((*h1)->bestFocalHeuristic != (*h2)->bestFocalHeuristic) {
+    return (*h1)->bestFocalHeuristic > (*h2)->bestFocalHeuristic;
   }
-  return (*h1)->gScore > (*h2)->gScore; // cost
+  return (*h1)->fScore > (*h2)->fScore; // cost
 }
 
 // state-based focal heuristic
@@ -156,6 +156,9 @@ int lowLevelfocalHeuristicState(
       state1 = current_tmp_traj.get_state(t - primitive_starting_index);
     }
     // for state 1
+    // std::cout << "state 1:" << std::endl;
+    // std::cout << state1.format(FMT)<< std::endl;
+
     all_robots[current_robot_idx]->transformation_collision_geometries(state1,
                                                                        tmp_ts1);
     fcl::Transform3d &transform = tmp_ts1[0];
@@ -172,6 +175,8 @@ int lowLevelfocalHeuristicState(
           state2 = sol.trajectory.states.at(t);
         }
         // for state 2
+        // std::cout << "state 2: " << std::endl;
+        // std::cout << state2.format(FMT)<< std::endl;
         all_robots[robot_idx]->transformation_collision_geometries(state2,
                                                                    tmp_ts2);
         fcl::Transform3d &transform = tmp_ts2[0];
@@ -184,6 +189,7 @@ int lowLevelfocalHeuristicState(
         fcl::collide(robot_objs[current_robot_idx], robot_objs[robot_idx],
                      request, result);
         if (result.isCollision()) {
+          // std::cout << "collision" << std::endl;
           ++numConflicts;
         }
       }
@@ -193,17 +199,17 @@ int lowLevelfocalHeuristicState(
   return numConflicts;
 }
 
-int lowLevelfocalHeuristicStateDebug(
+// low-levle focal heuristic needed for rewiring
+int lowLevelfocalHeuristicSingleState(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
-    dynobench::TrajWrapper &current_tmp_traj, size_t &current_robot_idx,
-    const float current_gScore, std::vector<int> &tmp_node_conflicts,
+    Eigen::VectorXd state1, size_t &current_robot_idx,
+    const float current_gScore,
     std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal) {
 
   int numConflicts = 0;
-  tmp_node_conflicts.clear();
   // other motion/robot
-  Eigen::VectorXd state1, state2;
+  Eigen::VectorXd state2;
   std::vector<fcl::Transform3d> tmp_ts1(1);
   std::vector<fcl::Transform3d> tmp_ts2(1);
   size_t max_t = 0;
@@ -214,18 +220,13 @@ int lowLevelfocalHeuristicStateDebug(
         max_t = std::max(max_t, sol.trajectory.states.size() - 1);
     }
   }
+
   size_t primitive_starting_index =
       std::lround(current_gScore / all_robots[current_robot_idx]->ref_dt);
+  max_t = std::max(max_t, primitive_starting_index); // for a single state
 
-  max_t =
-      std::max(max_t, primitive_starting_index + current_tmp_traj.get_size());
   for (size_t t = primitive_starting_index; t <= max_t; t++) {
-    if (t - primitive_starting_index >= current_tmp_traj.get_size()) {
-      state1 = current_tmp_traj.get_state(current_tmp_traj.get_size() - 1);
-    } else {
-      state1 = current_tmp_traj.get_state(t - primitive_starting_index);
-    }
-    // for state 1
+
     all_robots[current_robot_idx]->transformation_collision_geometries(state1,
                                                                        tmp_ts1);
     fcl::Transform3d &transform = tmp_ts1[0];
@@ -242,6 +243,8 @@ int lowLevelfocalHeuristicStateDebug(
           state2 = sol.trajectory.states.at(t);
         }
         // for state 2
+        // std::cout << "state 2: " << std::endl;
+        // std::cout << state2.format(FMT)<< std::endl;
         all_robots[robot_idx]->transformation_collision_geometries(state2,
                                                                    tmp_ts2);
         fcl::Transform3d &transform = tmp_ts2[0];
@@ -254,8 +257,8 @@ int lowLevelfocalHeuristicStateDebug(
         fcl::collide(robot_objs[current_robot_idx], robot_objs[robot_idx],
                      request, result);
         if (result.isCollision()) {
+          // std::cout << "collision" << std::endl;
           ++numConflicts;
-          tmp_node_conflicts.push_back(t);
         }
       }
       ++robot_idx;
@@ -276,13 +279,13 @@ void tdbastar_epsilon(
     std::vector<fcl::CollisionObjectd *> &robot_objs,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> *heuristic_nn,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result,
-    float w, std::string focal_heuristic_name) {
+    float w) {
 
   // #ifdef DBG_PRINTS
   std::cout << "*** options_tdbastar ***" << std::endl;
   options_tdbastar.print(std::cout);
   std::cout << "***" << std::endl;
-  std::cout << "Running tdbA* for robot " << robot_id << std::endl;
+  std::cout << "Running tdbA*-epsilon for robot " << robot_id << std::endl;
   for (const auto &constraint : constraints) {
     std::cout << "constraint at time: " << constraint.time << " ";
     std::cout << constraint.constrained_state.format(dynobench::FMT)
@@ -360,6 +363,7 @@ void tdbastar_epsilon(
   if (reverse_search) {
     h_fun = std::make_shared<Heu_blind>();
   } else {
+    // h_fun = std::make_shared<Heu_euclidean>(robot, problem.goals[robot_id]);
     h_fun = std::make_shared<
         Heu_roadmap_bwd<std::shared_ptr<AStarNode>, AStarNode>>(
         robot, heuristic_nn, problem.goals[robot_id]);
@@ -377,11 +381,13 @@ void tdbastar_epsilon(
       (robot->distance(problem.starts[robot_id], problem.goals[robot_id]) <=
        options_tdbastar.delta);
   start_node->arrivals.push_back({.gScore = 0,
+                                  .focalHeuristic = 0,
                                   .came_from = nullptr,
                                   .used_motion = (size_t)-1,
                                   .arrival_idx = (size_t)-1});
   start_node->current_arrival_idx = 0;
-  start_node->focalHeuristic = 0;
+  start_node->bestFocalHeuristic = 0;
+  start_node->best_focal_arrival_idx = 0;
 
   DYNO_CHECK_GEQ(start_node->hScore, 0, "hScore should be positive");
   DYNO_CHECK_LEQ(start_node->hScore, 1e5, "hScore should be bounded");
@@ -465,6 +471,8 @@ void tdbastar_epsilon(
   const bool check_intermediate_goal = true;
   const size_t num_check_goal = 0;
 
+  bool all_print = false;
+
   std::function<bool(Eigen::Ref<Eigen::VectorXd>)> ff =
       [&](Eigen::Ref<Eigen::VectorXd> state) {
         return robot->is_state_valid(state);
@@ -488,15 +496,57 @@ void tdbastar_epsilon(
 
   Eigen::VectorXd aux_last_state(robot->nx);
   int focalHeuristic = 0;
+  size_t best_node_bestFocalHeuristicIdx = 0;
+  int best_node_bestFocalHeuristic = 0;
   while (!stop_search()) {
 #ifdef REBUILT_FOCAL_LIST
     focal.clear();
     double best_cost = open.top()->fScore;
     auto iter = open.ordered_begin();
     auto iterEnd = open.ordered_end();
-    for (; iter != iterEnd; ++iter) {
-      auto cost = (*iter)->fScore;
-      if (cost <= best_cost * w) {
+    for (; iter != iterEnd;
+         ++iter) // each node in Open has only 1 bestFocalHeuristic
+    {
+      // auto cost = (*iter)->fScore;
+      // find/compute lowest focalHeuristic that fulfills suboptimality
+      // condition
+      int bestFocalHeuristic = std::numeric_limits<int>::max();
+      size_t best_focal_arrival_idx = 0;
+      size_t best_gscore = 0;
+      size_t idx = 0;
+      bool found = false;
+      for (const auto &arrival : (*iter)->arrivals) {
+        double cost = arrival.gScore + (*iter)->hScore; // fScore
+        if (cost <= best_cost * w) {
+          if (arrival.focalHeuristic < bestFocalHeuristic) {
+            bestFocalHeuristic = arrival.focalHeuristic;
+            best_focal_arrival_idx = idx;
+          } else if (arrival.focalHeuristic == bestFocalHeuristic) {
+            // TODO: add tie braking: same focalheuristic value -> prefer lower
+            // gScore
+            size_t tmp_best_focal_arrival_idx =
+                (arrival.gScore <
+                 (*iter)->arrivals.at(best_focal_arrival_idx).gScore)
+                    ? idx
+                    : best_focal_arrival_idx;
+            best_focal_arrival_idx = tmp_best_focal_arrival_idx;
+          }
+          found = true;
+        }
+        ++idx;
+      }
+
+      if (found) {
+        // picking up from Focal is based on bestFocalHeuristic, but it doesn't
+        // mean my current_idx is pointing to this element that is why
+        // arrival_idx of the child node should have best_focal_arrival_idx.
+        // current_arrival_idx is good for tdbA*, since is gets updated ONLY if
+        // the gscore has been improved. At the moment it might be updated if
+        // gscore OR focalHeuristic have been changed.
+        (*iter)->bestFocalHeuristic = bestFocalHeuristic;
+        (*iter)->best_focal_arrival_idx =
+            best_focal_arrival_idx; // which element of the current node has the
+                                    // lowest focalHeuristic
         std::shared_ptr<AStarNode> n = *iter;
         focal.push(n->handle);
       } else {
@@ -523,21 +573,43 @@ void tdbastar_epsilon(
       }
     }
 #endif
-    auto best_handle = focal.top();
+    auto best_handle = focal.top(); // based on bestFocalHeuristic
     best_node = *best_handle;
     last_f_score = best_node->fScore;
     best_node->is_in_open = false;
-    // std::cout << "best node state: " << best_node->state_eig.format(FMT) <<
-    // std::endl; std::cout << "best node focalheuristic: " <<
-    // best_node->focalHeuristic << std::endl; std::cout << "best node fscore: "
-    // << best_node->fScore << std::endl;
+    best_node_bestFocalHeuristicIdx = best_node->best_focal_arrival_idx;
+    best_node_bestFocalHeuristic =
+        best_node->arrivals.at(best_node_bestFocalHeuristicIdx).focalHeuristic;
+    if (all_print) {
+      std::cout << "/////////////////////" << std::endl;
+      std::cout << "checking the open set" << std::endl;
+      for (auto &f : open) {
+        std::cout << f->state_eig.format(FMT) << std::endl;
+        // std::cout << f->fScore << std::endl;
+        std::cout << f->bestFocalHeuristic << std::endl;
+      }
+      std::cout << "/////////////////////" << std::endl;
+      std::cout << "checking the focal set" << std::endl;
+      for (auto &f1 : focal) {
+        auto f2 = *f1;
+        std::cout << f2->state_eig.format(FMT) << std::endl;
+        // std::cout << f2->fScore << std::endl;
+        std::cout << f2->bestFocalHeuristic << std::endl;
+      }
+
+      std::cout << "open set size: " << open.size() << std::endl;
+      std::cout << "focal set size: " << focal.size() << std::endl;
+      std::cout << "best node state: " << best_node->state_eig.format(FMT)
+                << std::endl;
+      std::cout << "best node focalheuristic: " << best_node->bestFocalHeuristic
+                << std::endl;
+      std::cout << "best node fscore: " << best_node->fScore << std::endl;
+    }
 
     if (time_bench.expands % print_every == 0) {
       print_search_status();
     }
-
     time_bench.expands++;
-
     // CHECK if best node is close ENOUGH to goal
     double distance_to_goal =
         robot->distance(best_node->state_eig, problem.goals[robot_id]);
@@ -567,7 +639,11 @@ void tdbastar_epsilon(
                 << std::endl;
       std::cout << "x: " << best_node->state_eig.format(FMT) << std::endl;
       std::cout << "d: " << distance_to_goal << std::endl;
-      std::cout << "focal: " << best_node->focalHeuristic << std::endl;
+      std::cout << "focal: " << best_node_bestFocalHeuristic << std::endl;
+      // for the consistency in order to be able to use the same
+      // from_solution_to_yaml_and_traj function. With focal search
+      // current_arrival_idx doesn't provide any useful info.
+      best_node->current_arrival_idx = best_node->best_focal_arrival_idx;
       status = Terminate_status::SOLVED;
       break;
     }
@@ -617,17 +693,12 @@ void tdbastar_epsilon(
                       options_tdbastar.cost_delta_factor *
                           robot->lower_bound_time(best_node->state_eig,
                                                   traj_wrapper.get_state(0));
-
-      focalHeuristic = best_node->focalHeuristic +
+      // it laso based on assumption that I am expanding from the version of the
+      // best node with least/min focalHeuristic
+      focalHeuristic = best_node_bestFocalHeuristic +
                        lowLevelfocalHeuristicState(
                            solution, all_robots, traj_wrapper, robot_id,
                            best_node->gScore, robot_objs, reachesGoal);
-      // focalHeuristic = best_node->focalHeuristic +
-      //                   lowLevelfocalHeuristicStateDebug(solution,
-      //                   all_robots, traj_wrapper, robot_id,
-      //                   best_node->gScore, tmp_node->conflicts, robot_objs,
-      //                   reachesGoal);
-
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore;
       expanded_trajs.push_back(tmp_traj);
@@ -646,26 +717,34 @@ void tdbastar_epsilon(
         __node->gScore = gScore;
         __node->hScore = hScore;
         __node->fScore = gScore + hScore;
-        __node->focalHeuristic = focalHeuristic;
+
         if (chosen_index != -1)
           __node->intermediate_state = chosen_index;
         __node->is_in_open = true;
         __node->reaches_goal = reachesGoal;
-        __node->arrivals.push_back(
-            {.gScore = gScore,
-             .came_from = best_node,
-             .used_motion = lazy_traj.motion->idx,
-             .arrival_idx = best_node->current_arrival_idx});
+        __node->arrivals.push_back({
+            .gScore = gScore,
+            .focalHeuristic = focalHeuristic,
+            .came_from = best_node,
+            .used_motion = lazy_traj.motion->idx,
+            //  .arrival_idx = best_node->current_arrival_idx
+            .arrival_idx =
+                best_node->best_focal_arrival_idx // since the best node is
+                                                  // picked from Focal based on
+                                                  // bestFocalHeuristic.
+        });
         __node->current_arrival_idx = 0;
         // __node->conflicts = tmp_node->conflicts;
         time_bench.time_queue +=
             timed_fun_void([&] { __node->handle = open.push(__node); });
+
         time_bench.time_nearestNode_add +=
             timed_fun_void([&] { T_n->add(__node); });
         if (__node->fScore <= best_cost * w) { // best_fScore if not rebuilt
           focal.push(__node->handle);
         }
       } else {
+        // there are neighgors
         if (options_tdbastar.rewire) {
           for (auto &n : neighbors_n) {
             // STATE is not novel, we udpate
@@ -673,7 +752,8 @@ void tdbastar_epsilon(
                     gScore + options_tdbastar.cost_delta_factor *
                                  robot->lower_bound_time(tmp_node->state_eig,
                                                          n->state_eig);
-                tentative_g < n->gScore) {
+                tentative_g < n->gScore ||
+                focalHeuristic < n->bestFocalHeuristic) {
               bool update_valid = true;
               if (n->reaches_goal) {
                 for (const auto &constraint : constraints) {
@@ -693,14 +773,26 @@ void tdbastar_epsilon(
                 n->gScore = tentative_g;
                 n->fScore = tentative_g + n->hScore;
                 n->intermediate_state = -1; // reset intermediate state.
-                n->focalHeuristic = focalHeuristic;
-                // n->conflicts = tmp_node->conflicts;
-                n->arrivals.push_back(
-                    {.gScore = tentative_g,
-                     .came_from = best_node,
-                     .used_motion = lazy_traj.motion->idx,
-                     .arrival_idx = best_node->current_arrival_idx});
+                // update the focal heuristic
+                focalHeuristic =
+                    focalHeuristic + lowLevelfocalHeuristicSingleState(
+                                         solution, all_robots, n->state_eig,
+                                         robot_id, n->gScore, robot_objs,
+                                         n->reaches_goal);
+                n->arrivals.push_back({
+                    .gScore = tentative_g,
+                    .focalHeuristic = focalHeuristic,
+                    .came_from = best_node,
+                    .used_motion = lazy_traj.motion->idx,
+                    //  .arrival_idx = best_node->current_arrival_idx
+                    .arrival_idx =
+                        best_node
+                            ->best_focal_arrival_idx // since the best node is
+                                                     // picked from Focal based
+                                                     // on bestFocalHeuristic.
+                });
                 ++n->current_arrival_idx;
+
                 if (n->is_in_open) {
                   time_bench.time_queue +=
                       timed_fun_void([&] { open.increase(n->handle); });
@@ -709,6 +801,7 @@ void tdbastar_epsilon(
                   time_bench.time_queue +=
                       timed_fun_void([&] { n->handle = open.push(n); });
                 }
+
                 if (n->fScore <= best_cost * w) { // best_fScore if NOT rebuilt
                   focal.push(n->handle);
                 }
@@ -716,12 +809,61 @@ void tdbastar_epsilon(
             }
           }
         }
+        // by default is False
+        if (options_tdbastar.always_add_node) {
+          // check on time:
+          // check gScore vs gScore of the neighors -> only add if bigger than
+          // threshold. neighbors are in neighbors_n
+          std::cout << "creating a new node even if it is close to neighbors"
+                    << std::endl;
+          // always add a new node.
+          num_expansion_best_node++;
+          all_nodes.push_back(std::make_shared<AStarNode>());
+          auto __node = all_nodes.back();
+          __node->state_eig = tmp_node->state_eig;
+          __node->gScore = gScore;
+          __node->hScore = hScore;
+          __node->fScore = gScore + hScore;
+          if (chosen_index != -1)
+            __node->intermediate_state = chosen_index;
+          __node->is_in_open = true;
+          __node->reaches_goal = reachesGoal;
+          __node->arrivals.push_back({
+              .gScore = gScore,
+              .focalHeuristic = focalHeuristic,
+              .came_from = best_node,
+              .used_motion = lazy_traj.motion->idx,
+              //  .arrival_idx = best_node->current_arrival_idx
+              .arrival_idx =
+                  best_node->best_focal_arrival_idx // since the best node is
+                                                    // picked from Focal based
+                                                    // on bestFocalHeuristic.
+          });
+          __node->current_arrival_idx = 0;
+          time_bench.time_queue +=
+              timed_fun_void([&] { __node->handle = open.push(__node); });
+
+          time_bench.time_nearestNode_add +=
+              timed_fun_void([&] { T_n->add(__node); });
+          if (__node->fScore <= best_cost * w) { // best_fScore if not rebuilt
+            focal.push(__node->handle);
+          }
+        }
       }
+
       if (num_expansion_best_node >= options_tdbastar.limit_branching_factor) {
         break;
       }
     } // end of lazy_trajs loop
   }   // out of while loop
+
+  // Rewire means rewire + use arrival list
+  // OPTION 1:
+  // Rewire=1, Always add node=0 --> Best, difficult to implement. (Fast)
+  // OPTION 2:
+  // Rewire=0 Always add node=1 + check on time --> Complete when check on times
+  // threshold goes to zero (around .5 seconds) (Slower) OPTION 3: Rewire=0
+  // Always add node=0 ---> Not Complete.  (Fast)
 
   time_bench.time_search = watch.elapsed_ms();
 
@@ -729,6 +871,9 @@ void tdbastar_epsilon(
   time_bench.time_nearestNode =
       time_bench.time_nearestNode_add + time_bench.time_nearestNode_search;
 
+  // TODO: Add.
+  // time_collision_heuristic
+  // time_check_constraints
   time_bench.extra_time =
       time_bench.time_search - time_bench.time_collisions -
       time_bench.time_nearestNode_add - time_bench.time_nearestNode_search -
