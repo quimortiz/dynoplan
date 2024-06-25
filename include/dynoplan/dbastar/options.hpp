@@ -37,6 +37,8 @@ struct Time_benchmark {
   int motions_tree_size = 0;
   int states_tree_size = 0;
   double time_search = 0;
+  double time_collision_heuristic = 0;
+  double time_check_constraints = 0;
 
   void inline write(std::ostream &out) {
 
@@ -51,6 +53,8 @@ struct Time_benchmark {
     out << be << STR(build_heuristic, af) << std::endl;
     out << be << STR(time_queue, af) << std::endl;
     out << be << STR(time_search, af) << std::endl;
+    out << be << STR(time_collision_heuristic, af) << std::endl;
+    out << be << STR(time_check_constraints, af) << std::endl;
     out << be << STR(time_nearestMotion, af) << std::endl;
     out << be << STR(time_nearestNode, af) << std::endl;
     out << be << STR(time_nearestNode_add, af) << std::endl;

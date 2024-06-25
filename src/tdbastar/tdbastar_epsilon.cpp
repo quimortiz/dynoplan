@@ -122,7 +122,7 @@ int highLevelfocalHeuristicStatePrecise(
   return numConflicts;
 }
 
-// less accurate, but efficient implementation. 
+// less accurate, but efficient implementation.
 // counts conflicts per state
 int highLevelfocalHeuristicState(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
@@ -141,12 +141,11 @@ int highLevelfocalHeuristicState(
     size_t robot_idx = 0;
     size_t obj_idx = 0;
     std::vector<fcl::Transform3d> ts_data;
-    for (auto &robot : all_robots){
-      if (t >= solution[robot_idx].trajectory.states.size()){
-          state = solution[robot_idx].trajectory.states.back();    
-      }
-      else {
-          state = solution[robot_idx].trajectory.states[t];
+    for (auto &robot : all_robots) {
+      if (t >= solution[robot_idx].trajectory.states.size()) {
+        state = solution[robot_idx].trajectory.states.back();
+      } else {
+        state = solution[robot_idx].trajectory.states[t];
       }
       std::vector<fcl::Transform3d> tmp_ts(1);
       if (robot->name == "car_with_trailers") {
@@ -165,7 +164,8 @@ int highLevelfocalHeuristicState(
     }
     col_mng_robots->update(robot_objs);
     fcl::DefaultCollisionData<double> collision_data;
-    col_mng_robots->collide(&collision_data, fcl::DefaultCollisionFunction<double>);
+    col_mng_robots->collide(&collision_data,
+                            fcl::DefaultCollisionFunction<double>);
 
     if (collision_data.result.isCollision()) {
       ++numConflicts;
@@ -178,6 +178,7 @@ int highLevelfocalHeuristicState(
 // for simplicity I assume robot_objs.size() = robot number. TO DO
 int lowLevelfocalHeuristicStatePrecise(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    Time_benchmark &time_bench,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     dynobench::TrajWrapper &current_tmp_traj, size_t &current_robot_idx,
     const float current_gScore,
@@ -201,52 +202,55 @@ int lowLevelfocalHeuristicStatePrecise(
       std::lround(current_gScore / all_robots[current_robot_idx]->ref_dt);
   max_t =
       std::max(max_t, primitive_starting_index + current_tmp_traj.get_size());
-  for (size_t t = primitive_starting_index; t <= max_t; t++) {
-    if (t - primitive_starting_index >= current_tmp_traj.get_size()) {
-      state1 = current_tmp_traj.get_state(current_tmp_traj.get_size() - 1);
-    } else {
-      state1 = current_tmp_traj.get_state(t - primitive_starting_index);
-    }
-
-    all_robots[current_robot_idx]->transformation_collision_geometries(state1,
-                                                                       tmp_ts1);
-    fcl::Transform3d &transform = tmp_ts1[0];
-    robot_objs[current_robot_idx]->setTranslation(transform.translation());
-    robot_objs[current_robot_idx]->setRotation(transform.rotation());
-    robot_objs[current_robot_idx]->computeAABB();
-
-    size_t robot_idx = 0;
-    for (auto &sol : solution) {
-      if (robot_idx != current_robot_idx && !sol.trajectory.states.empty()) {
-        if (t >= sol.trajectory.states.size()) {
-          state2 = sol.trajectory.states.back();
-        } else {
-          state2 = sol.trajectory.states.at(t);
-        }
-        all_robots[robot_idx]->transformation_collision_geometries(state2,
-                                                                   tmp_ts2);
-        fcl::Transform3d &transform = tmp_ts2[0];
-        robot_objs[robot_idx]->setTranslation(transform.translation());
-        robot_objs[robot_idx]->setRotation(transform.rotation());
-        robot_objs[robot_idx]->computeAABB();
-        // check for collision
-        fcl::CollisionRequest<double> request;
-        fcl::CollisionResult<double> result;
-        fcl::collide(robot_objs[current_robot_idx], robot_objs[robot_idx],
-                     request, result);
-        if (result.isCollision()) {
-          // std::cout << "collision" << std::endl;
-          ++numConflicts;
-        }
+  time_bench.time_collision_heuristic += timed_fun_void([&] {
+    for (size_t t = primitive_starting_index; t <= max_t; t++) {
+      if (t - primitive_starting_index >= current_tmp_traj.get_size()) {
+        state1 = current_tmp_traj.get_state(current_tmp_traj.get_size() - 1);
+      } else {
+        state1 = current_tmp_traj.get_state(t - primitive_starting_index);
       }
-      ++robot_idx;
+
+      all_robots[current_robot_idx]->transformation_collision_geometries(
+          state1, tmp_ts1);
+      fcl::Transform3d &transform = tmp_ts1[0];
+      robot_objs[current_robot_idx]->setTranslation(transform.translation());
+      robot_objs[current_robot_idx]->setRotation(transform.rotation());
+      robot_objs[current_robot_idx]->computeAABB();
+
+      size_t robot_idx = 0;
+      for (auto &sol : solution) {
+        if (robot_idx != current_robot_idx && !sol.trajectory.states.empty()) {
+          if (t >= sol.trajectory.states.size()) {
+            state2 = sol.trajectory.states.back();
+          } else {
+            state2 = sol.trajectory.states.at(t);
+          }
+          all_robots[robot_idx]->transformation_collision_geometries(state2,
+                                                                     tmp_ts2);
+          fcl::Transform3d &transform = tmp_ts2[0];
+          robot_objs[robot_idx]->setTranslation(transform.translation());
+          robot_objs[robot_idx]->setRotation(transform.rotation());
+          robot_objs[robot_idx]->computeAABB();
+          // check for collision
+          fcl::CollisionRequest<double> request;
+          fcl::CollisionResult<double> result;
+          fcl::collide(robot_objs[current_robot_idx], robot_objs[robot_idx],
+                       request, result);
+          if (result.isCollision()) {
+            ++numConflicts;
+          }
+        }
+        ++robot_idx;
+      }
     }
-  }
+  });
+
   return numConflicts;
 }
 
 int lowLevelfocalHeuristicState(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    Time_benchmark &time_bench,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     dynobench::TrajWrapper &current_tmp_traj, size_t &current_robot_idx,
     const float current_gScore,
@@ -268,49 +272,54 @@ int lowLevelfocalHeuristicState(
       std::lround(current_gScore / all_robots[current_robot_idx]->ref_dt);
   max_t =
       std::max(max_t, primitive_starting_index + current_tmp_traj.get_size());
-  for (size_t t = primitive_starting_index; t <= max_t; t++) {
-    std::vector<fcl::Transform3d> ts_data;
-    size_t robot_idx = 0;
-    size_t obj_idx = 0;
-    for (auto &robot : all_robots){
-      if (robot_idx != current_robot_idx && !solution.at(robot_idx).trajectory.states.empty()){
-        if (t >= solution.at(robot_idx).trajectory.states.size()) {
-          state = solution.at(robot_idx).trajectory.states.back(); // state for the neighbor
+  time_bench.time_collision_heuristic += timed_fun_void([&] {
+    for (size_t t = primitive_starting_index; t <= max_t; t++) {
+      std::vector<fcl::Transform3d> ts_data;
+      size_t robot_idx = 0;
+      size_t obj_idx = 0;
+      for (auto &robot : all_robots) {
+        if (robot_idx != current_robot_idx &&
+            !solution.at(robot_idx).trajectory.states.empty()) {
+          if (t >= solution.at(robot_idx).trajectory.states.size()) {
+            state = solution.at(robot_idx)
+                        .trajectory.states.back(); // state for the neighbor
+          } else {
+            state = solution.at(robot_idx).trajectory.states.at(t);
+          }
         } else {
-          state = solution.at(robot_idx).trajectory.states.at(t);
+          if (t - primitive_starting_index >= current_tmp_traj.get_size()) {
+            state = current_tmp_traj.get_state(current_tmp_traj.get_size() - 1);
+          } else {
+            state = current_tmp_traj.get_state(
+                t - primitive_starting_index); // state of the current robot
+          }
         }
-      }
-      else { 
-        if (t - primitive_starting_index >= current_tmp_traj.get_size()) {
-          state = current_tmp_traj.get_state(current_tmp_traj.get_size() - 1);
-        } else {
-          state = current_tmp_traj.get_state(t - primitive_starting_index); // state of the current robot
+        // all states into one vector
+        std::vector<fcl::Transform3d> tmp_ts(1);
+        if (robot->name == "car_with_trailers") {
+          tmp_ts.resize(2);
         }
+        robot->transformation_collision_geometries(state, tmp_ts);
+        ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
+        ++robot_idx;
       }
-      // all states into one vector
-      std::vector<fcl::Transform3d> tmp_ts(1);
-      if (robot->name == "car_with_trailers") {
-        tmp_ts.resize(2);
+      // prepare/update the collision object vector
+      for (size_t i = 0; i < ts_data.size(); i++) {
+        fcl::Transform3d &transform = ts_data[i];
+        robot_objs[obj_idx]->setTranslation(transform.translation());
+        robot_objs[obj_idx]->setRotation(transform.rotation());
+        robot_objs[obj_idx]->computeAABB();
+        ++obj_idx;
       }
-      robot->transformation_collision_geometries(state, tmp_ts);
-      ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
-      ++robot_idx;
+      col_mng_robots->update(robot_objs);
+      fcl::DefaultCollisionData<double> collision_data;
+      col_mng_robots->collide(&collision_data,
+                              fcl::DefaultCollisionFunction<double>);
+      if (collision_data.result.isCollision()) {
+        ++numConflicts;
+      }
     }
-    // prepare/update the collision object vector
-    for (size_t i = 0; i < ts_data.size(); i++) {
-      fcl::Transform3d &transform = ts_data[i];
-      robot_objs[obj_idx]->setTranslation(transform.translation());
-      robot_objs[obj_idx]->setRotation(transform.rotation());
-      robot_objs[obj_idx]->computeAABB();
-      ++obj_idx;
-    }
-    col_mng_robots->update(robot_objs);
-    fcl::DefaultCollisionData<double> collision_data;
-    col_mng_robots->collide(&collision_data, fcl::DefaultCollisionFunction<double>);
-    if (collision_data.result.isCollision()){
-      ++numConflicts;
-    }
-  }
+  });
   return numConflicts;
 }
 
@@ -318,6 +327,7 @@ int lowLevelfocalHeuristicState(
 // TO DO: combine with lowLevelfocalHeuristicState
 int lowLevelfocalHeuristicSingleState(
     std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    Time_benchmark &time_bench,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     Eigen::VectorXd state1, size_t &current_robot_idx,
     const float current_gScore,
@@ -335,50 +345,53 @@ int lowLevelfocalHeuristicSingleState(
         max_t = std::max(max_t, sol.trajectory.states.size() - 1);
     }
   }
-
   size_t primitive_starting_index =
       std::lround(current_gScore / all_robots[current_robot_idx]->ref_dt);
-  max_t = std::max(max_t, primitive_starting_index + 1); // for a single state
+  max_t = std::max(max_t, primitive_starting_index); // for a single state
 
-  for (size_t t = primitive_starting_index; t <= max_t; t++) {
-    std::vector<fcl::Transform3d> ts_data;
-    size_t robot_idx = 0;
-    size_t obj_idx = 0;
-    for (auto &robot : all_robots){
-      if (robot_idx != current_robot_idx && !solution.at(robot_idx).trajectory.states.empty()){
-        if (t >= solution.at(robot_idx).trajectory.states.size()) {
-          state = solution.at(robot_idx).trajectory.states.back(); // state for the neighbor
+  time_bench.time_collision_heuristic += timed_fun_void([&] {
+    for (size_t t = primitive_starting_index; t <= max_t; t++) {
+      std::vector<fcl::Transform3d> ts_data;
+      size_t robot_idx = 0;
+      size_t obj_idx = 0;
+      for (auto &robot : all_robots) {
+        if (robot_idx != current_robot_idx &&
+            !solution.at(robot_idx).trajectory.states.empty()) {
+          if (t >= solution.at(robot_idx).trajectory.states.size()) {
+            state = solution.at(robot_idx)
+                        .trajectory.states.back(); // state for the neighbor
+          } else {
+            state = solution.at(robot_idx).trajectory.states.at(t);
+          }
         } else {
-          state = solution.at(robot_idx).trajectory.states.at(t);
+          state = state1;
         }
+        // all states into one vector
+        std::vector<fcl::Transform3d> tmp_ts(1);
+        if (robot->name == "car_with_trailers") {
+          tmp_ts.resize(2);
+        }
+        robot->transformation_collision_geometries(state, tmp_ts);
+        ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
+        ++robot_idx;
       }
-      else { 
-        state = state1;
+      // prepare/update the collision object vector
+      for (size_t i = 0; i < ts_data.size(); i++) {
+        fcl::Transform3d &transform = ts_data[i];
+        robot_objs[obj_idx]->setTranslation(transform.translation());
+        robot_objs[obj_idx]->setRotation(transform.rotation());
+        robot_objs[obj_idx]->computeAABB();
+        ++obj_idx;
       }
-      // all states into one vector
-      std::vector<fcl::Transform3d> tmp_ts(1);
-      if (robot->name == "car_with_trailers") {
-        tmp_ts.resize(2);
+      col_mng_robots->update(robot_objs);
+      fcl::DefaultCollisionData<double> collision_data;
+      col_mng_robots->collide(&collision_data,
+                              fcl::DefaultCollisionFunction<double>);
+      if (collision_data.result.isCollision()) {
+        ++numConflicts;
       }
-      robot->transformation_collision_geometries(state, tmp_ts);
-      ts_data.insert(ts_data.end(), tmp_ts.begin(), tmp_ts.end());
-      ++robot_idx;
     }
-    // prepare/update the collision object vector
-    for (size_t i = 0; i < ts_data.size(); i++) {
-      fcl::Transform3d &transform = ts_data[i];
-      robot_objs[obj_idx]->setTranslation(transform.translation());
-      robot_objs[obj_idx]->setRotation(transform.rotation());
-      robot_objs[obj_idx]->computeAABB();
-      ++obj_idx;
-    }
-    col_mng_robots->update(robot_objs);
-    fcl::DefaultCollisionData<double> collision_data;
-    col_mng_robots->collide(&collision_data, fcl::DefaultCollisionFunction<double>);
-    if (collision_data.result.isCollision()){
-      ++numConflicts;
-    }
-  }
+  });
   return numConflicts;
 }
 
@@ -401,11 +414,6 @@ void tdbastar_epsilon(
   options_tdbastar.print(std::cout);
   std::cout << "***" << std::endl;
   std::cout << "Running tdbA*-epsilon for robot " << robot_id << std::endl;
-  for (const auto &constraint : constraints) {
-    std::cout << "constraint at time: " << constraint.time << " ";
-    std::cout << constraint.constrained_state.format(dynobench::FMT)
-              << std::endl;
-  }
   // #endif
   std::shared_ptr<dynobench::Model_robot> robot = dynobench::robot_factory(
       (problem.models_base_path + problem.robotTypes[robot_id] + ".yaml")
@@ -444,7 +452,7 @@ void tdbastar_epsilon(
   } else {
     NOT_IMPLEMENTED;
   }
-  // // for the initial heuristics
+  // for the initial heuristics
   if (heuristic_result) {
     *heuristic_result = T_n;
   }
@@ -637,8 +645,6 @@ void tdbastar_epsilon(
             bestFocalHeuristic = arrival.focalHeuristic;
             best_focal_arrival_idx = idx;
           } else if (arrival.focalHeuristic == bestFocalHeuristic) {
-            // TODO: add tie braking: same focalheuristic value -> prefer lower
-            // gScore
             size_t tmp_best_focal_arrival_idx =
                 (arrival.gScore <
                  (*iter)->arrivals.at(best_focal_arrival_idx).gScore)
@@ -695,6 +701,7 @@ void tdbastar_epsilon(
     best_node_bestFocalHeuristicIdx = best_node->best_focal_arrival_idx;
     best_node_bestFocalHeuristic =
         best_node->arrivals.at(best_node_bestFocalHeuristicIdx).focalHeuristic;
+
     if (all_print) {
       std::cout << "/////////////////////" << std::endl;
       std::cout << "checking the open set" << std::endl;
@@ -729,56 +736,51 @@ void tdbastar_epsilon(
     double distance_to_goal =
         robot->distance(best_node->state_eig, problem.goals[robot_id]);
 
-      if (distance_to_goal < best_distance_to_goal)
-      {
-        best_distance_to_goal = distance_to_goal;
-      }
-      bool is_at_goal_no_constraints = false;
-      if (distance_to_goal <
-          options_tdbastar.delta_factor_goal * options_tdbastar.delta)
-      {
-        is_at_goal_no_constraints = true;
-        for (const auto &constraint : constraints)
-        {
-          if (constraint.time >= best_node->gScore - 1e-6)
-          {
+    if (distance_to_goal < best_distance_to_goal) {
+      best_distance_to_goal = distance_to_goal;
+    }
+    bool is_at_goal_no_constraints = false;
+    if (distance_to_goal <
+        options_tdbastar.delta_factor_goal * options_tdbastar.delta) {
+      is_at_goal_no_constraints = true;
+      time_bench.time_check_constraints += timed_fun_void([&] {
+        for (const auto &constraint : constraints) {
+          if (constraint.time >= best_node->gScore - 1e-6) {
             bool violation = robot->distance(best_node->state_eig,
                                              constraint.constrained_state) <=
                              options_tdbastar.delta;
-            if (violation)
-            {
+            if (violation) {
               is_at_goal_no_constraints = false;
               break;
             }
           }
         }
-      }
-      if (is_at_goal_no_constraints)
-      {
-        std::cout << "FOUND SOLUTION" << std::endl;
-        std::cout << "COST: " << best_node->gScore << " " << best_node->hScore
-                  << std::endl;
-        std::cout << "x: " << best_node->state_eig.format(FMT) << std::endl;
-        std::cout << "d: " << distance_to_goal << std::endl;
-        std::cout << "focal: " << best_node_bestFocalHeuristic << std::endl;
-        // for extracting the solution, for the consistency in order to use the same from_solution_to_yaml_and_traj
-        // function. Otherwise, current_arrival_idx doesn't point to any useful index/info.
-        best_node->current_arrival_idx = best_node->best_focal_arrival_idx;
-        status = Terminate_status::SOLVED;
-        break;
-      }
-      // No solution yet, continue the search
-      focal.pop();
-      open.erase(best_handle);
-      // EXPAND the best node
-      size_t num_expansion_best_node = 0;
-      std::vector<LazyTraj> lazy_trajs;
-      time_bench.time_lazy_expand += timed_fun_void(
-          [&]
-          { expander.expand_lazy(best_node->state_eig, lazy_trajs); });
-      for (size_t i = 0; i < lazy_trajs.size(); i++)
-      {
-        auto &lazy_traj = lazy_trajs[i];
+      });
+    }
+    if (is_at_goal_no_constraints) {
+      std::cout << "FOUND SOLUTION" << std::endl;
+      std::cout << "COST: " << best_node->gScore << " " << best_node->hScore
+                << std::endl;
+      std::cout << "x: " << best_node->state_eig.format(FMT) << std::endl;
+      std::cout << "d: " << distance_to_goal << std::endl;
+      std::cout << "focal: " << best_node_bestFocalHeuristic << std::endl;
+      // for extracting the solution, for the consistency in order to use the
+      // same from_solution_to_yaml_and_traj function. Otherwise,
+      // current_arrival_idx doesn't point to any useful index/info.
+      best_node->current_arrival_idx = best_node->best_focal_arrival_idx;
+      status = Terminate_status::SOLVED;
+      break;
+    }
+    // No solution yet, continue the search
+    focal.pop();
+    open.erase(best_handle);
+    // EXPAND the best node
+    size_t num_expansion_best_node = 0;
+    std::vector<LazyTraj> lazy_trajs;
+    time_bench.time_lazy_expand += timed_fun_void(
+        [&] { expander.expand_lazy(best_node->state_eig, lazy_trajs); });
+    for (size_t i = 0; i < lazy_trajs.size(); i++) {
+      auto &lazy_traj = lazy_trajs[i];
 
       int num_valid_states = -1;
       traj_wrapper.set_size(lazy_traj.motion->traj.states.size());
@@ -821,10 +823,12 @@ void tdbastar_epsilon(
       //                  lowLevelfocalHeuristicStatePrecise(
       //                      solution, all_robots, traj_wrapper, robot_id,
       //                      best_node->gScore, robot_objs, reachesGoal);
-      focalHeuristic = best_node_bestFocalHeuristic +
-                       lowLevelfocalHeuristicState(
-                           solution, all_robots, traj_wrapper, robot_id,
-                           best_node->gScore, col_mng_robots, robot_objs, reachesGoal);
+      focalHeuristic =
+          best_node_bestFocalHeuristic +
+          lowLevelfocalHeuristicState(solution, time_bench, all_robots,
+                                      traj_wrapper, robot_id, best_node->gScore,
+                                      col_mng_robots, robot_objs, reachesGoal);
+
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore;
       expanded_trajs.push_back(tmp_traj);
@@ -882,30 +886,35 @@ void tdbastar_epsilon(
                 focalHeuristic < n->bestFocalHeuristic) {
               bool update_valid = true;
               if (n->reaches_goal) {
-                for (const auto &constraint : constraints) {
-                  if (constraint.time >= best_node->gScore - 1e-6) {
-                    bool violation =
-                        robot->distance(n->state_eig,
-                                        constraint.constrained_state) <=
-                        options_tdbastar.delta;
-                    if (violation) {
-                      update_valid = false;
-                      break;
+                time_bench.time_check_constraints += timed_fun_void([&] {
+                  for (const auto &constraint : constraints) {
+                    if (constraint.time >= best_node->gScore - 1e-6) {
+                      bool violation =
+                          robot->distance(n->state_eig,
+                                          constraint.constrained_state) <=
+                          options_tdbastar.delta;
+                      if (violation) {
+                        update_valid = false;
+                        break;
+                      }
                     }
                   }
-                }
+                });
               }
               if (update_valid) {
                 n->gScore = tentative_g;
                 n->fScore = tentative_g + n->hScore;
                 n->intermediate_state = -1; // reset intermediate state.
+                // update the focalHeuristic
+                focalHeuristic =
+                    focalHeuristic + lowLevelfocalHeuristicSingleState(
+                                         solution, time_bench, all_robots,
+                                         n->state_eig, robot_id, n->gScore,
+                                         col_mng_robots, robot_objs,
+                                         n->reaches_goal);
                 n->arrivals.push_back({
                     .gScore = tentative_g,
-                    .focalHeuristic =
-                        focalHeuristic + lowLevelfocalHeuristicSingleState(
-                                             solution, all_robots, n->state_eig,
-                                             robot_id, n->gScore, col_mng_robots, robot_objs,
-                                             reachesGoal),
+                    .focalHeuristic = focalHeuristic,
                     .came_from = best_node,
                     .used_motion = lazy_traj.motion->idx,
                     //  .arrival_idx = best_node->current_arrival_idx
@@ -1003,7 +1012,8 @@ void tdbastar_epsilon(
       time_bench.time_nearestNode_add - time_bench.time_nearestNode_search -
       time_bench.time_lazy_expand - time_bench.time_alloc_primitive -
       time_bench.time_transform_primitive - time_bench.time_queue -
-      time_bench.check_bounds - time_bench.time_hfun;
+      time_bench.check_bounds - time_bench.time_hfun -
+      time_bench.time_check_constraints - time_bench.time_collision_heuristic;
 
   assert(time_bench.extra_time >= 0);
   // assert(time_bench.extra_time / time_bench.time_search * 100 <
@@ -1053,6 +1063,9 @@ void tdbastar_epsilon(
 
     // Sanity check here, that verifies that we obey all constraints
     std::cout << "checking constraints for the final solution " << std::endl;
+    time_bench.time_check_constraints += timed_fun_void([&] {
+
+    });
     for (const auto &constraint : constraints) {
       int time_index = std::lround(constraint.time / robot->ref_dt);
       assert(time_index >= 0);

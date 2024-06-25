@@ -79,7 +79,7 @@ int highLevelfocalHeuristicState(
 
 // computationally less efficient version of the low-level focal heuristic
 int lowLevelfocalHeuristicStatePrecise(
-    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution, Time_benchmark &time_bench,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     dynobench::TrajWrapper &current_tmp_traj, size_t &current_robot_idx,
     const float current_gScore,
@@ -87,7 +87,7 @@ int lowLevelfocalHeuristicStatePrecise(
 
 // less accurate focal heuristic, but faster
 int lowLevelfocalHeuristicState(
-    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution, Time_benchmark &time_bench,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     dynobench::TrajWrapper &current_tmp_traj, size_t &current_robot_idx,
     const float current_gScore,
@@ -95,7 +95,7 @@ int lowLevelfocalHeuristicState(
     std::vector<fcl::CollisionObjectd *> &robot_objs, bool reachesGoal = false);
 
 int lowLevelfocalHeuristicSingleState(
-    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution,
+    std::vector<LowLevelPlan<dynobench::Trajectory>> &solution, Time_benchmark &time_bench,
     const std::vector<std::shared_ptr<dynobench::Model_robot>> &all_robots,
     Eigen::VectorXd state1, size_t &current_robot_idx,
     const float current_gScore,
