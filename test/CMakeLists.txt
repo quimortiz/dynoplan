@@ -11,7 +11,8 @@ add_executable(
   # ./optimization/test_optimization_1.cpp
   # ./optimization/test_optimization_cli.cpp
   # ./optimization/test_optimization_multirobot.cpp
-  ./optimization/test_optimization_bar_integrator2_2d.cpp)
+  # ./optimization/test_optimization_bar_integrator2_2d.cpp
+  ./optimization/test_optimization_DintegratorCables.cpp)
 
 add_executable(
   test_dbastar dbastar/test_dbastar_base.cpp dbastar/test_dbastar_0.cpp
