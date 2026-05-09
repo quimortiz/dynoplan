@@ -290,7 +290,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
   auto &w = robot->diff_model->distance_weights;
   // CSTR_V(w);
 
-  if (startsWith(name, "unicycle1")) {
+  if (startsWith(name, "unicycle_first_order")) {
 
     auto data_to_key = [robot, fun](_T const &m) {
       const ob::State *s = fun(m);
@@ -304,7 +304,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
 
     out = new NearestNeighborsNigh<_T, __Space>(space, data_to_key);
 
-  } else if (startsWith(name, "unicycle2")) {
+  } else if (startsWith(name, "unicycle_second_order")) {
 
     auto data_to_key = [robot, fun](_T const &m) {
       using Vector5d = Eigen::Matrix<double, 5, 1>;
@@ -395,7 +395,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
     // out = new NearestNeighborsNigh<_T, SpaceQuad3d>(data_to_key);
     out = new NearestNeighborsNigh<_T, __SpaceQuad3d>(space, data_to_key);
 
-  } else if (startsWith(name, "car1")) {
+  } else if (startsWith(name, "car_with_trailers")) {
 
     auto data_to_key = [robot, fun](_T const &m) {
       const ob::State *s = fun(m);
@@ -404,7 +404,6 @@ ompl::NearestNeighbors<_T> *nigh_factory(
       robot->toEigen(s, __x);
       return std::tuple(Eigen::Vector2d(__x(0), __x(1)), __x(2), __x(3));
     };
-    // out = new NearestNeighborsNigh<_T, SpaceCar1>(data_to_key);
 
     DYNO_CHECK_EQ(w.size(), 3, AT);
     __SpaceCar1 space(w(0), w(1), w(2));
@@ -428,12 +427,10 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
   auto &w = robot->distance_weights;
   // CSTR_V(w);
 
-  if (startsWith(name, "unicycle1") && name != "unicycle1_3d_v0") {
+  if (startsWith(name, "unicycle_first_order") && name != "unicycle_first_order_3d") {
 
     if (cost_scale < 0) {
       auto data_to_key = [robot, fun](_T const &m) {
-        // DYNO_CHECK_EQ(fun(m).size(), 3, ""); //
-        // assert(fun(m).size() == 3);
         Eigen::Vector3d __x = fun(m);
         return std::tuple(Eigen::Vector2d(__x.head(2)), __x(2));
       };
@@ -458,7 +455,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
       out = new NearestNeighborsNigh<_T, __SpaceWithCost>(space, data_to_key);
     }
 
-  } else if (startsWith(name, "unicycle1_3d")) {
+  } else if (startsWith(name, "unicycle_first_order_3d")) {
 
     if (cost_scale < 0) {
       auto data_to_key = [robot, fun](_T const &m) {
@@ -486,7 +483,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
       out = new NearestNeighborsNigh<_T, __SpaceWithCost3>(space, data_to_key);
     }
 
-  } else if (startsWith(name, "unicycle2")) {
+  } else if (startsWith(name, "unicycle_second_order")) {
 
     if (cost_scale < 0) {
       auto data_to_key = [robot, fun](_T const &m) {
@@ -497,7 +494,6 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
                           Vector1d(__x(3)), Vector1d(__x(4)));
       };
 
-      // out = new NearestNeighborsNigh<_T, SpaceUni2>(data_to_key);
 
       DYNO_CHECK_EQ(w.size(), 4, AT);
       __SpaceUni2 space(w(0), w(1), w(2), w(3));
@@ -519,7 +515,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
           new NearestNeighborsNigh<_T, __SpaceUni2WithCost>(space, data_to_key);
     }
   }
-  else if (startsWith(name, "integrator1_2d"))
+  else if (startsWith(name, "single_integrator"))
   {
     auto data_to_key = [robot, fun](_T const &m)
     {
@@ -530,7 +526,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
     __SpaceIntegrator1 space;
     out = new NearestNeighborsNigh<_T, __SpaceIntegrator1>(space, data_to_key);
   }
-  else if (startsWith(name, "integrator2_2d"))
+  else if (startsWith(name, "double_integrator_2d"))
   {
     auto data_to_key = [robot, fun](_T const &m) {
       using Vector4d = Eigen::Matrix<double, 4, 1>;
@@ -543,29 +539,11 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
     __SpaceIntegrator2 space(w(0), w(1));
     out = new NearestNeighborsNigh<_T, __SpaceIntegrator2>(space, data_to_key);
   }
-  else if (startsWith(name, "integrator2_3d_res"))
-  {
-    auto data_to_key = [robot, fun](_T const &m) {
-      using Vector7d = Eigen::Matrix<double, 7, 1>;
-      using Vector1d = Eigen::Matrix<double, 1, 1>;
-      Vector7d __x = fun(m);
-      return std::tuple(Eigen::Vector3d(__x(0), __x(1), __x(2)),
-                        Eigen::Vector3d(__x(3), __x(4), __x(5)),
-                        Vector1d(__x(6)));
-    };
-
-    DYNO_CHECK_EQ(w.size(), 3, AT);
-    __SpaceIntegrator2_3d_res space(w(0), w(1), w(2));
-    out = new NearestNeighborsNigh<_T, __SpaceIntegrator2_3d_res>(space,
-                                                                  data_to_key);
-  }
-  else if (startsWith(name, "integrator2_3d"))
+  else if (startsWith(name, "double_integrator_3d"))
   {
     auto data_to_key = [robot, fun](_T const &m) {
       using Vector6d = Eigen::Matrix<double, 6, 1>;
       Vector6d __x = fun(m);
-      // return std::tuple(Eigen::Vector3d(__x.head(3)),Eigen::Vector3d(__x(3),
-      // __x(4), __x(5)));
       return std::tuple(Eigen::Vector3d(__x(0), __x(1), __x(2)),
                         Eigen::Vector3d(__x(3), __x(4), __x(5)));
     };
@@ -616,7 +594,6 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
       return std::tuple(__x(0), __x(1), Eigen::Vector2d(__x(2), __x(3)));
     };
 
-    // out = new NearestNeighborsNigh<_T, SpaceAcrobot>(data_to_key);
 
     DYNO_CHECK_EQ(w.size(), 3, AT);
     __SpaceAcrobot space(w(0), w(1), w(2));
@@ -637,20 +614,17 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
 
     DYNO_CHECK_EQ(w.size(), 4, AT);
     __SpaceQuad3d space(w(0), w(1), w(2), w(3));
-    // out = new NearestNeighborsNigh<_T, SpaceQuad3d>(data_to_key);
     out = new NearestNeighborsNigh<_T, __SpaceQuad3d>(space, data_to_key);
 
-  } else if (startsWith(name, "car1")) {
+  } else if (startsWith(name, "car_with_trailer")) {
 
     auto data_to_key = [robot, fun](_T const &m) {
       Eigen::Vector4d __x = fun(m);
       return std::tuple(Eigen::Vector2d(__x(0), __x(1)), __x(2), __x(3));
     };
-    // out = new NearestNeighborsNigh<_T, SpaceCar1>(data_to_key);
 
     DYNO_CHECK_EQ(w.size(), 3, AT);
     __SpaceCar1 space(w(0), w(1), w(2));
-    // out = new NearestNeighborsNigh<_T, SpaceQuad3d>(data_to_key);
     out = new NearestNeighborsNigh<_T, __SpaceCar1>(space, data_to_key);
   }
 
@@ -676,7 +650,7 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
   auto &w = robot->distance_weights;
   // CSTR_V(w);
 
-  if (startsWith(name, "unicycle1") && name != "unicycle1_3d_v0") {
+  if (startsWith(name, "unicycle_first_order") && name != "unicycle_first_order_3d") {
 
     if (cost_scale < 0) {
       auto data_to_key = [robot, fun, reverse_search](_T const &m) {
@@ -705,7 +679,7 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
       out = new NearestNeighborsNigh<_T, __SpaceWithCost>(space, data_to_key);
     }
 
-  } else if (startsWith(name, "unicycle1_3d")) {
+  } else if (startsWith(name, "unicycle_first_order_3d")) {
 
     if (cost_scale < 0) {
       auto data_to_key = [robot, fun, reverse_search](_T const &m) {
@@ -734,7 +708,7 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
       out = new NearestNeighborsNigh<_T, __SpaceWithCost3>(space, data_to_key);
     }
 
-  } else if (startsWith(name, "unicycle2")) {
+  } else if (startsWith(name, "unicycle_second_order")) {
 
     if (cost_scale < 0) {
       auto data_to_key = [robot, fun, reverse_search](_T const &m) {
@@ -766,7 +740,7 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
     }
 
   }
-  else if (startsWith(name, "integrator1_2d"))
+  else if (startsWith(name, "single_integrator"))
   {
     auto data_to_key = [robot, fun, reverse_search](_T const &m)
     {
@@ -777,7 +751,7 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
     __SpaceIntegrator1 space;
     out = new NearestNeighborsNigh<_T, __SpaceIntegrator1>(space, data_to_key);
   }
-  else if (startsWith(name, "integrator2_2d"))
+  else if (startsWith(name, "double_integrator_2d"))
   {
     auto data_to_key = [robot, fun, reverse_search](_T const &m) {
       using Vector4d = Eigen::Matrix<double, 4, 1>;
@@ -790,29 +764,11 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
     __SpaceIntegrator2 space(w(0), w(1));
     out = new NearestNeighborsNigh<_T, __SpaceIntegrator2>(space, data_to_key);
   }
-  else if (startsWith(name, "integrator2_3d_res"))
-  {
-    auto data_to_key = [robot, fun, reverse_search](_T const &m) {
-      using Vector7d = Eigen::Matrix<double, 7, 1>;
-      using Vector1d = Eigen::Matrix<double, 1, 1>;
-      Vector7d __x = fun(m, reverse_search, robot->translation_invariance);
-      return std::tuple(Eigen::Vector3d(__x(0), __x(1), __x(2)),
-                        Eigen::Vector3d(__x(3), __x(4), __x(5)),
-                        Vector1d(__x(6)));
-    };
-
-    DYNO_CHECK_EQ(w.size(), 3, AT);
-    __SpaceIntegrator2_3d_res space(w(0), w(1), w(2));
-    out = new NearestNeighborsNigh<_T, __SpaceIntegrator2_3d_res>(space,
-                                                                  data_to_key);
-  }
-  else if (startsWith(name, "integrator2_3d"))
+  else if (startsWith(name, "double_integrator_3d"))
   {
     auto data_to_key = [robot, fun, reverse_search](_T const &m) {
       using Vector6d = Eigen::Matrix<double, 6, 1>;
       Vector6d __x = fun(m, reverse_search, robot->translation_invariance);
-      // return std::tuple(Eigen::Vector3d(__x.head(3)),Eigen::Vector3d(__x(3),
-      // __x(4), __x(5)));
       return std::tuple(Eigen::Vector3d(__x(0), __x(1), __x(2)),
                         Eigen::Vector3d(__x(3), __x(4), __x(5)));
     };
@@ -822,7 +778,7 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
     out =
         new NearestNeighborsNigh<_T, __SpaceIntegrator2_3d>(space, data_to_key);
   }
-  else if (startsWith(name, "car1"))
+  else if (startsWith(name, "car_with_trailer"))
   {
 
     auto data_to_key = [robot, fun, reverse_search](_T const &m) {
@@ -830,7 +786,6 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
           fun(m, reverse_search, robot->translation_invariance);
       return std::tuple(Eigen::Vector2d(__x(0), __x(1)), __x(2), __x(3));
     };
-    // out = new NearestNeighborsNigh<_T, SpaceCar1>(data_to_key);
 
     DYNO_CHECK_EQ(w.size(), 3, AT);
     __SpaceCar1 space(w(0), w(1), w(2));
@@ -840,4 +795,4 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
   CHECK(out, AT);
   return out;
 }
-} // namespace dynoplan
+} 
