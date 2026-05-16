@@ -8,7 +8,7 @@
 bool execute_optimizationMultiRobot(const std::string &env_file,
                                     const std::string &initial_guess_file,
                                     const std::string &output_file,
-                                    const std::string &dynobench_base,
+                                    const std::string &base,
                                     bool sum_robots_cost) {
 
   using namespace dynoplan;
@@ -52,14 +52,13 @@ bool execute_optimizationMultiRobot(const std::string &env_file,
   options_trajopt.use_warmstart = 1;
   options_trajopt.weight_goal = 100;
   options_trajopt.max_iter = 50;
-  problem.models_base_path = dynobench_base + std::string("models/");
+  problem.models_base_path = base + std::string("robot_types/");
 
   Result_opti result;
   Trajectory sol;
 
   dynobench::Trajectory init_guess_joint =
       init_guess_multi_robot.transform_to_joint_trajectory();
-  init_guess.to_yaml_format("/tmp/check2.yaml");
 
   trajectory_optimization(problem, init_guess_joint, options_trajopt, sol,
                           result);
@@ -92,7 +91,7 @@ bool execute_optimizationMetaRobot(
     dynobench::Problem &problem,
     MultiRobotTrajectory &init_guess_multi_robot, // discrete search
     MultiRobotTrajectory &multi_robot_out,        // output
-    const std::string &dynobench_base, bool sum_robots_cost = true) {
+    const std::string &base, bool sum_robots_cost = true) {
 
   using namespace dynoplan;
   using namespace dynobench;
@@ -134,8 +133,8 @@ bool execute_optimizationMetaRobot(
   options_trajopt.use_warmstart = 1;
   options_trajopt.weight_goal = 100;
   options_trajopt.max_iter = 50;
-  options_trajopt.collision_weight = 100; // 300 for wall10
-  problem.models_base_path = dynobench_base + std::string("models/");
+  options_trajopt.collision_weight = 100; 
+  problem.models_base_path = base + std::string("robot_types/");
 
   Result_opti result;
   Trajectory sol;
