@@ -1,43 +1,31 @@
-// #include "dynoplan/dbastar/dbastar.hpp"
-#include "dynoplan/tdbastar/tdbastar.hpp"
-
-#include <boost/graph/graphviz.hpp>
-
-// #include <flann/flann.hpp>
-// #include <msgpack.hpp>
-#include <ompl/base/spaces/SE2StateSpace.h>
 #include <yaml-cpp/yaml.h>
-
-// #include <boost/functional/hash.hpp>
-#include <boost/heap/d_ary_heap.hpp>
-#include <boost/program_options.hpp>
-
-// OMPL headers
-#include <ompl/base/spaces/RealVectorStateSpace.h>
-#include <ompl/control/SpaceInformation.h>
-#include <ompl/control/spaces/RealVectorControlSpace.h>
-
-#include <ompl/datastructures/NearestNeighbors.h>
-// #include <ompl/datastructures/NearestNeighborsFLANN.h>
-#include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
-#include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
-
-#include "dynobench/motions.hpp"
-#include "dynobench/robot_models.hpp"
-#include "dynoplan/ompl/robots.h"
+// OMPL
 #include "ompl/base/Path.h"
 #include "ompl/base/ScopedState.h"
-
-// boost stuff for the graph
+#include <ompl/base/spaces/RealVectorStateSpace.h>
+#include <ompl/base/spaces/SE2StateSpace.h>
+#include <ompl/control/SpaceInformation.h>
+#include <ompl/control/spaces/RealVectorControlSpace.h>
+#include <ompl/datastructures/NearestNeighbors.h>
+#include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
+#include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
+// DYNOBENCH
+#include "dynobench/general_utils.hpp"
+#include "dynobench/motions.hpp"
+#include "dynobench/robot_models.hpp"
+// DYNOPLAN
+#include "dynoplan/nigh_custom_spaces.hpp"
+#include "dynoplan/ompl/robots.h"
+#include "dynoplan/tdbastar/tdbastar.hpp"
+// BOOST
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/graph_traits.hpp>
+#include <boost/graph/graphviz.hpp>
 #include <boost/graph/undirected_graph.hpp>
+#include <boost/heap/d_ary_heap.hpp>
+#include <boost/program_options.hpp>
 #include <boost/property_map/property_map.hpp>
-
-#include "dynobench/general_utils.hpp"
-
-#include "dynoplan/nigh_custom_spaces.hpp"
 
 namespace dynoplan {
 
@@ -126,8 +114,6 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                     std::ofstream *out) {
   std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>> result;
   CHECK(solution, AT);
-  // TODO: check what happens if a solution is a single state?
-
   std::shared_ptr<AStarNode> n = solution;
   size_t arrival_idx = n->current_arrival_idx;
   // size_t arrival_idx = n->best_focal_arrival_idx;
@@ -209,9 +195,6 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
     // TODO: missing additional offset, if any
 
     double jump = robot.lower_bound_time(node_state, xs.front());
-    // CSTR_V(node_state);
-    // CSTR_V(xs.front());
-    // std::cout << "jump " << jump << std::endl;
 
     if (out) {
       *out << space6 + "# (traj.states.front) "
@@ -246,10 +229,6 @@ void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
         *out << xs.at(k).format(FMT) << std::endl;
       }
     }
-
-    // Continue here!!
-    // Just get state + motion
-    // skip last, then state... and so on!!!
   }
   if (out) {
     *out << space6 << "# goal state is " << problem.goal.format(FMT)
@@ -404,11 +383,6 @@ bool check_lazy_trajectory(
     }
   });
   time_bench.num_col_motions++;
-  // std::cout << "Printing the tmp traj: " << std::endl;
-  // for (auto tr : tmp_traj.get_states()){
-  //     std::cout << tr.format(dynobench::FMT) << std::endl;
-  // }
-  // std::cout << "Finishing printing the tmp traj" << std::endl;
   bool reachesGoal;
   if (!forward) {
     reachesGoal = robot.distance(tmp_traj.get_state(tmp_traj.get_size() - 1),
@@ -505,7 +479,6 @@ void tdbastar(
     dynobench::Problem &problem, Options_tdbastar options_tdbastar,
     Trajectory &traj_out, const std::vector<Constraint> &constraints,
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
-    std::vector<dynobench::Trajectory> &expanded_trajs,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> *heuristic_nn,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result) {
 
@@ -530,9 +503,6 @@ void tdbastar(
   CHECK(options_tdbastar.motions_ptr,
         "motions should be loaded before calling dbastar");
   std::vector<Motion> &motions = *options_tdbastar.motions_ptr;
-  // for the reverse search debug
-  // std::ofstream out2("../dynoplan/expanded_trajs.yaml");
-  // out2 << "trajs:" << std::endl;
 
   auto check_motions = [&] {
     for (size_t idx = 0; idx < motions.size(); ++idx) {
@@ -561,13 +531,6 @@ void tdbastar(
     *heuristic_result = T_n;
   }
   if (options_tdbastar.use_nigh_nn) {
-    // if (reverse_search){
-    //    T_m = nigh_factory2<Motion *>(problem.robotTypes[robot_id], robot,
-    //    [](Motion& m) { return m->getLastStateEig(); });
-    // }
-    // else {
-    //    T_m = nigh_factory2<Motion *>(problem.robotTypes[robot_id], robot);
-    // }
     T_m = nigh_factory_t<Motion *>(problem.robotTypes[robot_id], robot,
                                    reverse_search);
   } else {
@@ -588,8 +551,7 @@ void tdbastar(
   }
 
   if (options_tdbastar.delta < 0) {
-    NOT_IMPLEMENTED; // HERE i could compute delta based on desired branching
-                     // factor!
+    NOT_IMPLEMENTED;
   }
 
   std::shared_ptr<Heu_fun> h_fun = nullptr;
@@ -798,8 +760,6 @@ void tdbastar(
         continue;
       }
 
-      // Additional CHECK: if a intermediate state is close to goal. It really
-      // helps!
       int chosen_index = -1;
       check_goal(*robot, tmp_node->state_eig, problem.goals[robot_id],
                  traj_wrapper,
@@ -828,7 +788,6 @@ void tdbastar(
 
       auto tmp_traj = dynobench::trajWrapper_2_Trajectory(traj_wrapper);
       tmp_traj.cost = best_node->gScore;
-      expanded_trajs.push_back(tmp_traj);
       // CHECK if new State is NOVEL
       time_bench.time_nearestNode_search += timed_fun_void([&] {
         T_n->nearestR(tmp_node,

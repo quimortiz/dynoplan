@@ -1,42 +1,30 @@
 #pragma once
-#include <algorithm>
-// // #include <boost/graph/graphviz.hpp>
 #include "Eigen/Core"
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <limits>
-//
-// #include <flann/flann.hpp>
-// #include <msgpack.hpp>
-#include <ompl/base/spaces/SE2StateSpace.h>
 #include <yaml-cpp/yaml.h>
-//
-// // #include <boost/functional/hash.hpp>
-#include <boost/heap/d_ary_heap.hpp>
-#include <boost/program_options.hpp>
-//
-// // OMPL headers
-
-// #include <ompl/base/spaces/RealVectorStateSpace.h>
-// #include <ompl/control/SpaceInformation.h>
+// ompl
+#include "ompl/base/ScopedState.h"
+#include <ompl/base/spaces/SE2StateSpace.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>
 #include <ompl/datastructures/NearestNeighbors.h>
-// #include <ompl/datastructures/NearestNeighborsFLANN.h>
-// #include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
-// #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
-//
-// #include "fclHelper.hpp"
+// boost
+#include <boost/heap/d_ary_heap.hpp>
+#include <boost/program_options.hpp>
+// dynobench
 #include "dynobench/dyno_macros.hpp"
 #include "dynobench/motions.hpp"
-#include "dynoplan/ompl/robots.h"
-#include "ompl/base/ScopedState.h"
-#include <fcl/fcl.h>
-
 #include "dynobench/planar_rotor.hpp"
 #include "dynobench/quadrotor.hpp"
+// dynoplan
 #include "dynoplan/dbastar/heuristics.hpp"
 #include "dynoplan/dbastar/options.hpp"
+#include "dynoplan/ompl/robots.h"
+
+#include <fcl/fcl.h>
 
 namespace dynoplan {
 

@@ -152,20 +152,8 @@ int main(int argc, char *argv[]) {
                              options_tdbastar.cut_actions, true,
                              options_tdbastar.check_cols);
   options_tdbastar.motions_ptr = &motions;
-  std::vector<dynobench::Trajectory> expanded_trajs_tmp;
   tdbastar(problem, options_tdbastar, trajectory, constraints, out_tdb,
-           robot_id, /*reverse_search*/ false, expanded_trajs_tmp, nullptr,
-           nullptr);
-  if (save_expanded_trajs) {
-    fs::path output_path(outputFile);
-    std::string output_folder = output_path.parent_path().string();
-    std::ofstream out2(output_folder + "/expanded_trajs.yaml");
-    out2 << "trajs:" << std::endl;
-    for (auto traj : expanded_trajs_tmp) {
-      out2 << "  - " << std::endl;
-      traj.to_yaml_format(out2, "    ");
-    }
-  }
+           robot_id, /*reverse_search*/ false, nullptr, nullptr);
 
   CSTR_(outputFile);
   std::ofstream results(outputFile);

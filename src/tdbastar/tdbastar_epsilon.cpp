@@ -1,28 +1,27 @@
-#include <boost/graph/graphviz.hpp>
 
 #include <map>
-#include <ompl/base/spaces/SE2StateSpace.h>
 #include <yaml-cpp/yaml.h>
-// #include <boost/functional/hash.hpp>
+// BOOST
+#include <boost/graph/graphviz.hpp>
 #include <boost/heap/d_ary_heap.hpp>
 #include <boost/program_options.hpp>
 
-// OMPL headers
+// OMPL
+#include "ompl/base/Path.h"
+#include "ompl/base/ScopedState.h"
 #include <ompl/base/spaces/RealVectorStateSpace.h>
+#include <ompl/base/spaces/SE2StateSpace.h>
 #include <ompl/control/SpaceInformation.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>
-
 #include <ompl/datastructures/NearestNeighbors.h>
 #include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
 #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
-
+// DYNOBENCH
+#include "dynobench/general_utils.hpp"
 #include "dynobench/motions.hpp"
+#include "dynobench/nn.h"
 #include "dynobench/robot_models.hpp"
-#include "dynoplan/ompl/robots.h"
-#include "ompl/base/Path.h"
-#include "ompl/base/ScopedState.h"
-
-// boost stuff for the graph
+// BOOST
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/graph_traits.hpp>
@@ -31,19 +30,14 @@
 // fcl
 #include "fcl/broadphase/broadphase_collision_manager.h"
 #include <fcl/fcl.h>
-
-#include "dynobench/general_utils.hpp"
+// DYNOPLAN
 #include "dynoplan/nigh_custom_spaces.hpp"
+#include "dynoplan/ompl/robots.h"
 #include "dynoplan/tdbastar/planresult.hpp"
 #include "dynoplan/tdbastar/tdbastar.hpp"
 #include "dynoplan/tdbastar/tdbastar_epsilon.hpp"
 
-// nn
-#include "dynobench/nn.h"
-
 #define REBUILT_FOCAL_LIST
-// #define DEBUG_REWIRING
-
 namespace dynoplan {
 
 using dynobench::Trajectory;
@@ -54,8 +48,6 @@ namespace ob = ompl::base;
 
 using Sample = std::vector<double>;
 using Sample_ = ob::State;
-
-// nigh interface for OMPL
 
 bool compareFocalHeuristic::operator()(const open_t::handle_type &h1,
                                        const open_t::handle_type &h2) const {
@@ -525,11 +517,6 @@ void tdbastar_epsilon(
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result,
     bool residual_force, float w, bool run_focal_heuristic) {
 
-#ifdef DBG_PRINTS
-  std::cout << "*** options_tdbastar ***" << std::endl;
-  options_tdbastar.print(std::cout);
-  std::cout << "***" << std::endl;
-#endif
   std::cout << "*** Running tdbA*-epsilon for robot " << robot_id << " ***"
             << std::endl;
   for (const auto &constraint : constraints) {

@@ -1,33 +1,29 @@
 #pragma once
-#include <algorithm>
-// // #include <boost/graph/graphviz.hpp>
 #include "Eigen/Core"
+#include <algorithm>
 #include <chrono>
 #include <fstream>
 #include <iostream>
 #include <limits>
-//
-// #include <flann/flann.hpp>
-// #include <msgpack.hpp>
-#include <ompl/base/spaces/SE2StateSpace.h>
 #include <yaml-cpp/yaml.h>
-//
-// // #include <boost/functional/hash.hpp>
+// BOOST
 #include <boost/heap/d_ary_heap.hpp>
 #include <boost/program_options.hpp>
 // OMPL
+#include "ompl/base/ScopedState.h"
+#include <ompl/base/spaces/SE2StateSpace.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>
 #include <ompl/datastructures/NearestNeighbors.h>
-// #include "fclHelper.hpp"
+// FCL
+#include <fcl/fcl.h>
+// DYNOBENCH
 #include "dynobench/dyno_macros.hpp"
 #include "dynobench/motions.hpp"
-#include "dynoplan/ompl/robots.h"
-#include "ompl/base/ScopedState.h"
-#include <fcl/fcl.h>
-
 #include "dynobench/planar_rotor.hpp"
 #include "dynobench/quadrotor.hpp"
+// DYNOPLAN
 #include "dynoplan/dbastar/heuristics.hpp"
+#include "dynoplan/ompl/robots.h"
 #include "dynoplan/tdbastar/options.hpp"
 
 namespace dynoplan {
@@ -102,22 +98,7 @@ struct AStarNode {
   }
 };
 
-// float heuristic(std::shared_ptr<RobotOmpl> robot, const ob::State *s,
-//                 const ob::State *g);
-
 using Edge = std::pair<int, int>;
-// void backward_tree_with_dynamics(
-//     const std::vector<std::vector<double>> &data,
-//     std::vector<Motion> &primitives, std::vector<Edge> &edge_list,
-//     std::vector<double> &distance_list,
-//     std::shared_ptr<fcl::BroadPhaseCollisionManagerf> bpcm_env,
-//     double delta_sq);
-
-enum class Duplicate_detection {
-  NO = 0,
-  HARD = 1,
-  SOFT = 2,
-};
 
 enum class Terminate_status {
   SOLVED = 0,
@@ -140,7 +121,6 @@ struct Out_info_tdb {
   double cost = -1;
   bool solved = 0;
   double cost_with_delta_time = -1;
-  // void print(std::ostream &out);
   double time_search = -1;
   std::map<std::string, std::string> data;
 
@@ -179,7 +159,6 @@ void tdbastar(
     dynobench::Problem &problem, Options_tdbastar options_dbastar,
     dynobench::Trajectory &traj_out, const std::vector<Constraint> &constraints,
     Out_info_tdb &out_info_tdb, size_t &robot_id, bool reverse_search,
-    std::vector<dynobench::Trajectory> &expanded_trajs,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> *heuristic_nn = nullptr,
     ompl::NearestNeighbors<std::shared_ptr<AStarNode>> **heuristic_result =
         nullptr);
@@ -302,9 +281,6 @@ struct Expander {
   }
 };
 
-//
-// @param:nodes
-//
 void plot_search_tree(std::vector<AStarNode *> nodes,
                       std::vector<Motion> &motions,
                       dynobench::Model_robot &robot, const char *filename);
@@ -331,13 +307,9 @@ bool check_lazy_trajectory(
     std::function<bool(Eigen::Ref<Eigen::VectorXd>)> *check_state = nullptr,
     int *num_valid_states = nullptr, bool forward = true);
 
-// TODO: @Akmaral, are you using this function? -- if not remove from here and
-// from cpp
 void disable_motions(std::shared_ptr<dynobench::Model_robot> &robot,
                      std::string &robot_name, float delta,
                      bool filterDuplicates, float alpha, size_t num_max_motions,
                      std::vector<Motion> &motions);
 
-void export_node_expansion(std::vector<dynobench::Trajectory> &expanded_trajs,
-                           std::ostream *out);
 } // namespace dynoplan

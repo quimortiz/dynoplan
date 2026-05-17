@@ -1,39 +1,29 @@
 #pragma once
-#include <boost/graph/graphviz.hpp>
-
-// #include <flann/flann.hpp>
-// #include <msgpack.hpp>
-#include <ompl/base/spaces/SE2StateSpace.h>
 #include <yaml-cpp/yaml.h>
-
-// #include <boost/functional/hash.hpp>
-
 // OMPL headers
-#include <ompl/base/spaces/RealVectorStateSpace.h>
-#include <ompl/control/SpaceInformation.h>
-#include <ompl/control/spaces/RealVectorControlSpace.h>
-
-#include <ompl/datastructures/NearestNeighbors.h>
-// #include <ompl/datastructures/NearestNeighborsFLANN.h>
-#include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
-#include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
-
-#include "dynobench/motions.hpp"
-#include "dynobench/robot_models.hpp"
-#include "dynoplan/ompl/robots.h"
 #include "ompl/base/Path.h"
 #include "ompl/base/ScopedState.h"
-
-// boost stuff for the graph
+#include <ompl/base/spaces/RealVectorStateSpace.h>
+#include <ompl/base/spaces/SE2StateSpace.h>
+#include <ompl/control/SpaceInformation.h>
+#include <ompl/control/spaces/RealVectorControlSpace.h>
+#include <ompl/datastructures/NearestNeighbors.h>
+#include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
+#include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
+// BOOST
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/graph_traits.hpp>
+#include <boost/graph/graphviz.hpp>
 #include <boost/graph/undirected_graph.hpp>
 #include <boost/property_map/property_map.hpp>
-
+// dynobench
 #include "dynobench/general_utils.hpp"
-
+#include "dynobench/motions.hpp"
+#include "dynobench/robot_models.hpp"
+// dynoplan
 #include "dynoplan/dbastar/options.hpp"
+#include "dynoplan/ompl/robots.h"
 
 namespace dynoplan {
 
