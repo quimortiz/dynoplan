@@ -133,7 +133,6 @@ namespace dynoplan
   {
     std::vector<std::pair<std::shared_ptr<AStarNode>, size_t>> result;
     CHECK(solution, AT);
-    // TODO: check what happens if a solution is a single state?
 
     std::shared_ptr<AStarNode> n = solution;
     size_t arrival_idx = n->current_arrival_idx;
@@ -203,8 +202,6 @@ namespace dynoplan
              << motion.traj.states.back().format(FMT) << std::endl;
       }
 
-      // transform the motion to match the state
-
       // get the motion
       robot.offset(node_state, __offset);
       if (out)
@@ -222,12 +219,8 @@ namespace dynoplan
       std::vector<Eigen::VectorXd> xs = traj_wrap.get_states();
       std::vector<Eigen::VectorXd> us = traj_wrap.get_actions();
 
-      // TODO: missing additional offset, if any
 
       double jump = robot.lower_bound_time(node_state, xs.front());
-      // CSTR_V(node_state);
-      // CSTR_V(xs.front());
-      // std::cout << "jump " << jump << std::endl;
 
       if (out)
       {
@@ -273,10 +266,6 @@ namespace dynoplan
           *out << xs.at(k).format(FMT) << std::endl;
         }
       }
-
-      // Continue here!!
-      // Just get state + motion
-      // skip last, then state... and so on!!!
     }
     if (out)
     {
@@ -451,11 +440,6 @@ namespace dynoplan
       motion_valid = dynobench::is_motion_collision_free(tmp_traj, robot);
     } });
     time_bench.num_col_motions++;
-    // std::cout << "Printing the tmp traj: " << std::endl;
-    // for (auto tr : tmp_traj.get_states()){
-    //     std::cout << tr.format(dynobench::FMT) << std::endl;
-    // }
-    // std::cout << "Finishing printing the tmp traj" << std::endl;
     bool reachesGoal;
     if (!forward)
     {

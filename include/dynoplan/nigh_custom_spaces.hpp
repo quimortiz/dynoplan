@@ -299,7 +299,7 @@ ompl::NearestNeighbors<_T> *nigh_factory(
       return std::tuple(Eigen::Vector2d(__x.head(2)), __x(2));
     };
 
-    DYNO_CHECK_EQ(w.size(), 2, AT);
+    DYNO_CHECK_EQ(w.size(), 3, AT);
     __Space space(double(w(0)), double(w(1)));
 
     out = new NearestNeighborsNigh<_T, __Space>(space, data_to_key);
@@ -435,7 +435,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
         return std::tuple(Eigen::Vector2d(__x.head(2)), __x(2));
       };
 
-      DYNO_CHECK_EQ(w.size(), 2, AT);
+      DYNO_CHECK_EQ(w.size(), 3, AT);
       __Space space(double(w(0)), double(w(1)));
 
       out = new NearestNeighborsNigh<_T, __Space>(space, data_to_key);
@@ -463,7 +463,7 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
         return std::tuple(Eigen::Vector3d(__x.head(3)), __x(3));
       };
 
-      DYNO_CHECK_EQ(w.size(), 2, AT);
+      DYNO_CHECK_EQ(w.size(), 3, AT);
       __Space3 space(double(w(0)), double(w(1)));
 
       out = new NearestNeighborsNigh<_T, __Space3>(space, data_to_key);
@@ -535,8 +535,8 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
                         Eigen::Vector2d(__x(2), __x(3)));
     };
 
-    DYNO_CHECK_EQ(w.size(), 2, AT);
-    __SpaceIntegrator2 space(w(0), w(1));
+    DYNO_CHECK_EQ(w.size(), 4, AT);
+    __SpaceIntegrator2 space(w(0), w(2));
     out = new NearestNeighborsNigh<_T, __SpaceIntegrator2>(space, data_to_key);
   }
   else if (startsWith(name, "double_integrator_3d"))
@@ -659,7 +659,7 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
         return std::tuple(Eigen::Vector2d(__x.head(2)), __x(2));
       };
 
-      DYNO_CHECK_EQ(w.size(), 2, AT);
+      DYNO_CHECK_EQ(w.size(), 3, AT);
       __Space space(double(w(0)), double(w(1)));
 
       out = new NearestNeighborsNigh<_T, __Space>(space, data_to_key);
@@ -688,7 +688,7 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
         return std::tuple(Eigen::Vector3d(__x.head(3)), __x(3));
       };
 
-      DYNO_CHECK_EQ(w.size(), 2, AT);
+      DYNO_CHECK_EQ(w.size(), 3, AT);
       __Space3 space(double(w(0)), double(w(1)));
 
       out = new NearestNeighborsNigh<_T, __Space3>(space, data_to_key);
@@ -760,8 +760,8 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
                         Eigen::Vector2d(__x(2), __x(3)));
     };
 
-    DYNO_CHECK_EQ(w.size(), 2, AT);
-    __SpaceIntegrator2 space(w(0), w(1));
+    DYNO_CHECK_EQ(w.size(), 4, AT);
+    __SpaceIntegrator2 space(w(0), w(2));
     out = new NearestNeighborsNigh<_T, __SpaceIntegrator2>(space, data_to_key);
   }
   else if (startsWith(name, "double_integrator_3d"))
