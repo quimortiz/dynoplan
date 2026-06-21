@@ -1,28 +1,27 @@
-#include "dynoplan/ompl/robots.h"
 #include <memory>
+#include <algorithm>
+#include <limits>
 
-#include "dynobench/dyno_macros.hpp"
-#include <ompl/base/spaces/SE2StateSpace.h>
-#include <ompl/base/spaces/SE3StateSpace.h>
-#include <ompl/base/spaces/SO3StateSpace.h>
-#include <ompl/control/spaces/RealVectorControlSpace.h>
-#include <ompl/tools/config/MagicConstants.h>
-
-#include "dynobench/robot_models_base.hpp"
 #include "nigh/kdtree_batch.hpp"
 #include "nigh/kdtree_median.hpp"
 #include "nigh/lp_space.hpp"
 #include "nigh/so3_space.hpp"
 #include <nigh/cartesian_space.hpp>
 #include <nigh/scaled_space.hpp>
-
 // OMPL
 #include <ompl/datastructures/NearestNeighbors.h>
 #include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
 #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
-
+#include <ompl/base/spaces/SE2StateSpace.h>
+#include <ompl/base/spaces/SE3StateSpace.h>
+#include <ompl/base/spaces/SO3StateSpace.h>
+#include <ompl/control/spaces/RealVectorControlSpace.h>
+#include <ompl/tools/config/MagicConstants.h>
+// dynoplan
 #include "dynoplan/ompl/fclHelper.hpp"
-
+#include "dynoplan/ompl/robots.h"
+// dynobench
+#include "dynobench/dyno_macros.hpp"
 #include "dynobench/acrobot.hpp"
 #include "dynobench/car.hpp"
 #include "dynobench/planar_rotor.hpp"
@@ -30,6 +29,7 @@
 #include "dynobench/quadrotor.hpp"
 #include "dynobench/unicycle1.hpp"
 #include "dynobench/unicycle2.hpp"
+#include "dynobench/robot_models_base.hpp"
 
 namespace dynoplan {
 
@@ -95,14 +95,6 @@ double clamp(double val, double min, double max) {
   return val;
 }
 
-// This works:
-// (opti) ⋊> ~/s/w/k/build on dev ⨯ make && ./main_ompl --env_file
-// ../benchmark/quadrotor_0/empty_0_easy.yaml --results_file
-// ../results_new/quadrotor_
-// 0/empty_0_easy/sst_v0/04-17-2023--18-58-03/run_0_out.yaml --timelimit 10
-// --cfg ../results_new/quadrotor_0/empty_0_easy/sst_v0/04-17-2023--18-58-03
-// /run_0_out.yaml.cfg.yaml
-
 struct ControlSamplerMixer : public oc::ControlSampler {
   std::shared_ptr<dynobench::Model_quad3d> model;
   ControlSamplerMixer(const std::shared_ptr<dynobench::Model_quad3d> &model,
@@ -138,13 +130,6 @@ struct ControlSamplerMixer : public oc::ControlSampler {
       rcontrol->values[i] = clamp(f(i), bounds.low[i], bounds.high[i]);
     }
 
-    // rcontrol->values[1] = rcontrol->values[0]  ; // TODO: change this!
-    // rcontrol->values[2] = rcontrol->values[0]  ; // TODO: change this!
-    // rcontrol->values[3] = rcontrol->values[0]  ; // TODO: change this!
-
-    // control is the same.
-
-    // std::cout << std::endl;
   }
 
 protected:
@@ -197,14 +182,6 @@ public:
       rcontrol->values[i] =
           clamp(rng_.gaussian(mean_, stddev_), bounds.low[i], bounds.high[i]);
     }
-
-    // rcontrol->values[1] = rcontrol->values[0]  ; // TODO: change this!
-    // rcontrol->values[2] = rcontrol->values[0]  ; // TODO: change this!
-    // rcontrol->values[3] = rcontrol->values[0]  ; // TODO: change this!
-
-    // control is the same.
-
-    // std::cout << std::endl;
   }
 
 protected:
@@ -752,497 +729,6 @@ protected:
   };
 };
 
-// class RobotUnicycleFirstOrder : public RobotOmplOmplOmplOmpl {
-// public:
-//   double max_ang_speed_;
-//
-//   RobotOmplOmplOmplOmplUnicycleFirstOrder(const
-//   ompl::base::RealVectorBounds &position_bounds,
-//                           float v_min, float v_max, float w_min, float
-//                           w_max)
-//                           {
-//     name_ = "UnicycleFirstOrder";
-//
-//
-//     auto space(std::make_shared<ob::SE2StateSpace>());
-//     space->setBounds(position_bounds);
-//
-//     // create a control space
-//     // R^1: turning speed
-//     auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 2));
-//
-//     double xx_lb = position_bounds.low.at(0);
-//     double yy_lb = position_bounds.low.at(1);
-//     double theta_lb = -M_PI;
-//
-//     double xx_ub = position_bounds.high.at(0);
-//     double yy_ub = position_bounds.high.at(1);
-//     double theta_ub = M_PI;
-//
-//     double v_lb = v_min;
-//     double w_lb = w_min;
-//
-//     double w_ub = w_max;
-//     double v_ub = v_max;
-//
-//     x_ub = Eigen::VectorXd(3);
-//     x_lb = Eigen::VectorXd(3);
-//
-//     u_zero = Eigen::VectorXd::Zero(2);
-//
-//     x_lb << xx_lb, yy_lb, theta_lb;
-//     x_ub << xx_ub, yy_ub, theta_ub;
-//
-//     u_ub = Eigen::VectorXd(2);
-//     u_lb = Eigen::VectorXd(2);
-//
-//     u_lb << v_lb, w_lb;
-//     u_ub << v_ub, w_ub;
-//
-//     // set the bounds for the control space
-//     ob::RealVectorBounds cbounds(2);
-//     cbounds.setLow(0, v_min);
-//     cbounds.setHigh(0, v_max);
-//     cbounds.setLow(1, w_min);
-//     cbounds.setHigh(1, w_max);
-//
-//     cspace->setBounds(cbounds);
-//
-//     // construct an instance of  space information from this control space
-//     si_ = std::make_shared<oc::SpaceInformation>(space, cspace);
-//
-//     dt_ = 0.1;
-//     is2D_ = true;
-//     max_speed_ = std::max(fabsf(v_min), fabsf(v_max));
-//     max_ang_speed_ = std::max(fabsf(w_min), fabsf(w_max));
-//   }
-//
-//   virtual void geometric_interpolation(const ompl::base::State *from,
-//                                        const ompl::base::State *to, double
-//                                        t, ompl::base::State *out) override
-//                                        {
-//
-//     auto from_typed = from->as<ob::SE2StateSpace::StateType>();
-//     auto to_typed = to->as<ob::SE2StateSpace::StateType>();
-//
-//     auto out_typed = out->as<ob::SE2StateSpace::StateType>();
-//     // use simple Euler integration
-//
-//     out_typed->setX(from_typed->getX() +
-//                     t * (to_typed->getX() - from_typed->getX()));
-//     out_typed->setY(from_typed->getY() +
-//                     t * (to_typed->getY() - from_typed->getY()));
-//
-//     // TODO: solve this
-//     out_typed->setYaw(from_typed->getYaw() +
-//                       t * (to_typed->getYaw() - from_typed->getYaw()));
-//   }
-//
-//   void propagate(const ompl::base::State *start,
-//                  const ompl::control::Control *control, const double
-//                  duration, ompl::base::State *result) override {
-//     auto startTyped = start->as<ob::SE2StateSpace::StateType>();
-//     const double *ctrl =
-//         control->as<ompl::control::RealVectorControlSpace::ControlType>()
-//             ->values;
-//
-//     auto resultTyped = result->as<ob::SE2StateSpace::StateType>();
-//
-//     // use simple Euler integration
-//     float x = startTyped->getX();
-//     float y = startTyped->getY();
-//     float yaw = startTyped->getYaw();
-//     float remaining_time = duration;
-//     do {
-//       float dt = std::min(remaining_time, dt_);
-//
-//       yaw += ctrl[1] * dt;
-//       x += ctrl[0] * cosf(yaw) * dt;
-//       y += ctrl[0] * sinf(yaw) * dt;
-//
-//       remaining_time -= dt;
-//     } while (remaining_time >= dt_);
-//
-//     // update result
-//
-//     resultTyped->setX(x);
-//     resultTyped->setY(y);
-//     resultTyped->setYaw(yaw);
-//
-//     // Normalize orientation
-//     ob::SO2StateSpace SO2;
-//     SO2.enforceBounds(resultTyped->as<ob::SO2StateSpace::StateType>(1));
-//   }
-//
-//   virtual fcl::Transform3f getTransform(const ompl::base::State *state,
-//                                         size_t /*part*/) override {
-//     auto stateTyped = state->as<ob::SE2StateSpace::StateType>();
-//
-//     fcl::Transform3f result;
-//     result = Eigen::Translation<float, 3>(
-//         fcl::Vector3f(stateTyped->getX(), stateTyped->getY(), 0));
-//     float yaw = stateTyped->getYaw();
-//     result.rotate(Eigen::AngleAxisd(yaw, Eigen::Vector3f::UnitZ()));
-//     return result;
-//   }
-//
-//   virtual void setPosition(ompl::base::State *state,
-//                            const fcl::Vector3f position) override {
-//     auto stateTyped = state->as<ob::SE2StateSpace::StateType>();
-//     stateTyped->setX(position(0));
-//     stateTyped->setY(position(1));
-//   }
-//
-//   virtual double cost_lower_bound(const ompl::base::State *a,
-//                                   const ompl::base::State *b) const
-//                                   override
-//                                   {
-//
-//     auto a_typed = a->as<ob::SE2StateSpace::StateType>();
-//     auto b_typed = b->as<ob::SE2StateSpace::StateType>();
-//
-//     // use simple Euler integration
-//
-//     double dx = a_typed->getX() - b_typed->getX();
-//     double dy = a_typed->getY() - b_typed->getY();
-//     double dtheta =
-//         std::fabs(distance_angle(a_typed->getYaw(), b_typed->getYaw()));
-//
-//     return std::max(std::sqrt(dx * dx + dy * dy) / max_speed_,
-//                     dtheta / max_ang_speed_);
-//   }
-// };
-
-////////////////////////////////////////////////////////////////////////////////////////////////
-
-// class RobotUnicycleSecondOrder : public Robot {
-//
-//   double max_ang_speed_;
-//   double max_acceleration_;
-//   double max_ang_acceleration_;
-//
-// public:
-//   RobotUnicycleSecondOrder(
-//       const ompl::base::RealVectorBounds &position_bounds,
-//       float v_limit,     // max velocity in m/s
-//       float w_limit,     // max angular velocity in rad/s
-//       float a_limit,     // max accelleration in m/s^2
-//       float w_dot_limit) // max angular acceleration in rad/s^2
-//   {
-//     name_ = "UnicycleSecondOrder";
-//     geom_.emplace_back(new fcl::Boxf(0.5, 0.25, 1.0));
-//
-//     auto space(std::make_shared<StateSpace>());
-//     space->setPositionBounds(position_bounds);
-//
-//     double xx_lb = position_bounds.low.at(0);
-//     double yy_lb = position_bounds.low.at(1);
-//     double theta_lb = -M_PI;
-//     double v_lb = -v_limit;
-//     double w_lb = -w_limit;
-//
-//     double xx_ub = position_bounds.high.at(0);
-//     double yy_ub = position_bounds.high.at(1);
-//     double theta_ub = M_PI;
-//     double w_ub = w_limit;
-//     double v_ub = v_limit;
-//
-//     x_ub = Eigen::VectorXd(5);
-//     x_lb = Eigen::VectorXd(5);
-//
-//     x_lb << xx_lb, yy_lb, theta_lb, v_lb, w_lb;
-//     x_ub << xx_ub, yy_ub, theta_ub, v_ub, w_ub;
-//
-//     u_ub = Eigen::VectorXd(2);
-//     u_lb = Eigen::VectorXd(2);
-//
-//     u_lb << -a_limit, -w_dot_limit;
-//     u_ub << a_limit, w_dot_limit;
-//
-//     ob::RealVectorBounds vel_bounds(1);
-//     vel_bounds.setLow(-v_limit);
-//     vel_bounds.setHigh(v_limit);
-//     space->setVelocityBounds(vel_bounds);
-//
-//     ob::RealVectorBounds w_bounds(1);
-//     w_bounds.setLow(-w_limit);
-//     w_bounds.setHigh(w_limit);
-//     space->setAngularVelocityBounds(w_bounds);
-//
-//     u_zero = Eigen::VectorXd::Zero(2);
-//
-//     // create a control space
-//     // R^1: turning speed
-//     auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 2));
-//
-//     // set the bounds for the control space
-//     ob::RealVectorBounds cbounds(2);
-//     cbounds.setLow(0, -a_limit);
-//     cbounds.setHigh(0, a_limit);
-//     cbounds.setLow(1, -w_dot_limit);
-//     cbounds.setHigh(1, w_dot_limit);
-//
-//     cspace->setBounds(cbounds);
-//
-//     // construct an instance of  space information from this control space
-//     si_ = std::make_shared<oc::SpaceInformation>(space, cspace);
-//
-//     dt_ = 0.1;
-//     is2D_ = true;
-//     max_speed_ = v_limit;
-//     max_ang_speed_ = w_limit;
-//
-//     max_acceleration_ = a_limit;
-//     max_ang_acceleration_ = w_dot_limit;
-//   }
-//
-//   virtual void geometric_interpolation(const ompl::base::State *from,
-//                                        const ompl::base::State *to, double
-//                                        t, ompl::base::State *out) override
-//                                        {
-//
-//     auto from_typed = from->as<StateSpace::StateType>();
-//     auto to_typed = to->as<StateSpace::StateType>();
-//
-//     auto out_typed = out->as<StateSpace::StateType>();
-//     // use simple Euler integration
-//
-//     out_typed->setX(from_typed->getX() +
-//                     t * (to_typed->getX() - from_typed->getX()));
-//     out_typed->setY(from_typed->getY() +
-//                     t * (to_typed->getY() - from_typed->getY()));
-//
-//     // TODO: solve this.
-//     out_typed->setYaw(from_typed->getYaw() +
-//                       t * (to_typed->getYaw() - from_typed->getYaw()));
-//
-//     out_typed->setVelocity(
-//         from_typed->getVelocity() +
-//         t * (to_typed->getVelocity() - from_typed->getVelocity()));
-//
-//     out_typed->setAngularVelocity(from_typed->getAngularVelocity() +
-//                                   t * (to_typed->getAngularVelocity() -
-//                                        from_typed->getAngularVelocity()));
-//   }
-//
-//   virtual double cost_lower_bound(const ompl::base::State *a,
-//                                   const ompl::base::State *b) override {
-//
-//     auto a_typed = a->as<StateSpace::StateType>();
-//     auto b_typed = b->as<StateSpace::StateType>();
-//
-//     double dx = a_typed->getX() - b_typed->getX();
-//     double dy = a_typed->getY() - b_typed->getY();
-//
-//     double dv = a_typed->getVelocity() - b_typed->getVelocity();
-//     double dw = a_typed->getAngularVelocity() -
-//     b_typed->getAngularVelocity(); double dtheta =
-//     distance_angle(a_typed->getYaw(), b_typed->getYaw());
-//
-//     std::array<double, 4> maxs = {std::sqrt(dx * dx + dy * dy) /
-//     max_speed_,
-//                                   std::fabs(dtheta) / max_ang_speed_,
-//                                   std::fabs(dv) / max_acceleration_,
-//                                   std::fabs(dw) / max_ang_acceleration_};
-//
-//     auto it = std::max_element(maxs.cbegin(), maxs.cend());
-//     return *it;
-//   };
-//
-//   void propagate(const ompl::base::State *start,
-//                  const ompl::control::Control *control, const double
-//                  duration, ompl::base::State *result) override {
-//     auto startTyped = start->as<StateSpace::StateType>();
-//     const double *ctrl =
-//         control->as<ompl::control::RealVectorControlSpace::ControlType>()
-//             ->values;
-//
-//     auto resultTyped = result->as<StateSpace::StateType>();
-//
-//     // use simple Euler integration
-//     float x = startTyped->getX();
-//     float y = startTyped->getY();
-//     float yaw = startTyped->getYaw();
-//     float v = startTyped->getVelocity();
-//     float w = startTyped->getAngularVelocity();
-//     float remaining_time = duration;
-//     do {
-//       float dt = std::min(remaining_time, dt_);
-//
-//       // For compatibility with KOMO, update v and yaw first
-//       v += ctrl[0] * dt;
-//       w += ctrl[1] * dt;
-//       yaw += w * dt;
-//       x += v * cosf(yaw) * dt;
-//       y += v * sinf(yaw) * dt;
-//
-//       remaining_time -= dt;
-//     } while (remaining_time >= dt_);
-//
-//     // update result
-//
-//     resultTyped->setX(x);
-//     resultTyped->setY(y);
-//     resultTyped->setYaw(yaw);
-//     resultTyped->setVelocity(v);
-//     resultTyped->setAngularVelocity(w);
-//
-//     // Normalize orientation
-//     ob::SO2StateSpace SO2;
-//     SO2.enforceBounds(resultTyped->as<ob::SO2StateSpace::StateType>(1));
-//   }
-//
-//   virtual fcl::Transform3f getTransform(const ompl::base::State *state,
-//                                         size_t /*part*/) override {
-//     auto stateTyped = state->as<StateSpace::StateType>();
-//
-//     fcl::Transform3f result;
-//     result = Eigen::Translation<float, 3>(
-//         fcl::Vector3f(stateTyped->getX(), stateTyped->getY(), 0));
-//     float yaw = stateTyped->getYaw();
-//     result.rotate(Eigen::AngleAxisd(yaw, Eigen::Vector3f::UnitZ()));
-//     return result;
-//   }
-//
-//   virtual void setPosition(ompl::base::State *state,
-//                            const fcl::Vector3f position) override {
-//     auto stateTyped = state->as<ob::SE2StateSpace::StateType>();
-//     stateTyped->setX(position(0));
-//     stateTyped->setY(position(1));
-//   }
-//
-// protected:
-//   class StateSpace : public ob::CompoundStateSpace {
-//   public:
-//     class StateType : public ob::CompoundStateSpace::StateType {
-//     public:
-//       StateType() = default;
-//
-//       double getX() const {
-//         return as<ob::RealVectorStateSpace::StateType>(0)->values[0];
-//       }
-//
-//       double getY() const {
-//         return as<ob::RealVectorStateSpace::StateType>(0)->values[1];
-//       }
-//
-//       double getYaw() const {
-//         return as<ob::SO2StateSpace::StateType>(1)->value;
-//       }
-//
-//       double getVelocity() const {
-//         return as<ob::RealVectorStateSpace::StateType>(2)->values[0];
-//       }
-//
-//       double getAngularVelocity() const {
-//         return as<ob::RealVectorStateSpace::StateType>(3)->values[0];
-//       }
-//
-//       void setX(double x) {
-//         as<ob::RealVectorStateSpace::StateType>(0)->values[0] = x;
-//       }
-//
-//       void setY(double y) {
-//         as<ob::RealVectorStateSpace::StateType>(0)->values[1] = y;
-//       }
-//
-//       void setYaw(double yaw) {
-//         as<ob::SO2StateSpace::StateType>(1)->value = yaw;
-//       }
-//
-//       void setVelocity(double velocity) {
-//         as<ob::RealVectorStateSpace::StateType>(2)->values[0] = velocity;
-//       }
-//
-//       void setAngularVelocity(double angularVelocity) {
-//         as<ob::RealVectorStateSpace::StateType>(3)->values[0] =
-//         angularVelocity;
-//       }
-//     };
-//
-//     StateSpace() {
-//       setName("CarSO" + getName());
-//       type_ = ob::STATE_SPACE_TYPE_COUNT + 0;
-//       addSubspace(std::make_shared<ob::RealVectorStateSpace>(2),
-//                   1.0);                                        // position
-//       addSubspace(std::make_shared<ob::SO2StateSpace>(), 0.5); //
-//       orientation
-//       addSubspace(std::make_shared<ob::RealVectorStateSpace>(1),
-//                   0.25); // velocity
-//       addSubspace(std::make_shared<ob::RealVectorStateSpace>(1),
-//                   0.25); // angular velocity
-//       lock();
-//     }
-//
-//     ~StateSpace() override = default;
-//
-//     void setPositionBounds(const ob::RealVectorBounds &bounds) {
-//       as<ob::RealVectorStateSpace>(0)->setBounds(bounds);
-//     }
-//
-//     const ob::RealVectorBounds &getPositionBounds() const {
-//       return as<ob::RealVectorStateSpace>(0)->getBounds();
-//     }
-//
-//     void setVelocityBounds(const ob::RealVectorBounds &bounds) {
-//       as<ob::RealVectorStateSpace>(2)->setBounds(bounds);
-//     }
-//
-//     const ob::RealVectorBounds &getVelocityBounds() const {
-//       return as<ob::RealVectorStateSpace>(2)->getBounds();
-//     }
-//
-//     void setAngularVelocityBounds(const ob::RealVectorBounds &bounds) {
-//       as<ob::RealVectorStateSpace>(3)->setBounds(bounds);
-//     }
-//
-//     const ob::RealVectorBounds &getAngularVelocityBounds() const {
-//       return as<ob::RealVectorStateSpace>(3)->getBounds();
-//     }
-//
-//     ob::State *allocState() const override {
-//       auto *state = new StateType();
-//       allocStateComponents(state);
-//       return state;
-//     }
-//
-//     void freeState(ob::State *state) const override {
-//       CompoundStateSpace::freeState(state);
-//     }
-//
-//     void registerProjections() override {
-//       class DefaultProjection : public ob::ProjectionEvaluator {
-//       public:
-//         DefaultProjection(const ob::StateSpace *space)
-//             : ob::ProjectionEvaluator(space) {}
-//
-//         unsigned int getDimension() const override { return 2; }
-//
-//         void defaultCellSizes() override {
-//           cellSizes_.resize(2);
-//           bounds_ = space_->as<ob::SE2StateSpace>()->getBounds();
-//           cellSizes_[0] = (bounds_.high[0] - bounds_.low[0]) /
-//                           ompl::magic::PROJECTION_DIMENSION_SPLITS;
-//           cellSizes_[1] = (bounds_.high[1] - bounds_.low[1]) /
-//                           ompl::magic::PROJECTION_DIMENSION_SPLITS;
-//         }
-//
-//         void project(const ob::State *state,
-//                      Eigen::Ref<Eigen::VectorXd> projection) const override
-//                      {
-//           projection = Eigen::Map<const Eigen::VectorXd>(
-//               state->as<ob::SE2StateSpace::StateType>()
-//                   ->as<ob::RealVectorStateSpace::StateType>(0)
-//                   ->values,
-//               2);
-//         }
-//       };
-//
-//       registerDefaultProjection(std::make_shared<DefaultProjection>(this));
-//     }
-//   };
-// };
-
 class Quad2dPole : public RobotOmpl {
 
 public:
@@ -1777,370 +1263,7 @@ protected:
   };
 };
 
-// class Quad2d : public Robot {
-//
-//   double max_ang_speed_;
-//   double max_acceleration_;
-//   double max_ang_acceleration_;
-//
-// public:
-//   Quad2d(const ompl::base::RealVectorBounds &position_bounds) {
-//     name_ = "Quad2d";
-//     geom_.emplace_back(new fcl::Boxf(0.5, 0.25, 1.0));
-//     double v_limit = 5;
-//     double w_limit = 10;
-//
-//     max_speed_ = v_limit;
-//     max_ang_speed_ = w_limit;
-//     max_acceleration_ = 20;     // 2g
-//     max_ang_acceleration_ = 20; // ? what should i put here?
-//     dt_ = 0.01;
-//
-//     double fmax = 1e3;
-//
-//     auto space(std::make_shared<StateSpace>());
-//     space->setPositionBounds(position_bounds);
-//
-//     double xx_lb = position_bounds.low.at(0);
-//     double yy_lb = position_bounds.low.at(1);
-//     double theta_lb = -M_PI;
-//     double vx_lb = -v_limit;
-//     double vy_lb = -v_limit;
-//     double w_lb = -w_limit;
-//
-//     double xx_ub = position_bounds.high.at(0);
-//     double yy_ub = position_bounds.high.at(1);
-//     double theta_ub = M_PI;
-//     double w_ub = w_limit;
-//     double vx_ub = v_limit;
-//     double vy_ub = v_limit;
-//     //
-//     x_ub = Eigen::VectorXd(6);
-//     x_lb = Eigen::VectorXd(6);
-//
-//     x_lb << xx_lb, yy_lb, theta_lb, vx_lb, vy_lb, w_lb;
-//     x_ub << xx_ub, yy_ub, theta_ub, vx_ub, vy_ub, w_ub;
-//
-//     u_ub = Eigen::VectorXd(2);
-//     u_lb = Eigen::VectorXd(2);
-//
-//     u_lb << 0, 0;
-//     u_ub << fmax, fmax;
-//
-//     ob::RealVectorBounds vel_bounds(2);
-//     vel_bounds.setLow(-v_limit);
-//     vel_bounds.setHigh(v_limit);
-//     space->setVelocityBounds(vel_bounds);
-//
-//     ob::RealVectorBounds w_bounds(1);
-//     w_bounds.setLow(-w_limit);
-//     w_bounds.setHigh(w_limit);
-//     space->setAngularVelocityBounds(w_bounds);
-//
-//     u_zero = Eigen::VectorXd::Zero(2);
-//
-//     // create a control space
-//     // R^1: turning speed
-//     auto cspace(std::make_shared<oc::RealVectorControlSpace>(space, 2));
-//
-//     // set the bounds for the control space
-//     ob::RealVectorBounds cbounds(2);
-//     cbounds.setLow(0, 0);
-//     cbounds.setHigh(0, fmax);
-//     cbounds.setLow(1, 0);
-//     cbounds.setHigh(1, fmax);
-//
-//     cspace->setBounds(cbounds);
-//     //
-//     // // construct an instance of  space information from this control
-//     space si_ = std::make_shared<oc::SpaceInformation>(space, cspace);
-//     //
-//     // dt_ = 0.1;
-//     // is2D_ = true;
-//     // max_speed_ = v_limit;
-//     // max_ang_speed_ = w_limit;
-//     //
-//     // max_acceleration_ = a_limit;
-//     // max_ang_acceleration_ = w_dot_limit;
-//     is2D_ = true;
-//   }
-//
-//   virtual void geometric_interpolation(const ompl::base::State *from,
-//                                        const ompl::base::State *to, double
-//                                        t, ompl::base::State *out) override
-//                                        {
-//
-//     ERROR_WITH_INFO("not implemented");
-//     // auto from_typed = from->as<StateSpace::StateType>();
-//     // auto to_typed = to->as<StateSpace::StateType>();
-//     //
-//     // auto out_typed = out->as<StateSpace::StateType>();
-//     // // use simple Euler integration
-//     //
-//     // out_typed->setX(from_typed->getX() +
-//     //                 t * (to_typed->getX() - from_typed->getX()));
-//     // out_typed->setY(from_typed->getY() +
-//     //                 t * (to_typed->getY() - from_typed->getY()));
-//     //
-//     // // TODO: solve this.
-//     // out_typed->setYaw(from_typed->getYaw() +
-//     //                   t * (to_typed->getYaw() - from_typed->getYaw()));
-//     //
-//     // out_typed->setVelocity(
-//     //     from_typed->getVelocity() +
-//     //     t * (to_typed->getVelocity() - from_typed->getVelocity()));
-//     //
-//     // out_typed->setAngularVelocity(from_typed->getAngularVelocity() +
-//     //                               t * (to_typed->getAngularVelocity() -
-//     // from_typed->getAngularVelocity()));
-//   }
-//
-//   virtual double cost_lower_bound(const ompl::base::State *a,
-//                                   const ompl::base::State *b) override {
-//
-//     // throw std::runtime_error("not implemented");
-//     auto a_typed = a->as<StateSpace::StateType>();
-//     auto b_typed = b->as<StateSpace::StateType>();
-//     //
-//     double dx = a_typed->getX() - b_typed->getX();
-//     double dy = a_typed->getY() - b_typed->getY();
-//     double dtheta = distance_angle(a_typed->getYaw(), b_typed->getYaw());
-//     //
-//     double dvx = a_typed->getVx() - b_typed->getVx();
-//     double dvy = a_typed->getVy() - b_typed->getVy();
-//     double dw = a_typed->getAngularVelocity() -
-//     b_typed->getAngularVelocity();
-//
-//     // double dw = a_typed->getAngularVelocity() -
-//     // b_typed->getAngularVelocity(); double dtheta =
-//     //     std::fabs(distance_angle(a_typed->getYaw(), b_typed->getYaw()));
-//     //
-//
-//     std::array<double, 6> maxs = {std::fabs(dx) / max_speed_,
-//                                   std::fabs(dy) / max_speed_,
-//                                   std::fabs(dtheta) / max_ang_speed_,
-//                                   std::fabs(dvx) / max_acceleration_,
-//                                   std::fabs(dvy) / max_acceleration_,
-//                                   std::fabs(dw) / max_ang_acceleration_};
-//     auto it = std::max_element(maxs.cbegin(), maxs.cend());
-//     return *it;
-//   };
-//
-//   void propagate(const ompl::base::State *start,
-//                  const ompl::control::Control *control, const double
-//                  duration, ompl::base::State *result) override {
-//
-//     ERROR_WITH_INFO("not implemented");
-//     // auto startTyped = start->as<StateSpace::StateType>();
-//     // const double *ctrl =
-//     // control->as<ompl::control::RealVectorControlSpace::ControlType>()
-//     //         ->values;
-//     //
-//     // auto resultTyped = result->as<StateSpace::StateType>();
-//     //
-//     // // use simple Euler integration
-//     // float x = startTyped->getX();
-//     // float y = startTyped->getY();
-//     // float yaw = startTyped->getYaw();
-//     // float v = startTyped->getVelocity();
-//     // float w = startTyped->getAngularVelocity();
-//     // float remaining_time = duration;
-//     // do {
-//     //   float dt = std::min(remaining_time, dt_);
-//     //
-//     //   // For compatibility with KOMO, update v and yaw first
-//     //   v += ctrl[0] * dt;
-//     //   w += ctrl[1] * dt;
-//     //   yaw += w * dt;
-//     //   x += v * cosf(yaw) * dt;
-//     //   y += v * sinf(yaw) * dt;
-//     //
-//     //   remaining_time -= dt;
-//     // } while (remaining_time >= dt_);
-//     //
-//     // // update result
-//     //
-//     // resultTyped->setX(x);
-//     // resultTyped->setY(y);
-//     // resultTyped->setYaw(yaw);
-//     // resultTyped->setVelocity(v);
-//     // resultTyped->setAngularVelocity(w);
-//     //
-//     // // Normalize orientation
-//     // ob::SO2StateSpace SO2;
-//     // SO2.enforceBounds(resultTyped->as<ob::SO2StateSpace::StateType>(1));
-//   }
-//
-//   virtual fcl::Transform3f getTransform(const ompl::base::State *state,
-//                                         size_t /*part*/) override {
-//     auto stateTyped = state->as<StateSpace::StateType>();
-//
-//     fcl::Transform3f result;
-//     result = Eigen::Translation<float, 3>(
-//         fcl::Vector3f(stateTyped->getX(), stateTyped->getY(), 0));
-//     float yaw = stateTyped->getYaw();
-//     result.rotate(Eigen::AngleAxisd(yaw, Eigen::Vector3f::UnitZ()));
-//     return result;
-//   }
-//
-//   virtual void setPosition(ompl::base::State *state,
-//                            const fcl::Vector3f position) override {
-//     auto stateTyped = state->as<ob::SE2StateSpace::StateType>();
-//     stateTyped->setX(position(0));
-//     stateTyped->setY(position(1));
-//   }
-//
-// protected:
-//   class StateSpace : public ob::CompoundStateSpace {
-//   public:
-//     class StateType : public ob::CompoundStateSpace::StateType {
-//     public:
-//       StateType() = default;
-//
-//       double getX() const {
-//         return as<ob::RealVectorStateSpace::StateType>(0)->values[0];
-//       }
-//
-//       double getY() const {
-//         return as<ob::RealVectorStateSpace::StateType>(0)->values[1];
-//       }
-//
-//       double getYaw() const {
-//         return as<ob::SO2StateSpace::StateType>(1)->value;
-//       }
-//
-//       double getVx() const {
-//         return as<ob::RealVectorStateSpace::StateType>(2)->values[1];
-//       }
-//
-//       double getVy() const {
-//         return as<ob::RealVectorStateSpace::StateType>(2)->values[2];
-//       }
-//
-//       double getAngularVelocity() const {
-//         return as<ob::RealVectorStateSpace::StateType>(3)->values[0];
-//       }
-//
-//       void setX(double x) {
-//         as<ob::RealVectorStateSpace::StateType>(0)->values[0] = x;
-//       }
-//
-//       void setY(double y) {
-//         as<ob::RealVectorStateSpace::StateType>(0)->values[1] = y;
-//       }
-//
-//       void setYaw(double yaw) {
-//         as<ob::SO2StateSpace::StateType>(1)->value = yaw;
-//       }
-//
-//       void setVx(double vx) {
-//         as<ob::RealVectorStateSpace::StateType>(2)->values[0] = vx;
-//       }
-//
-//       void setVy(double vy) {
-//         as<ob::RealVectorStateSpace::StateType>(2)->values[1] = vy;
-//       }
-//
-//       void setAngularVelocity(double angularVelocity) {
-//         as<ob::RealVectorStateSpace::StateType>(3)->values[0] =
-//         angularVelocity;
-//       }
-//     };
-//
-//     StateSpace() {
-//       setName("Quad2d" + getName());
-//       type_ = ob::STATE_SPACE_TYPE_COUNT + 0;
-//       addSubspace(std::make_shared<ob::RealVectorStateSpace>(2),
-//                   1.0);                                        // position
-//       addSubspace(std::make_shared<ob::SO2StateSpace>(), 0.5); //
-//       orientation
-//       // addSubspace(std::make_shared<ob::RealVectorStateSpace>(2),
-//       //             0.25); // velocity
-//
-//       addSubspace(std::make_shared<ob::RealVectorStateSpace>(2),
-//                   0.1); // velocity
-//       //
-//
-//       //
-//       // addSubspace(std::make_shared<ob::RealVectorStateSpace>(1),
-//       //             0.25); // angular velocity
-//       //
-//
-//       addSubspace(std::make_shared<ob::RealVectorStateSpace>(1),
-//                   0.1); // angular velocity
-//
-//       lock();
-//     }
-//
-//     ~StateSpace() override = default;
-//
-//     void setPositionBounds(const ob::RealVectorBounds &bounds) {
-//       as<ob::RealVectorStateSpace>(0)->setBounds(bounds);
-//     }
-//
-//     const ob::RealVectorBounds &getPositionBounds() const {
-//       return as<ob::RealVectorStateSpace>(0)->getBounds();
-//     }
-//
-//     void setVelocityBounds(const ob::RealVectorBounds &bounds) {
-//       as<ob::RealVectorStateSpace>(2)->setBounds(bounds);
-//     }
-//
-//     const ob::RealVectorBounds &getVelocityBounds() const {
-//       return as<ob::RealVectorStateSpace>(2)->getBounds();
-//     }
-//
-//     void setAngularVelocityBounds(const ob::RealVectorBounds &bounds) {
-//       as<ob::RealVectorStateSpace>(3)->setBounds(bounds);
-//     }
-//
-//     const ob::RealVectorBounds &getAngularVelocityBounds() const {
-//       return as<ob::RealVectorStateSpace>(3)->getBounds();
-//     }
-//
-//     ob::State *allocState() const override {
-//       auto *state = new StateType();
-//       allocStateComponents(state);
-//       return state;
-//     }
-//
-//     void freeState(ob::State *state) const override {
-//       CompoundStateSpace::freeState(state);
-//     }
-//
-//     void registerProjections() override {
-//       class DefaultProjection : public ob::ProjectionEvaluator {
-//       public:
-//         DefaultProjection(const ob::StateSpace *space)
-//             : ob::ProjectionEvaluator(space) {}
-//
-//         unsigned int getDimension() const override { return 2; }
-//
-//         void defaultCellSizes() override {
-//           cellSizes_.resize(2);
-//           bounds_ = space_->as<ob::SE2StateSpace>()->getBounds();
-//           cellSizes_[0] = (bounds_.high[0] - bounds_.low[0]) /
-//                           ompl::magic::PROJECTION_DIMENSION_SPLITS;
-//           cellSizes_[1] = (bounds_.high[1] - bounds_.low[1]) /
-//                           ompl::magic::PROJECTION_DIMENSION_SPLITS;
-//         }
-//
-//         void project(const ob::State *state,
-//                      Eigen::Ref<Eigen::VectorXd> projection) const override
-//                      {
-//           projection = Eigen::Map<const Eigen::VectorXd>(
-//               state->as<ob::SE2StateSpace::StateType>()
-//                   ->as<ob::RealVectorStateSpace::StateType>(0)
-//                   ->values,
-//               2);
-//         }
-//       };
-//
-//       registerDefaultProjection(std::make_shared<DefaultProjection>(this));
-//     }
-//   };
-// };
-//
+
 class Acrobot : public RobotOmpl {
 
 public:
@@ -3063,21 +2186,19 @@ void load_motion_primitives_new(const std::string &motionsFile,
                                 std::vector<Motion> &motions, int max_motions,
                                 bool cut_actions, bool shuffle,
                                 bool compute_col,
-                                MotionPrimitiveFormat format) {
+                                std::optional<unsigned int> seed) {
 
   dynobench::Trajectories trajs;
-
-  if (format == MotionPrimitiveFormat::AUTO) {
-    std::filesystem::path filePath = motionsFile;
-    if (filePath.extension() == ".yaml") {
-      format = MotionPrimitiveFormat::YAML;
-    } else if (filePath.extension() == ".json")
-      format = MotionPrimitiveFormat::JSON;
-    else if (filePath.extension() == ".msgpack")
-      format = MotionPrimitiveFormat::MSGPACK;
-    else if (filePath.extension() == ".bin")
-      format = MotionPrimitiveFormat::BOOST;
-  }
+  MotionPrimitiveFormat format;
+  std::filesystem::path filePath = motionsFile;
+  if (filePath.extension() == ".yaml") {
+    format = MotionPrimitiveFormat::YAML;
+  } else if (filePath.extension() == ".json")
+    format = MotionPrimitiveFormat::JSON;
+  else if (filePath.extension() == ".msgpack")
+    format = MotionPrimitiveFormat::MSGPACK;
+  else if (filePath.extension() == ".bin")
+    format = MotionPrimitiveFormat::BOOST;
 
   switch (format) {
   case MotionPrimitiveFormat::YAML: {
@@ -3128,7 +2249,6 @@ void load_motion_primitives_new(const std::string &motionsFile,
     }
   }
 
-  // TODO: robot should have "add noise function"
   if (startsWith(robot.name, "quad3d")) {
     // ensure quaternion
     for (auto &t : trajs.data) {
@@ -3165,16 +2285,12 @@ void load_motion_primitives_new(const std::string &motionsFile,
   }
 
   if (shuffle) {
-    // std::shuffle(std::begin(motions), std::end(motions),
-    // std::default_random_engine{});
-    std::random_device rd;
-    std::default_random_engine eng(rd()); // Seed with random value
-    std::shuffle(std::begin(motions), std::end(motions), eng);
+    std::mt19937 rng(seed ? *seed : std::random_device{}());
+    std::shuffle(motions.begin(), motions.end(), rng);
   }
 
   for (size_t idx = 0; idx < motions.size(); ++idx) {
     motions[idx].idx = idx;
-    // motions[idx].last_state_translated = motions[idx].traj.states.back();
   }
 }
 

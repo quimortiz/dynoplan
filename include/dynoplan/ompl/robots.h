@@ -1,20 +1,22 @@
 #pragma once
 
-// OMPL headers
+#include <yaml-cpp/node/node.h>
+#include <optional>
+#include <random>
+#include <algorithm>
+#include <limits>
+// dynobench
 #include "dynobench/dyno_macros.hpp"
 #include "dynobench/motions.hpp"
 #include "dynobench/robot_models.hpp"
-
+// ompl
 #include <ompl/control/SpaceInformation.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>
-
-#include <yaml-cpp/node/node.h>
-
+#include "ompl/control/StatePropagator.h"
 // FCL
 #include "fclHelper.hpp"
 #include <fcl/fcl.h>
 
-#include "ompl/control/StatePropagator.h"
 
 namespace dynoplan {
 
@@ -245,11 +247,7 @@ void load_motion_primitives_new(
     const std::string &motionsFile, dynobench::Model_robot &robot,
     std::vector<Motion> &motions, int max_motions, bool cut_actions,
     bool shuffle, bool compute_col = true,
-    MotionPrimitiveFormat format = MotionPrimitiveFormat::AUTO);
-
-void load_motion_primitives(const std::string &motionsFile, RobotOmpl &robot,
-                            std::vector<Motion> &motions, int max_motions,
-                            bool cut_actions, bool shuffle);
+    std::optional<unsigned int> seed = std::nullopt);
 
 void traj_to_motion(const dynobench::Trajectory &traj,
                     dynobench::Model_robot &robot, Motion &motion_out,
