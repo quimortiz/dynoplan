@@ -1,7 +1,6 @@
-
-
 #include "dynoplan/optimization/generate_ocp.hpp"
 #include "dynobench/joint_robot.hpp"
+#include "dynobench/integrator2_2d.hpp"
 #include "dynobench/quadrotor_payload_n.hpp"
 #include "dynoplan/optimization/croco_models.hpp"
 
@@ -99,9 +98,6 @@ generate_problem(const Generate_params &gen_args,
     use_hard_bounds = false;
   }
 
-  // CHECK(
-  //     !(options_trajopt.control_bounds &&
-  //     options_trajopt.soft_control_bounds), AT);
 
   for (size_t t = 0; t < gen_args.N; t++) {
 
@@ -149,7 +145,7 @@ generate_problem(const Generate_params &gen_args,
     feats_run.push_back(control_feature);
 
     if (options_trajopt.soft_control_bounds) {
-      // std::cout << "Experimental" << std::endl;
+      std::cout << "control soft bounds are true" << std::endl;
       Eigen::VectorXd v = Eigen::VectorXd(nu);
       double delta = 1e-4;
       v.setConstant(100);
@@ -160,8 +156,17 @@ generate_problem(const Generate_params &gen_args,
           nx, nu, nu,
           dyn->u_ub - delta * Eigen::VectorXd::Ones(dyn->u_lb.size()), v));
     }
-
-    // feats_run.push_back(mk<State_bounds>(nx, nu, nx, v, -v);
+    // only for double integrator now
+    if (options_trajopt.control_bounds && gen_args.model_robot->name == "Integrator2_2d"){
+        feats_run.push_back(
+          mk<ControlSphereBounds>(
+            nx,
+            nu,
+            0,      // ax index
+            1,      // ay index
+            /*a_max*/2.0, // TO DO Akmaral: read from .yaml file
+            /*weight*/100));
+      }
 
     bool time_variant_collision = gen_args.model_robot->time_varying_env.size();
 
@@ -303,8 +308,6 @@ generate_problem(const Generate_params &gen_args,
 
       CSTR_V(state_weights);
       CSTR_V(state_ref);
-      // std::cout << state_weights << std::endl;
-      // std::cout << state_ref << std::endl;
       ptr<Cost> state_feature =
           mk<State_cost>(nx, nu, nx, state_weights, state_ref);
       feats_run.push_back(state_feature);
@@ -341,7 +344,6 @@ generate_problem(const Generate_params &gen_args,
     }
 
     if (startsWith(gen_args.name, "point")) {
-      // TODO: refactor so that the features are local to the robots!!
       if (control_mode == Control_Mode::default_mode ||
           control_mode == Control_Mode::free_time) {
         std::cout << "adding regularization on the acceleration! " << std::endl;
@@ -362,13 +364,46 @@ generate_problem(const Generate_params &gen_args,
             gen_args.model_robot, gen_args.model_robot->k_acc);
         feats_run.push_back(acc_cost);
       } else {
-        // QUIM TODO: Check if required!!
+        NOT_IMPLEMENTED;
+      }
+    }
+
+        // double integrator 2d
+    if (startsWith(gen_args.name, "Integrator2_2d")) {
+      if (control_mode == Control_Mode::default_mode ||
+          control_mode == Control_Mode::free_time) {
+        std::cout << "adding regularization on the speed! " << std::endl;
+
+        auto ptr_derived =
+            std::dynamic_pointer_cast<dynobench::Integrator2_2d>(
+                gen_args.model_robot);
+
+        // Additionally, add regularization!!
+        Vxd state_weights(4);
+        Vxd state_ref = Vxd::Zero(4);
+        state_weights.setOnes();
+        state_weights *= 1; //.0001;
+        state_weights.segment(0, 2).setZero();
+
+        ptr<Cost> state_feature = mk<State_cost>(
+            nx, nu, nx, state_weights, state_ref);
+        feats_run.push_back(state_feature);
+        // for the spherical constraint for the speed/vel.magnitude
+        feats_run.push_back(
+              mk<VelocitySphereBounds>(
+                  nx,
+                  nu,
+                  2,          // vx index
+                  3,          // vy index
+                  /*v_max*/0.5, // TO DO Akmaral: read from .yaml file
+                  /*weight*/100));
+      } 
+      else {
         NOT_IMPLEMENTED;
       }
     }
 
     if (startsWith(gen_args.name, "acrobot")) {
-      // TODO: refactor so that the features are local to the robots!!
       if (control_mode == Control_Mode::default_mode) {
         std::cout << "adding regularization on v" << std::endl;
         Vxd state_weights(4);
@@ -397,24 +432,20 @@ generate_problem(const Generate_params &gen_args,
       feats_run.push_back(state_feature);
     }
     const bool add_margin_to_bounds = 1;
+    // component-wise constraint for the state
     if (dyn->x_lb.size() && dyn->x_weightb.sum() > 1e-10) {
-
       Eigen::VectorXd v = dyn->x_lb;
-
       if (add_margin_to_bounds) {
         v.array() += 0.05;
       }
-
       feats_run.push_back(mk<State_bounds>(nx, nu, nx, v, -dyn->x_weightb));
     }
 
     if (dyn->x_ub.size() && dyn->x_weightb.sum() > 1e-10) {
-
       Eigen::VectorXd v = dyn->x_ub;
       if (add_margin_to_bounds) {
         v.array() -= 0.05;
       }
-
       feats_run.push_back(mk<State_bounds>(nx, nu, nx, v, dyn->x_weightb));
     }
 
@@ -427,21 +458,6 @@ generate_problem(const Generate_params &gen_args,
       contour_alpha_u->k = options_trajopt.k_linear;
 
       feats_run.push_back(contour_alpha_u);
-
-      // std::cout << "warning, no contour in non-terminal states" << std::endl;
-      // ptr<Contour_cost_x> contour_x =
-      //     mk<Contour_cost_x>(nx, nu, gen_args.interpolator);
-      // contour_x->weight = options_trajopt.k_contour;
-
-      // std::cout << "warning, no cost on alpha in non-terminal states"
-      //           << std::endl;
-      // idea: use this only if it is close
-      // ptr<Contour_cost_alpha_x> contour_alpha_x =
-      //     mk<Contour_cost_alpha_x>(nx, nu);
-      // contour_alpha_x->k = .1 * options_trajopt.k_linear;
-
-      // feats_run.push_back(contour_x);
-      // feats_run.push_back(contour_alpha_x);
     }
 
     boost::shared_ptr<crocoddyl::ActionModelAbstract> am_run =
@@ -470,9 +486,6 @@ generate_problem(const Generate_params &gen_args,
 
   if (gen_args.goal_cost) {
     std::cout << "adding goal cost " << std::endl;
-    // ptr<Cost> state_feature = mk<State_cost>(
-    //     nx, nu, nx, options_trajopt.weight_goal * Vxd::Ones(nx),
-    //     gen_args.goal);
 
     DYNO_CHECK_EQ(static_cast<size_t>(gen_args.goal.size()),
                   gen_args.model_robot->nx, AT);
@@ -489,9 +502,7 @@ generate_problem(const Generate_params &gen_args,
     ptr<Cost> state_feature = mk<State_cost_model>(
         gen_args.model_robot, nx, nu,
         gen_args.penalty * options_trajopt.weight_goal * goal_weight,
-        // Vxd::Ones(gen_args.model_robot->nx),
         gen_args.goal);
-    // QUIM TODO: continuehere -- remove weights on quaternions!
 
     feats_terminal.push_back(state_feature);
   }
@@ -503,7 +514,6 @@ generate_problem(const Generate_params &gen_args,
     std::vector<boost::shared_ptr<crocoddyl::ActionModelAbstract>>
         amq_runs_diff(amq_runs.size());
 
-    // double disturbance = 1e-4; // should be high, becaues I have collisions
     double disturbance = options_trajopt.disturbance;
     std::transform(
         amq_runs.begin(), amq_runs.end(), amq_runs_diff.begin(),
@@ -597,16 +607,6 @@ bool check_problem(ptr<crocoddyl::ShootingProblem> problem,
                    const std::vector<Vxd> &xs, const std::vector<Vxd> &us) {
 
   bool equal = true;
-  // for (auto &x : xs) {
-  //   CSTR_V(x);
-  //   CSTR_(x.size());
-  // }
-  // std::cout << "us" << std::endl;
-  // for (auto &u : us) {
-  //
-  //   CSTR_(u.size());
-  //   CSTR_V(u);
-  // }
 
   problem->calc(xs, us);
   problem->calcDiff(xs, us);

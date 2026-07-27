@@ -432,18 +432,10 @@ void Contour_cost_x::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
   __Jx.block(0, nx - 1, nx - 1, 1) = weight * last_J;
 
   __r = weight * (last_out - x.head(nx - 1));
-  // std::cout << "calcDiff __r: " << __r.format(FMT) << std::endl;
-  //
-
-  // CSTR_V((__r));
-  // CSTR_V((__Jx));
-  // CSTR_V((__r.transpose() * __Jx));
 
   Lx += __r.transpose() * __Jx;
 
   Lxx += __Jx.transpose() * __Jx;
-  // Lxx.diagonal().head(nx - 1) += weight * weight * Vxd::Ones(nx - 1);
-  // Lxx(nx - 1, nx - 1) += weight * last_J.transpose() * last_J;
 }
 
 Contour_cost::Contour_cost(size_t nx, size_t nu,
@@ -469,11 +461,6 @@ void Contour_cost::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x,
   r(nx - 1) = weight_contour * weight_alpha * (alpha - ref_alpha);
   r(nx) = weight_virtual_control * u(nu - 1);
 }
-
-// void Contour_cost::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x)
-// {
-//   throw -1;
-// }
 
 void Contour_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
                             Eigen::Ref<Eigen::VectorXd> Lu,
@@ -554,12 +541,10 @@ void Col_cost::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x) {
     raw_d = cinfo.distance;
     last_x = x;
     last_raw_d = raw_d;
-    // std::cout << " x " << STR_V(x) << " " << raw_d << std::endl;
   }
   double d = weight * (raw_d - margin);
   auto out = Eigen::Matrix<double, 1, 1>(std::min(d, 0.));
   r = out;
-  // std::cout << "r col is " << r << " x " << STR_V(x) << std::endl;
 }
 
 void Col_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
@@ -599,12 +584,6 @@ void Col_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
       Jx.block(0, 0, 1, nx_effective) = v__.transpose();
       Lx += d * Jx.transpose();
       Lxx += Jx.transpose() * Jx;
-      // std::cout << "contribution from collisions" << std::endl;
-      // std::cout << "x " << STR_V(x) << std::endl;
-      // std::cout << "Lx " << std::endl;
-      // std::cout << Lx << std::endl;
-      // std::cout << "Lxx " << std::endl;
-      // std::cout << Lxx << std::endl;
     } else {
       ;
     }
@@ -735,38 +714,9 @@ void Control_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
                             const Eigen::Ref<const Eigen::VectorXd> &x,
                             const Eigen::Ref<const Eigen::VectorXd> &u) {
   check_input_calcDiff(Lx, Lu, Lxx, Luu, Lxu, x, u);
-  // CSTR_(u_weight);
-  // CSTR_V(Lu);
   Lu += (u - u_ref).cwiseProduct(u_weight).cwiseProduct(u_weight);
-  // CSTR_V(Lu);
   Luu.diagonal() += u_weight.cwiseProduct(u_weight);
 }
-
-// void Control_cost::calcDiff(Eigen::Ref<Eigen::MatrixXd> Jx,
-//                             Eigen::Ref<Eigen::MatrixXd> Ju,
-//                             const Eigen::Ref<const Vxd> &x,
-//                             const Eigen::Ref<const Vxd> &u) {
-//
-//   assert(static_cast<std::size_t>(x.size()) == nx);
-//   assert(static_cast<std::size_t>(u.size()) == nu);
-//
-//   assert(static_cast<std::size_t>(Jx.rows()) == nr);
-//   assert(static_cast<std::size_t>(Ju.rows()) == nr);
-//   assert(static_cast<std::size_t>(Ju.cols()) == nu);
-//   Ju = u_weight.asDiagonal();
-//   Jx.setZero();
-// }
-
-// weight * ( x - ub ) <= 0
-//
-// NOTE:
-// you can implement lower bounds
-// weight = -w
-// ub = lb
-// DEMO:
-// -w ( x - lb ) <= 0
-// w ( x - lb ) >= 0
-// w x >= w lb
 
 State_bounds::State_bounds(size_t nx, size_t nu, size_t nr, const Vxd &ub,
                            const Vxd &weight)
@@ -779,10 +729,8 @@ State_bounds::State_bounds(size_t nx, size_t nu, size_t nr, const Vxd &ub,
 
 void State_bounds::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x,
                         const Eigen::Ref<const Vxd> &u) {
-  // std::cout << "checking bounds " << STR_V(x) << std::endl;
   check_input_calc(r, x, u);
   calc(r, x);
-  // std::cout << "checking bounds " << STR_V(x) << std::endl;
 }
 
 void State_bounds::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x) {
@@ -795,8 +743,6 @@ void State_bounds::calc(Eigen::Ref<Vxd> r, const Eigen::Ref<const Vxd> &x) {
 void State_bounds::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
                             Eigen::Ref<Eigen::MatrixXd> Lxx,
                             const Eigen::Ref<const Eigen::VectorXd> &x) {
-  // Lx += (((x -
-  // ub).cwiseProduct(weight)).cwiseMax(0.)).cwiseProduct(weight);
 
   check_input_calcDiff(Lx, Lxx, x);
   Eigen::Matrix<bool, Eigen::Dynamic, 1> result =
@@ -817,6 +763,155 @@ void State_bounds::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
   check_input_calcDiff(Lx, Lu, Lxx, Luu, Lxu, x, u);
   calcDiff(Lx, Lxx, x);
 }
+
+// spherical constraint for the speed (integrator2_2d dynamics)
+VelocitySphereBounds::VelocitySphereBounds(size_t nx,
+                                           size_t nu,
+                                           int idx_vx,
+                                           int idx_vy,
+                                           double vmax,
+                                           double weight)
+    : Cost(nx, nu, 1),
+      idx_vx(idx_vx),
+      idx_vy(idx_vy),
+      vmax2(vmax * vmax),
+      weight(weight) {
+
+  name = "velocity_sphere_bound";
+}
+
+void VelocitySphereBounds::calc(Eigen::Ref<Vxd> r,
+                                const Eigen::Ref<const Vxd> &x,
+                                const Eigen::Ref<const Vxd> &u) {
+
+  check_input_calc(r, x, u);
+  calc(r, x);
+}
+
+void VelocitySphereBounds::calc(Eigen::Ref<Vxd> r,
+                                const Eigen::Ref<const Vxd> &x) {
+
+  check_input_calc(r, x);
+
+  double vx = x(idx_vx);
+  double vy = x(idx_vy);
+
+  double violation = vx * vx + vy * vy - vmax2;
+
+  r(0) = std::max(0.0, weight * violation);
+}
+
+void VelocitySphereBounds::calcDiff(
+    Eigen::Ref<Eigen::VectorXd> Lx,
+    Eigen::Ref<Eigen::MatrixXd> Lxx,
+    const Eigen::Ref<const Eigen::VectorXd> &x) {
+
+  check_input_calcDiff(Lx, Lxx, x);
+
+  double vx = x(idx_vx);
+  double vy = x(idx_vy);
+
+  double violation = vx * vx + vy * vy - vmax2;
+
+  if (violation <= 0.)
+    return;
+
+  // gradient of residual
+  double gx = 2.0 * weight * vx;
+  double gy = 2.0 * weight * vy;
+
+  // residual
+  double r = weight * violation;
+
+  // cost gradient
+  Lx(idx_vx) += r * gx;
+  Lx(idx_vy) += r * gy;
+
+  // Gauss-Newton Hessian
+  Lxx(idx_vx, idx_vx) += gx * gx;
+  Lxx(idx_vx, idx_vy) += gx * gy;
+  Lxx(idx_vy, idx_vx) += gy * gx;
+  Lxx(idx_vy, idx_vy) += gy * gy;
+}
+
+void VelocitySphereBounds::calcDiff(
+    Eigen::Ref<Eigen::VectorXd> Lx,
+    Eigen::Ref<Eigen::VectorXd> Lu,
+    Eigen::Ref<Eigen::MatrixXd> Lxx,
+    Eigen::Ref<Eigen::MatrixXd> Luu,
+    Eigen::Ref<Eigen::MatrixXd> Lxu,
+    const Eigen::Ref<const Eigen::VectorXd> &x,
+    const Eigen::Ref<const Eigen::VectorXd> &u) {
+
+  check_input_calcDiff(Lx, Lu, Lxx, Luu, Lxu, x, u);
+
+  calcDiff(Lx, Lxx, x);
+}
+
+// spherical constraint on the acceleration magnitude
+ControlSphereBounds::ControlSphereBounds(size_t nx,
+                                         size_t nu,
+                                         int idx_ux,
+                                         int idx_uy,
+                                         double umax,
+                                         double weight)
+    : Cost(nx, nu, 1),
+      idx_ux(idx_ux),
+      idx_uy(idx_uy),
+      umax2(umax * umax),
+      weight(weight) {
+
+  name = "control_sphere_bound";
+}
+
+void ControlSphereBounds::calc(Eigen::Ref<Vxd> r,
+                               const Eigen::Ref<const Vxd> &x,
+                               const Eigen::Ref<const Vxd> &u) {
+
+  check_input_calc(r, x, u);
+
+  double ux = u(idx_ux);
+  double uy = u(idx_uy);
+
+  double violation = ux * ux + uy * uy - umax2;
+
+  r(0) = std::max(0.0, weight * violation);
+}
+
+void ControlSphereBounds::calcDiff(
+    Eigen::Ref<Eigen::VectorXd> Lx,
+    Eigen::Ref<Eigen::VectorXd> Lu,
+    Eigen::Ref<Eigen::MatrixXd> Lxx,
+    Eigen::Ref<Eigen::MatrixXd> Luu,
+    Eigen::Ref<Eigen::MatrixXd> Lxu,
+    const Eigen::Ref<const Eigen::VectorXd> &x,
+    const Eigen::Ref<const Eigen::VectorXd> &u) {
+
+  check_input_calcDiff(Lx, Lu, Lxx, Luu, Lxu, x, u);
+
+  double ux = u(idx_ux);
+  double uy = u(idx_uy);
+
+  double violation = ux * ux + uy * uy - umax2;
+
+  if (violation <= 0.)
+    return;
+
+  double r = weight * violation;
+
+  double gux = 2.0 * weight * ux;
+  double guy = 2.0 * weight * uy;
+
+  Lu(idx_ux) += r * gux;
+  Lu(idx_uy) += r * guy;
+
+  // Gauss-Newton approximation
+  Luu(idx_ux, idx_ux) += gux * gux;
+  Luu(idx_ux, idx_uy) += gux * guy;
+  Luu(idx_uy, idx_ux) += guy * gux;
+  Luu(idx_uy, idx_uy) += guy * guy;
+}
+
 
 Control_bounds::Control_bounds(size_t nx, size_t nu, size_t nr, const Vxd &ub,
                                const Vxd &weight)
@@ -860,19 +955,6 @@ void Control_bounds::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
       (result.cast<double>()).cwiseProduct(weight).cwiseProduct(weight);
 }
 
-// void State_bounds::calcDiff(Eigen::Ref<Eigen::MatrixXd> Jx,
-//                             const Eigen::Ref<const Vxd> &x) {
-//
-//   assert(static_cast<std::size_t>(Jx.rows()) == nr);
-//   assert(static_cast<std::size_t>(Jx.cols()) == nx);
-//
-//   Eigen::Matrix<bool, Eigen::Dynamic, 1> result =
-//       (x - ub).cwiseProduct(weight).array() >= 0;
-//   // std::cout << " x " << x.format(FMT) << std::endl;
-//   // std::cout << " ub " << ub.format(FMT) << std::endl;
-//   // std::cout << " result " << result.cast<double>().format(FMT)
-//   << std::endl; Jx.diagonal() = (result.cast<double>()).cwiseProduct(weight);
-// }
 
 State_cost::State_cost(size_t nx, size_t nu, size_t nr, const Vxd &x_weight,
                        const Vxd &ref)
@@ -912,8 +994,7 @@ void State_cost::calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
   Lxx.diagonal() += x_weight.cwiseProduct(x_weight);
 }
 
-size_t
-get_total_num_features(const std::vector<boost::shared_ptr<Cost>> &features) {
+size_t get_total_num_features(const std::vector<boost::shared_ptr<Cost>> &features) {
   return std::accumulate(features.begin(), features.end(), 0,
                          [](auto &a, auto &b) { return a + b->nr; });
 }
@@ -1007,24 +1088,12 @@ void ActionModelDyno::calcDiff(
   d->Lx.setZero();
   d->Lxx.setZero();
 
-  // size_t index = 0;
-  // Jx.setZero();
   for (size_t i = 0; i < features.size(); i++) {
     auto &feat = features.at(i);
-    // size_t &_nr = feat->nr;
-
-    // Eigen::Ref<Vxd> r = d->r.segment(index, _nr);
-    // Eigen::Ref<Eigen::MatrixXd> jx = Jx.block(index, 0, _nr, nx);
 
     feat->calcDiff(d->Lx, d->Lxx, x);
 
-    // if (feat->cost_type == CostTYPE::least_squares) {
-    //   data->Lx.noalias() += r.transpose() * jx;
-    //   data->Lxx.noalias() += jx.transpose() * jx;
-    // } else if (feat->cost_type == CostTYPE::linear) {
-    //   data->Lx.noalias() += jx.colwise().sum();
-    // }
-    // index += _nr;
+    
   }
 }
 
@@ -1045,9 +1114,6 @@ void ActionModelDyno::print(std::ostream &os) const {
   os << "wrapper" << std::endl;
 }
 
-// NEW REFACTOR
-//
-//
 
 int get_total_num_features_mode(const std::vector<ptr<Cost>> &features,
                                 Control_Mode mode) {
@@ -1571,9 +1637,6 @@ void Quad3d_acceleration_cost::calcDiff(
   acc = f.tail<6>();
   model->calcDiffV(Jv_x, Jv_u, x, u);
 
-  // CSTR_V(acc);
-  // std::cout << "Jv_x\n" << Jv_x << std::endl;
-  // std::cout << "Jv_u\n" << Jv_u <<  std::endl;
 
   DYNO_CHECK_EQ(f.size(), 12, AT);
   DYNO_CHECK_EQ(acc.size(), 6, AT);
@@ -1608,17 +1671,6 @@ Acceleration_cost_acrobot::Acceleration_cost_acrobot(size_t nx, size_t nu)
   f.setZero();
 }
 
-// 6 Payload
-// 6 Cable
-// 6
-// 7
-// 7
-// TOTAL:  32
-// nx (point):
-// 6 payload: (pos, vel)
-// 6*num_robots (qc_0, wc_0, qc_1, wc_1, ...,qc_{n-1}, wc_{n-1}), cable vector
-// and omega 7* num_robots (q, w): (q_0, w_0, ..., q_{n-1}, w_{n-1}), quat and
-// omega
 Payload_n_acceleration_cost::Payload_n_acceleration_cost(
     const std::shared_ptr<dynobench::Model_robot> &model_robot, double k_acc)
     : Cost(model_robot->nx, model_robot->nu, model_robot->nx), k_acc(k_acc),
@@ -1652,25 +1704,14 @@ Payload_n_acceleration_cost::Payload_n_acceleration_cost(
     selector.segment(6 + 6 * i + 3, 3).setOnes();
     selector.segment(6 + 6 * num_robots + 7 * i + 4, 3).setOnes();
   }
-
-  // selector.segment(6 + 3, 3).setOnes();
-  // selector.segment(2 * 6 + 3, 3).setOnes();
-
-  // selector.segment(3 * 6 + 4, 3).setOnes();
-  // selector.segment(3 * 6 + 7 + 4, 3).setOnes();
 }
 
 void Payload_n_acceleration_cost::calc(
     Eigen::Ref<Eigen::VectorXd> r, const Eigen::Ref<const Eigen::VectorXd> &x,
     const Eigen::Ref<const Eigen::VectorXd> &u) {
 
-  // CSTR_V(x);
-  // CSTR_V(u);
-  // CSTR_V(f);
   assert(model);
   model->calcV(f, x.head(model->nx), u.head(model->nu));
-  // CSTR_V(f);
-  // CSTR_V(selector);
   r = k_acc * f.cwiseProduct(selector);
   // I have to choose some entries...: DONE
 }
@@ -1901,25 +1942,6 @@ void Dynamics::calcDiff(Eigen::Ref<Eigen::MatrixXd> Fx,
     ERROR_WITH_INFO("not implemented");
   }
 }
-
-// void Quaternion_cost::calcDiff(Eigen::Ref<Eigen::MatrixXd> Jx,
-//                                const Eigen::Ref<const Eigen::VectorXd> &x)
-//                                {
-//
-//   Eigen::Vector4d q = x.segment<4>(3);
-//   Jx.row(0).segment<4>(3) = (2. * k_quat) * q;
-//
-//
-//
-// }
-//
-// void Quaternion_cost::calcDiff(Eigen::Ref<Eigen::MatrixXd> Jx,
-//                                Eigen::Ref<Eigen::MatrixXd> Ju,
-//                                const Eigen::Ref<const Eigen::VectorXd> &x,
-//                                const Eigen::Ref<const Eigen::VectorXd> &u)
-//                                {
-//   calcDiff(Jx, x);
-// }
 
 State_cost_model::State_cost_model(
     const std::shared_ptr<dynobench::Model_robot> &model_robot, size_t nx,

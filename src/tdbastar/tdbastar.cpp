@@ -124,6 +124,104 @@ namespace dynoplan
               << std::endl;
   }
 
+  // filter motions based on 1) duplicate, 2) exceeding the velocity limit
+  void filter_motions(std::shared_ptr<dynobench::Model_robot> &robot,
+                     std::string &robot_name,
+                     float delta,
+                     bool filterDuplicates,
+                     float alpha,
+                     size_t num_max_motions,
+                     bool filterVelocityMagnitude,
+                     std::vector<Motion> &motions)
+{
+  double maxVelocityMagnitude = 0.5; // TO DO Akmaral - take from the robot->v_limit
+  ompl::NearestNeighbors<Motion *> *T_m = nullptr;
+  T_m = nigh_factory_t<Motion *>(robot_name, robot, /*reverse search*/ false);
+
+  // Enable all motions.
+  for (size_t i = 0; i < motions.size(); ++i)
+  {
+    motions[i].disabled = false;
+    T_m->add(&motions[i]);
+  }
+
+  // Filter motions whose velocity magnitude exceeds the limit.
+  if (filterVelocityMagnitude)
+  {
+    for (auto &m : motions)
+    {
+      for (const auto &x : m.traj.states)
+      {
+        double vx = x(2); // TO DO Akmaral - velocity index for different dynamics
+        double vy = x(3); // TO DO Akmaral - velocity index for different dynamics
+        double speed = std::hypot(vx, vy);
+        if (speed > maxVelocityMagnitude)
+        {
+          m.disabled = true;
+          break; // No need to check the remaining states.
+        }
+      }
+    }
+  }
+
+  if (filterDuplicates)
+  {
+    size_t num_duplicates = 0;
+    Motion fakeMotion;
+    fakeMotion.idx = -1;
+    fakeMotion.traj.states.push_back(Eigen::VectorXd(robot->nx));
+    std::vector<Motion *> neighbors_m;
+
+    for (const auto &m : motions)
+    {
+      if (m.disabled)
+      {
+        continue;
+      }
+
+      fakeMotion.traj.states.at(0) = m.traj.states.at(0);
+      T_m->nearestR(&fakeMotion, delta * alpha, neighbors_m);
+
+      for (Motion *nm : neighbors_m)
+      {
+        if (nm == &m || nm->disabled)
+        {
+          continue;
+        }
+
+        float goal_delta =
+            robot->distance(m.traj.states.back(), nm->traj.states.back());
+
+        if (goal_delta < delta * (1 - alpha))
+        {
+          nm->disabled = true;
+          ++num_duplicates;
+        }
+      }
+    }
+  }
+
+  // Limit to num_max_motions.
+  size_t num_enabled_motions = 0;
+  for (size_t i = 0; i < motions.size(); ++i)
+  {
+    if (!motions[i].disabled)
+    {
+      if (num_enabled_motions >= num_max_motions)
+      {
+        motions[i].disabled = true;
+      }
+      else
+      {
+        ++num_enabled_motions;
+      }
+    }
+  }
+
+  std::cout << "There are " << num_enabled_motions
+            << " motions enabled." << std::endl;
+}
+
   void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                       const std::vector<Motion> &motions,
                                       std::shared_ptr<AStarNode> solution,

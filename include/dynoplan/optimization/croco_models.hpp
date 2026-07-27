@@ -1001,28 +1001,10 @@ struct Control_cost : Cost {
                         Eigen::Ref<Eigen::MatrixXd> Lxu,
                         const Eigen::Ref<const Eigen::VectorXd> &x,
                         const Eigen::Ref<const Eigen::VectorXd> &u);
-
-  // virtual void calcDiff(Eigen::Ref<Eigen::MatrixXd> Jx,
-  //                       Eigen::Ref<Eigen::MatrixXd> Ju,
-  //                       const Eigen::Ref<const Eigen::VectorXd> &x,
-  //                       const Eigen::Ref<const Eigen::VectorXd> &u);
-  //
-  // virtual void calcDiff(Eigen::Ref<Eigen::MatrixXd> Jx,
-  //                       const Eigen::Ref<const Eigen::VectorXd> &x);
 };
 
 // x - ub  <= 0
 struct State_bounds : Cost {
-  // weight * ( x - ub ) <= 0
-  //
-  // NOTE:
-  // you can implement lower bounds
-  // weight = -w
-  // ub = lb
-  // DEMO:
-  // -w ( x - lb ) <= 0
-  // w ( x - lb ) >= 0
-  // w x >= w lb
 
   Eigen::VectorXd ub;
   Eigen::VectorXd weight;
@@ -1051,18 +1033,76 @@ struct State_bounds : Cost {
                         Eigen::Ref<Eigen::MatrixXd> Lxx,
                         const Eigen::Ref<const Eigen::VectorXd> &x) override;
 };
+// spherical constraint for the velocity (integrator2_2d dynamics)
+class VelocitySphereBounds : public Cost {
+
+public:
+  VelocitySphereBounds(size_t nx,
+                       size_t nu,
+                       int idx_vx,
+                       int idx_vy,
+                       double vmax,
+                       double weight);
+
+  virtual void calc(Eigen::Ref<Eigen::VectorXd> r,
+                    const Eigen::Ref<const Eigen::VectorXd> &x,
+                    const Eigen::Ref<const Eigen::VectorXd> &u) override;
+
+  virtual void calc(Eigen::Ref<Eigen::VectorXd> r,
+                    const Eigen::Ref<const Eigen::VectorXd> &x) override;
+
+  virtual void calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
+                        Eigen::Ref<Eigen::MatrixXd> Lxx,
+                        const Eigen::Ref<const Eigen::VectorXd> &x) override;
+
+  virtual void calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
+                        Eigen::Ref<Eigen::VectorXd> Lu,
+                        Eigen::Ref<Eigen::MatrixXd> Lxx,
+                        Eigen::Ref<Eigen::MatrixXd> Luu,
+                        Eigen::Ref<Eigen::MatrixXd> Lxu,
+                        const Eigen::Ref<const Eigen::VectorXd> &x,
+                        const Eigen::Ref<const Eigen::VectorXd> &u) override;
+
+private:
+  int idx_vx;
+  int idx_vy;
+
+  double vmax2;
+  double weight;
+};
+
+// spherical constraint - acceleration magnitude
+class ControlSphereBounds : public Cost {
+
+public:
+  ControlSphereBounds(size_t nx,
+                      size_t nu,
+                      int idx_ux,
+                      int idx_uy,
+                      double umax,
+                      double weight);
+
+  void calc(Eigen::Ref<Eigen::VectorXd> r,
+            const Eigen::Ref<const Eigen::VectorXd> &x,
+            const Eigen::Ref<const Eigen::VectorXd> &u) override;
+
+  void calcDiff(Eigen::Ref<Eigen::VectorXd> Lx,
+                Eigen::Ref<Eigen::VectorXd> Lu,
+                Eigen::Ref<Eigen::MatrixXd> Lxx,
+                Eigen::Ref<Eigen::MatrixXd> Luu,
+                Eigen::Ref<Eigen::MatrixXd> Lxu,
+                const Eigen::Ref<const Eigen::VectorXd> &x,
+                const Eigen::Ref<const Eigen::VectorXd> &u) override;
+
+private:
+  int idx_ux;
+  int idx_uy;
+
+  double umax2;
+  double weight;
+};
 
 struct Control_bounds : Cost {
-  // weight * ( x - ub ) <= 0
-  //
-  // NOTE:
-  // you can implement lower bounds
-  // weight = -w
-  // ub = lb
-  // DEMO:
-  // -w ( x - lb ) <= 0
-  // w ( x - lb ) >= 0
-  // w x >= w lb
 
   Eigen::VectorXd ub;
   Eigen::VectorXd weight;
