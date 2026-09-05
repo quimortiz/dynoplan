@@ -296,9 +296,8 @@ void split_motion_primitives(const dynobench::Trajectories &in,
 
   auto robot =
       dynobench::robot_factory((options_primitives.models_base_path +
-                                dynobench::robot_type_to_path(dynamics))
+                                options_primitives.dynamics + ".yaml")
                                    .c_str());
-
   std::random_device rd;  // a seed for the random number engine
   std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
 
