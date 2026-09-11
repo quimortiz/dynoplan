@@ -322,25 +322,6 @@ namespace dynoplan
           num_steps = 6; // for short motions
         Eigen::VectorXd fixed_state(robot->nx);
         fixed_state.setZero();
-        if (robot->name == "unicycle1")
-        {
-          std::random_device rd;
-          std::mt19937 gen(rd()); // gen(42);
-          std::uniform_real_distribution<> dis(-M_PI, M_PI);
-          // better sample, otherwise sensitive to goal theta value
-          for (size_t i = 0; i < 1; i++)
-          {
-            double theta = dis(gen);
-            theta = wrap_angle(theta);
-            // std::cout << "Adding sampled theta: " << theta << "(" << theta * 180.0 / M_PI << " deg.)" << std::endl;
-            Motion *m = new Motion();
-            fixed_state(2) = theta; // deterministically set orientation
-            m->traj.states.resize(num_steps, fixed_state);
-            m->traj.actions.resize(num_steps - 1, zero_action);
-            LazyTraj tmp_lazy_traj{.offset = &offset, .robot = robot, .motion = m};
-            lazy_trajs.push_back(tmp_lazy_traj);
-          }
-        }
         if (robot->name == "Integrator2_3d")
         {
           std::random_device rd;
