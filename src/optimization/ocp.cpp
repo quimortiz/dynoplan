@@ -1095,13 +1095,6 @@ void __trajectory_optimization(
 
   std::vector<Eigen::VectorXd> xs_init__ = xs_init;
 
-  if (startsWith(problem.robotType, "quad3d") &&
-      !startsWith(problem.robotType, "quad3dpayload")) {
-    DYNO_CHECK_EQ(start.size(), 13, "");
-    DYNO_CHECK_EQ(goal.size(), 13, "");
-    fix_problem_quaternion(start, goal, xs_init, us_init);
-  }
-
   if (options_trajopt_local.smooth_traj) {
     for (size_t i = 0; i < num_smooth_iterations; i++) {
       xs_init = smooth_traj2(xs_init, *model_robot->state);
@@ -2614,14 +2607,6 @@ void Result_opti::write_yaml_db(std::ostream &out) {
   out << "result:" << std::endl;
   out << "  - states:" << std::endl;
   for (auto &x : xs_out) {
-    // if (__in(vstr{"unicycle_first_order_0", "unicycle_second_order_0",
-    //               "car_first_order_with_1_trailers_0", "quad2d"},
-    //          name)) {
-    //   x(2) = std::remainder(x(2), 2 * M_PI);
-    // } else if (name == "acrobot") {
-    //   x(0) = std::remainder(x(0), 2 * M_PI);
-    //   x(1) = std::remainder(x(1), 2 * M_PI);
-    // }
     out << "      - " << x.format(FMT) << std::endl;
   }
 
