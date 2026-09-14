@@ -228,7 +228,7 @@ generate_problem(const Generate_params &gen_args,
                   nu,
                   2,          // vx index
                   3,          // vy index
-                  /*v_max*/5.0, 
+                  /*v_max*/0.5, 
                   /*weight*/100));
       } 
       else {
