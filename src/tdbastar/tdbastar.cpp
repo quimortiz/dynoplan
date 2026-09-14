@@ -60,69 +60,160 @@ namespace dynoplan
       return a->gScore < b->gScore;
     }
   }
-  void disable_motions(std::shared_ptr<dynobench::Model_robot> &robot,
-                       std::string &robot_name, float delta,
-                       bool filterDuplicates, float alpha, size_t num_max_motions,
-                       std::vector<Motion> &motions)
+  
+  void disable_motions(
+    std::shared_ptr<dynobench::Model_robot> &robot,
+    std::string &robot_name,
+    float delta,
+    bool filterDuplicates,
+    float alpha,
+    size_t num_max_motions,
+    std::vector<Motion> &motions)
+{
+  ompl::NearestNeighbors<Motion *> *T_m = nullptr;
+  T_m = nigh_factory_t<Motion *>(robot_name, robot, /*reverse search*/ false);
+
+  // Enable all motions initially
+  for (size_t i = 0; i < motions.size(); ++i)
   {
-    ompl::NearestNeighbors<Motion *> *T_m = nullptr;
-    T_m = nigh_factory_t<Motion *>(robot_name, robot, /*reverse search*/ false);
-    // enable all motions
-    for (size_t i = 0; i < motions.size(); ++i)
+    motions[i].disabled = false;
+  }
+  bool filterAccMagnitude = true;
+  double max_acc = 2.0;
+  if (filterAccMagnitude)
+  {
+    size_t num_acc_violations = 0;
+
+    for (auto &m : motions)
     {
-      motions[i].disabled = false;
-      T_m->add(&motions.at(i));
-    }
-    if (filterDuplicates)
-    {
-      size_t num_duplicates = 0;
-      Motion fakeMotion;
-      fakeMotion.idx = -1;
-      fakeMotion.traj.states.push_back(Eigen::VectorXd(robot->nx));
-      std::vector<Motion *> neighbors_m;
-      for (const auto &m : motions)
+      bool violation = false;
+
+      for (const auto &u : m.traj.actions)
       {
-        if (m.disabled)
+        double acc_sq = 0.0;
+
+        if (u.size() == 2)
         {
-          continue;
+          // 2D: [ax, ay]
+          acc_sq = u[0] * u[0] +
+                   u[1] * u[1];
         }
-        fakeMotion.traj.states.at(0) = m.traj.states.at(0);
-        T_m->nearestR(&fakeMotion, delta * alpha, neighbors_m);
-        for (Motion *nm : neighbors_m)
+        else if (u.size() == 3)
         {
-          if (nm == &m || nm->disabled)
-          {
-            continue;
-          }
-          float goal_delta =
-              robot->distance(m.traj.states.back(), nm->traj.states.back());
-          if (goal_delta < delta * (1 - alpha))
-          {
-            nm->disabled = true;
-            ++num_duplicates;
-          }
-        }
-      }
-    }
-    // limit to num_max_motions
-    size_t num_enabled_motions = 0;
-    for (size_t i = 0; i < motions.size(); ++i)
-    {
-      if (!motions[i].disabled)
-      {
-        if (num_enabled_motions >= num_max_motions)
-        {
-          motions[i].disabled = true;
+          // 3D: [ax, ay, az]
+          acc_sq = u[0] * u[0] +
+                   u[1] * u[1] +
+                   u[2] * u[2];
         }
         else
         {
-          ++num_enabled_motions;
+          std::cerr << "Unexpected action dimension: "
+                    << u.size() << std::endl;
+          continue;
+        }
+
+        const double acc_mag = std::sqrt(acc_sq);
+
+        if (acc_mag > max_acc + 1e-9)
+        {
+          violation = true;
+          break;
+        }
+      }
+
+      if (violation)
+      {
+        m.disabled = true;
+        ++num_acc_violations;
+      }
+    }
+
+    std::cout << "Disabled " << num_acc_violations
+              << " motions due to acceleration magnitude > "
+              << max_acc << "." << std::endl;
+  }
+
+  for (auto &m : motions)
+  {
+    if (!m.disabled)
+    {
+      T_m->add(&m);
+    }
+  }
+
+  if (filterDuplicates)
+  {
+    size_t num_duplicates = 0;
+
+    Motion fakeMotion;
+    fakeMotion.idx = -1;
+    fakeMotion.traj.states.push_back(
+        Eigen::VectorXd(robot->nx));
+
+    std::vector<Motion *> neighbors_m;
+
+    for (const auto &m : motions)
+    {
+      if (m.disabled)
+      {
+        continue;
+      }
+
+      fakeMotion.traj.states.at(0) =
+          m.traj.states.at(0);
+
+      neighbors_m.clear();
+
+      T_m->nearestR(
+          &fakeMotion,
+          delta * alpha,
+          neighbors_m);
+
+      for (Motion *nm : neighbors_m)
+      {
+        if (nm == &m || nm->disabled)
+        {
+          continue;
+        }
+
+        float goal_delta =
+            robot->distance(
+                m.traj.states.back(),
+                nm->traj.states.back());
+
+        if (goal_delta < delta * (1 - alpha))
+        {
+          nm->disabled = true;
+          ++num_duplicates;
         }
       }
     }
-    std::cout << "There are " << num_enabled_motions << " motions enabled."
-              << std::endl;
   }
+
+  size_t num_enabled_motions = 0;
+
+  for (size_t i = 0; i < motions.size(); ++i)
+  {
+    if (!motions[i].disabled)
+    {
+      if (num_enabled_motions >= num_max_motions)
+      {
+        motions[i].disabled = true;
+      }
+      else
+      {
+        ++num_enabled_motions;
+      }
+    }
+  }
+
+  std::cout << "There are "
+            << num_enabled_motions
+            << " motions enabled."
+            << std::endl;
+
+  delete T_m;
+}
 
   void from_solution_to_yaml_and_traj(dynobench::Model_robot &robot,
                                       const std::vector<Motion> &motions,
@@ -451,11 +542,6 @@ namespace dynoplan
       motion_valid = dynobench::is_motion_collision_free(tmp_traj, robot);
     } });
     time_bench.num_col_motions++;
-    // std::cout << "Printing the tmp traj: " << std::endl;
-    // for (auto tr : tmp_traj.get_states()){
-    //     std::cout << tr.format(dynobench::FMT) << std::endl;
-    // }
-    // std::cout << "Finishing printing the tmp traj" << std::endl;
     bool reachesGoal;
     if (!forward)
     {
