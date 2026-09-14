@@ -315,11 +315,10 @@ namespace dynoplan
       }
       if (add_static_motions)
       {
-        int num_steps = 12; // benchmarking
+        int num_steps = 6; // benchmarking
         Eigen::VectorXd zero_action(robot->nu);
         zero_action.setZero();
-        if (robot->name == "Integrator2_3d")
-          num_steps = 6; // for short motions
+
         Eigen::VectorXd fixed_state(robot->nx);
         fixed_state.setZero();
         if (robot->name == "unicycle1")
@@ -332,7 +331,6 @@ namespace dynoplan
           {
             double theta = dis(gen);
             theta = wrap_angle(theta);
-            // std::cout << "Adding sampled theta: " << theta << "(" << theta * 180.0 / M_PI << " deg.)" << std::endl;
             Motion *m = new Motion();
             fixed_state(2) = theta; // deterministically set orientation
             m->traj.states.resize(num_steps, fixed_state);
@@ -341,22 +339,73 @@ namespace dynoplan
             lazy_trajs.push_back(tmp_lazy_traj);
           }
         }
-        if (robot->name == "Integrator2_3d")
+        if (robot->name == "Integrator2_2d" || robot->name == "Integrator2_3d")
         {
           std::random_device rd;
-          std::mt19937 gen(rd());                          // gen(42);
-          std::uniform_real_distribution<> dis(-0.5, 0.5); // velocity limit
-          // better sample, otherwise sensitive to goal theta value
+          std::mt19937 gen(rd());
+
+          constexpr double v_max = 5.0;
+
+          // Sample uniformly inside a disk/sphere.
+          std::uniform_real_distribution<double> dis(-1.0, 1.0);
+
           for (size_t i = 0; i < 4; i++)
           {
             Motion *m = new Motion();
-            // sample velocity components
-            fixed_state(3) = dis(gen);
-            fixed_state(4) = dis(gen);
-            fixed_state(5) = dis(gen);
+
+            if (robot->name == "Integrator2_2d")
+            {
+              // Sample a point inside the unit disk.
+              double vx, vy;
+              double norm_sq;
+
+              do {
+                  vx = dis(gen);
+                  vy = dis(gen);
+                  norm_sq = vx * vx + vy * vy;
+              } while (norm_sq > 1.0 || norm_sq < 1e-12);
+
+              // Scale to velocity sphere of radius v_max.
+              const double scale = v_max / std::sqrt(norm_sq);
+
+              std::uniform_real_distribution<double> radius_dis(0.0, 1.0);
+              const double r = std::sqrt(radius_dis(gen));
+
+              fixed_state(2) = vx * scale * r;
+              fixed_state(3) = vy * scale * r;
+            }
+            else // Integrator2_3d
+            {
+              // Sample a point inside the unit sphere.
+              double vx, vy, vz;
+              double norm_sq;
+
+              do {
+                  vx = dis(gen);
+                  vy = dis(gen);
+                  vz = dis(gen);
+                  norm_sq = vx * vx + vy * vy + vz * vz;
+              } while (norm_sq > 1.0 || norm_sq < 1e-12);
+
+              const double scale = v_max / std::sqrt(norm_sq);
+
+              std::uniform_real_distribution<double> radius_dis(0.0, 1.0);
+              const double r = std::cbrt(radius_dis(gen));
+
+              fixed_state(3) = vx * scale * r;
+              fixed_state(4) = vy * scale * r;
+              fixed_state(5) = vz * scale * r;
+            }
+
             m->traj.states.resize(num_steps, fixed_state);
             m->traj.actions.resize(num_steps - 1, zero_action);
-            LazyTraj tmp_lazy_traj{.offset = &offset, .robot = robot, .motion = m};
+
+            LazyTraj tmp_lazy_traj{
+                .offset = &offset,
+                .robot = robot,
+                .motion = m
+            };
+
             lazy_trajs.push_back(tmp_lazy_traj);
           }
         }
