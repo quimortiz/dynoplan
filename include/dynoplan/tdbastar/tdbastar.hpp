@@ -344,7 +344,7 @@ namespace dynoplan
           std::random_device rd;
           std::mt19937 gen(rd());
 
-          constexpr double v_max = 5.0;
+          constexpr double v_max = 0.5;
 
           // Sample uniformly inside a disk/sphere.
           std::uniform_real_distribution<double> dis(-1.0, 1.0);
