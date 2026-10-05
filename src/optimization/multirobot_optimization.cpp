@@ -134,7 +134,7 @@ bool execute_optimizationMetaRobot(
   options_trajopt.weight_goal = 100;
   options_trajopt.max_iter = 50;
   options_trajopt.collision_weight = 100; 
-  problem.models_base_path = base + std::string("robot_types/");
+  problem.models_base_path = base + std::string("examples/robot_types/");
 
   Result_opti result;
   Trajectory sol;

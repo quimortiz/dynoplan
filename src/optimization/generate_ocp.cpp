@@ -102,49 +102,81 @@ generate_problem(const Generate_params &gen_args,
   for (size_t t = 0; t < gen_args.N; t++) {
 
     std::vector<ptr<Cost>> feats_run;
-
+    // assumes homogeneous robot teams
     if (gen_args.model_robot->name == "joint_robot") {
 
-        auto ptr_derived =
-            std::dynamic_pointer_cast<dynobench::Joint_robot>(
-                gen_args.model_robot);
+      auto ptr_derived =
+          std::dynamic_pointer_cast<dynobench::Joint_robot>(
+              gen_args.model_robot);
 
-        size_t x_offset = 0;
-        size_t u_offset = 0;
+      const int num_robots = ptr_derived->nxs.size();
 
-        for (size_t j = 0; j < ptr_derived->nxs.size(); ++j) {
+      assert(num_robots > 0);
+      assert(!ptr_derived->robot_names.empty());
 
-          const int robot_nx = ptr_derived->nxs[j];
-          const int robot_nu = ptr_derived->nus[j];
+      const std::string& robot_name = ptr_derived->robot_names.front();
 
-          // Each component is an Integrator2_2d:
-          assert(robot_nx == 4);
-          assert(robot_nu == 2);
+      const int robot_nx = ptr_derived->nxs.front();
 
-          // Acceleration magnitude: sqrt(ax^2 + ay^2) <= acc_mag
+      const std::vector<int>& goal_times = ptr_derived->goal_times;
+
+      print_vec(goal_times.data(), goal_times.size());
+      CSTR_(gen_args.N);
+
+      if (!goal_times.empty()) {
+
+        Eigen::VectorXd weights = Eigen::VectorXd::Zero(nx);
+        for (size_t j = 0; j < goal_times.size(); ++j) {
+          if (goal_times[j] <= t + 1) {
+            const size_t start_index = j * robot_nx;
+            weights.segment(start_index, robot_nx).setOnes();
+          }
+        }
+
+        if (weights.sum() > 1e-12) {
+          std::cout << "warning, adding special goal cost"
+                    << std::endl;
+          ptr<Cost> state_feature = mk<State_cost_model>(
+              gen_args.model_robot,
+              nx,
+              nu,
+              gen_args.penalty *
+                  options_trajopt.weight_goal *
+                  weights,
+              gen_args.goal);
+
+          feats_run.emplace_back(state_feature);
+        }
+      }
+      // Robot specific constraints
+      for (int r = 0; r < num_robots; ++r) {
+
+        if (robot_name == "Integrator2_2d") {
+          
+          const int x_offset = r * robot_nx;
+          const int u_offset = r * ptr_derived->nus.front();
+
           if (options_trajopt.control_bounds) {
-              feats_run.push_back(
-                  mk<ControlSphereBounds>(
-                      nx,
-                      nu,
-                      u_offset + 0,   // ax
-                      u_offset + 1,   // ay
-                      2.0,            // a_max
-                      100));          // weight
+            feats_run.push_back(
+                mk<ControlSphereBounds>(
+                    nx,
+                    nu,
+                    u_offset + 0,   // ax
+                    u_offset + 1,   // ay
+                    2.0,            // a_max
+                    100));          // weight
           }
 
-          // Velocity magnitude: sqrt(vx^2 + vy^2) <= speed
+          // Velocity magnitude: sqrt(vx^2 + vy^2) <= v_max
           feats_run.push_back(
               mk<VelocitySphereBounds>(
                   nx,
                   nu,
-                  x_offset + 2,   // vx
-                  x_offset + 3,   // vy
-                  5.0,            // v_max
-                  100));          // weight
-
-          x_offset += robot_nx;
-          u_offset += robot_nu;
+                  x_offset + 2,     // vx
+                  x_offset + 3,     // vy
+                  5.0,              // v_max
+                  100));            // weight
+        }
       }
     }
 
