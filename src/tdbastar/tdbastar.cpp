@@ -134,7 +134,7 @@ namespace dynoplan
                      bool filterVelocityMagnitude,
                      std::vector<Motion> &motions)
 {
-  double maxVelocityMagnitude = 0.5; // TO DO Akmaral - take from the robot->v_limit
+  double maxVelocityMagnitude = 2.0;
   ompl::NearestNeighbors<Motion *> *T_m = nullptr;
   T_m = nigh_factory_t<Motion *>(robot_name, robot, /*reverse search*/ false);
 
@@ -157,6 +157,7 @@ namespace dynoplan
         double speed = std::hypot(vx, vy);
         if (speed > maxVelocityMagnitude)
         {
+          std::cout << "speed limit exceeded, magnitude: " << speed << std::endl;
           m.disabled = true;
           break; // No need to check the remaining states.
         }
@@ -164,6 +165,7 @@ namespace dynoplan
     }
   }
 
+  std::cout << "before filtering " << motions.size() << std::endl;
   if (filterDuplicates)
   {
     size_t num_duplicates = 0;

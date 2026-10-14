@@ -722,155 +722,405 @@ void generate_primitives(const Options_trajopt &options_trajopt,
   double success_rate = double(trajectories.data.size()) / attempts;
   CSTR_(success_rate);
 }
-// uses Stratified sampling
-void generate_primitives_spread(const Options_trajopt &options_trajopt,
-                         const Options_primitives &options_primitives,
-                         dynobench::Trajectories &trajectories){
 
+void generate_primitives_spread(const Options_trajopt &options_trajopt,
+                                const Options_primitives &options_primitives,
+                                dynobench::Trajectories &trajectories)
+{
   bool finished = false;
-  int num_primitives = 0;
 
   auto robot_model =
-      dynobench::robot_factory((options_primitives.models_base_path +
-                                options_primitives.dynamics + ".yaml")
-                                   .c_str());
+      dynobench::robot_factory(
+          (options_primitives.models_base_path +
+            options_primitives.dynamics + ".yaml")
+              .c_str());
 
-  size_t num_translation = robot_model->get_translation_invariance();
+  size_t num_translation =
+      robot_model->get_translation_invariance();
+
   if (num_translation)
   {
     Eigen::VectorXd p_lb(num_translation);
     Eigen::VectorXd p_ub(num_translation);
+
     p_lb.setOnes();
     p_lb *= -1;
+
     p_ub.setOnes();
+
     robot_model->setPositionBounds(p_lb, p_ub);
   }
 
   auto time_start = std::chrono::steady_clock::now();
   size_t attempts = 0;
+
+  // Random number generator for directional sampling.
+  static std::mt19937 rng(std::random_device{}());
+  std::uniform_real_distribution<double> unit_dist(0.0, 1.0);
+
   while (!finished)
   {
-
     Eigen::VectorXd start(robot_model->nx);
     Eigen::VectorXd goal(robot_model->nx);
 
     robot_model->sample_uniform(start);
 
-    // sample spread displacemenet. Ideally try to cover the space
-    Eigen::VectorXd d_ub(start.size());
-    Eigen::VectorXd d_lb(start.size());
-
-    d_ub.setOnes();
-    d_lb.setConstant(-1.);
-
-    int N = 10;
-    for (int i = 0; i < N; ++i)
-    {
-      double u = (i + Eigen::internal::random<double>(0.0, 1.0)) / N; // u in [(i)/N, (i+1)/N]
-      Eigen::VectorXd d = d_lb + (d_ub - d_lb) * .5 * u;              // maps to [-1, 1]
-      if (options_primitives.dynamics == "unicycle1_v0"){
-        d[2] = std::atan2(std::sin(d[2]), std::cos(d[2]));
-      }
-
-      std::cout << "desired displacement " << std::endl;
-      CSTR_V(d);
-
-      goal = start + d;
-      robot_model->ensure(goal);
-
-      // check that it is in the limits!
-      if (robot_model->is_state_valid(goal))
+      if (options_primitives.dynamics == "integrator2_2d")
       {
-        std::cout << "Warning: goal state is not valid!! " << std::endl;
-        continue;
+        const int num_directions = 16;
+
+        const std::vector<double> radii = {
+            0.25, 0.5, 0.75, 1.0
+        };
+
+        const double sector_width =
+            2.0 * M_PI / num_directions;
+
+          for (int i = 0; i < num_directions; ++i)
+          {
+            const double theta =
+                (i + unit_dist(rng)) * sector_width;
+
+            for (const double r : radii)
+            {
+              if (finished)
+              {
+                  break;
+              }
+
+              // Initialize goal from the start state.
+              goal = start;
+
+              // Target position in the sampled direction.
+              goal[0] =
+                  start[0] + r * std::cos(theta);
+
+              goal[1] =
+                  start[1] + r * std::sin(theta);
+
+              // Preserve initial velocity at the goal.
+              goal[2] = start[2];
+              goal[3] = start[3];
+
+              robot_model->ensure(goal);
+
+              // Assuming true means the state is valid.
+              if (!robot_model->is_state_valid(goal))
+              {
+                  std::cout
+                      << "Warning: goal state is not valid!"
+                      << std::endl;
+
+                  attempts++;
+                  continue;
+              }
+
+              Eigen::VectorXd start_local = start;
+              Eigen::VectorXd goal_local = goal;
+
+              if (num_translation)
+              {
+                  goal_local.head(num_translation) -=
+                      start_local.head(num_translation);
+
+                  start_local.head(num_translation).setZero();
+              }
+
+              std::cout
+                  << "Trying to generate a path between"
+                  << std::endl;
+
+              CSTR_V(start_local);
+              CSTR_V(goal_local);
+
+              dynobench::Problem problem;
+
+              problem.models_base_path =
+                  options_primitives.models_base_path;
+
+              problem.goal = goal_local;
+              problem.start = start_local;
+              problem.robotType =
+                  options_primitives.dynamics;
+
+              problem.robotTypes.resize(1);
+
+              std::vector<double> try_rates = {
+                  0.5, 1.0, 2.0
+              };
+
+              bool is_first = true;
+              bool solved = false;
+
+              dynobench::Trajectory traj_first;
+
+              for (const auto &try_rate : try_rates)
+              {
+                  dynobench::Trajectory init_guess;
+
+                  init_guess.num_time_steps =
+                      int(
+                          try_rate *
+                          options_primitives.ref_time_steps);
+
+                  dynobench::Trajectory traj;
+                  Result_opti opti_out;
+
+                  trajectory_optimization(
+                      problem,
+                      init_guess,
+                      options_trajopt,
+                      traj,
+                      opti_out);
+
+                  if (is_first)
+                  {
+                      traj_first = traj;
+                      is_first = false;
+                  }
+
+                  if (opti_out.feasible)
+                  {
+                      CHECK(traj.states.size(), AT);
+
+                      traj.start = traj.states.front();
+                      traj.goal = traj.states.back();
+
+                      trajectories.data.push_back(traj);
+
+                      solved = true;
+                      break;
+                  }
+                }
+
+                if (!solved &&
+                    options_primitives.adapt_infeas_primitives)
+                {
+                  std::cout
+                      << "adapting a motion primitive"
+                      << std::endl;
+
+                  CHECK(traj_first.states.size(), AT);
+                  CHECK(traj_first.actions.size(), AT);
+
+                  traj_first.start =
+                      traj_first.states.front();
+
+                  traj_first.goal =
+                      traj_first.states.back();
+
+                  trajectories.data.push_back(traj_first);
+                }
+
+                attempts++;
+
+                  // Termination conditions.
+                  if (attempts >=
+                      options_primitives.max_attempts)
+                  {
+                      finished = true;
+                  }
+
+                  if (trajectories.data.size() >=
+                      options_primitives.max_num_primitives)
+                  {
+                      finished = true;
+                  }
+
+                  if (get_time_stamp_ms(time_start) / 1000. >=
+                      options_primitives.time_limit)
+                  {
+                      finished = true;
+                  }
+              }
+
+              if (finished)
+              {
+                  break;
+              }
+          }
       }
-      if (num_translation)
+      // ============================================================
+      // Other dynamics: retain the original random sampling.
+      // ============================================================
+      else
       {
-        goal.head(num_translation) -= start.head(num_translation);
-        start.head(num_translation).setZero();
+          Eigen::VectorXd d_ub(start.size());
+          Eigen::VectorXd d_lb(start.size());
+
+          d_ub.setOnes();
+          d_lb.setConstant(-1.0);
+
+          const int N = 10;
+
+          for (int i = 0; i < N; ++i)
+          {
+              if (finished)
+              {
+                  break;
+              }
+
+              double u =
+                  Eigen::internal::random<double>(0.0, 1.0);
+
+              Eigen::VectorXd d =
+                  d_lb + (d_ub - d_lb) * u;
+
+              if (options_primitives.dynamics == "unicycle1_v0")
+              {
+                  d[2] =
+                      std::atan2(
+                          std::sin(d[2]),
+                          std::cos(d[2]));
+              }
+
+              std::cout
+                  << "desired displacement"
+                  << std::endl;
+
+              CSTR_V(d);
+
+              goal = start + d;
+
+              robot_model->ensure(goal);
+
+              // Preserve the original validity-check behavior.
+              if (robot_model->is_state_valid(goal))
+              {
+                  std::cout
+                      << "Warning: goal state is not valid!!"
+                      << std::endl;
+
+                  continue;
+              }
+
+              if (num_translation)
+              {
+                  goal.head(num_translation) -=
+                      start.head(num_translation);
+
+                  start.head(num_translation).setZero();
+              }
+
+              std::cout
+                  << "Trying to Generate a path between"
+                  << std::endl;
+
+              CSTR_V(start);
+              CSTR_V(goal);
+
+              dynobench::Problem problem;
+
+              problem.models_base_path =
+                  options_primitives.models_base_path;
+
+              problem.goal = goal;
+              problem.start = start;
+
+              problem.robotType =
+                  options_primitives.dynamics;
+
+              problem.robotTypes.resize(1);
+
+              std::vector<double> try_rates = {
+                  0.5, 1.0, 2.0
+              };
+
+              bool is_first = true;
+              bool solved = false;
+
+              dynobench::Trajectory traj_first;
+
+              for (const auto &try_rate : try_rates)
+              {
+                  dynobench::Trajectory init_guess;
+
+                  init_guess.num_time_steps =
+                      int(
+                          try_rate *
+                          options_primitives.ref_time_steps);
+
+                  dynobench::Trajectory traj;
+                  Result_opti opti_out;
+
+                  trajectory_optimization(
+                      problem,
+                      init_guess,
+                      options_trajopt,
+                      traj,
+                      opti_out);
+
+                  if (is_first)
+                  {
+                      traj_first = traj;
+                      is_first = false;
+                  }
+
+                  if (opti_out.feasible)
+                  {
+                      CHECK(traj.states.size(), AT);
+
+                      traj.start = traj.states.front();
+                      traj.goal = traj.states.back();
+
+                      trajectories.data.push_back(traj);
+
+                      solved = true;
+                      break;
+                  }
+              }
+
+              if (!solved &&
+                  options_primitives.adapt_infeas_primitives)
+              {
+                  std::cout
+                      << "adapting a motion primitive"
+                      << std::endl;
+
+                  CHECK(traj_first.states.size(), AT);
+                  CHECK(traj_first.actions.size(), AT);
+
+                  traj_first.start =
+                      traj_first.states.front();
+
+                  traj_first.goal =
+                      traj_first.states.back();
+
+                  trajectories.data.push_back(traj_first);
+              }
+
+              attempts++;
+          }
       }
 
-      std::cout << "Trying to Generate a path betweeen " << std::endl;
-
-      CSTR_V(start);
-      CSTR_V(goal);
-
-      dynobench::Problem problem;
-      problem.models_base_path = options_primitives.models_base_path;
-      problem.goal = goal;
-      problem.start = start;
-      problem.robotType = options_primitives.dynamics;
-      problem.robotTypes.resize(1);
-      // double try
-
-      std::vector<double> try_rates{.5, 1., 2.};
-
-      bool is_first = true;
-      bool solved = false;
-      dynobench::Trajectory traj_first;
-      for (const auto &try_rate : try_rates)
+      // Global termination conditions.
+      if (attempts >= options_primitives.max_attempts)
       {
-        dynobench::Trajectory init_guess;
-        init_guess.num_time_steps =
-            int(try_rate * options_primitives.ref_time_steps);
-
-        dynobench::Trajectory traj;
-        Result_opti opti_out;
-
-        trajectory_optimization(problem, init_guess, options_trajopt, traj,
-                                opti_out);
-
-        if (is_first)
-        {
-          traj_first = traj;
-          is_first = false;
-        }
-
-        if (opti_out.feasible)
-        {
-          solved = true;
-          CHECK(traj.states.size(), AT);
-          traj.start = traj.states.front();
-          traj.goal = traj.states.back();
-          trajectories.data.push_back(traj);
-          break;
-        }
+          finished = true;
       }
 
-      if (!solved && options_primitives.adapt_infeas_primitives)
+      if (trajectories.data.size() >=
+          options_primitives.max_num_primitives)
       {
-        std::cout << "adapting a motion primitive" << std::endl;
-        CHECK(traj_first.states.size(), AT);
-        CHECK(traj_first.actions.size(), AT);
-        traj_first.start = traj_first.states.front();
-        traj_first.goal = traj_first.states.back();
-        trajectories.data.push_back(traj_first);
+          finished = true;
       }
 
-      attempts++;
-    }
-
-    if (attempts >= options_primitives.max_attempts)
-    {
-      finished = true;
-    }
-
-    if (trajectories.data.size() >= options_primitives.max_num_primitives)
-    {
-      finished = true;
-    }
-
-    if (get_time_stamp_ms(time_start) / 1000. >=
-        options_primitives.time_limit)
-    {
-      finished = true;
-    }
+      if (get_time_stamp_ms(time_start) / 1000. >=
+          options_primitives.time_limit)
+      {
+          finished = true;
+      }
   }
 
-  CSTR_(attempts);
-  CSTR_(trajectories.data.size());
-  double success_rate = double(trajectories.data.size()) / attempts;
-  CSTR_(success_rate);
+    CSTR_(attempts);
+    CSTR_(trajectories.data.size());
+
+    double success_rate =
+        attempts > 0
+            ? double(trajectories.data.size()) / attempts
+            : 0.0;
+
+    CSTR_(success_rate);
 }
 
 } // namespace dynoplan

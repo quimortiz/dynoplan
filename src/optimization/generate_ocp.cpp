@@ -174,7 +174,7 @@ generate_problem(const Generate_params &gen_args,
                   nu,
                   x_offset + 2,     // vx
                   x_offset + 3,     // vy
-                  5.0,              // v_max
+                  2.0,              // v_max
                   100));            // weight
         }
       }
@@ -260,7 +260,7 @@ generate_problem(const Generate_params &gen_args,
                   nu,
                   2,          // vx index
                   3,          // vy index
-                  /*v_max*/0.5, 
+                  /*v_max*/2.0, 
                   /*weight*/100));
       } 
       else {

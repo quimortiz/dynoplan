@@ -315,7 +315,7 @@ namespace dynoplan
       }
       if (add_static_motions)
       {
-        int num_steps = 6; // benchmarking
+        int num_steps = 5; // benchmarking
         Eigen::VectorXd zero_action(robot->nu);
         zero_action.setZero();
 
