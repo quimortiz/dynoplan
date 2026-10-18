@@ -1,38 +1,24 @@
 #pragma once
 #include <boost/graph/graphviz.hpp>
-
-// #include <flann/flann.hpp>
-// #include <msgpack.hpp>
 #include <ompl/base/spaces/SE2StateSpace.h>
 #include <yaml-cpp/yaml.h>
-
-// #include <boost/functional/hash.hpp>
-
-// OMPL headers
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/control/SpaceInformation.h>
 #include <ompl/control/spaces/RealVectorControlSpace.h>
-
 #include <ompl/datastructures/NearestNeighbors.h>
-// #include <ompl/datastructures/NearestNeighborsFLANN.h>
 #include <ompl/datastructures/NearestNeighborsGNATNoThreadSafety.h>
 #include <ompl/datastructures/NearestNeighborsSqrtApprox.h>
-
 #include "dynobench/motions.hpp"
 #include "dynobench/robot_models.hpp"
 #include "dynoplan/ompl/robots.h"
 #include "ompl/base/Path.h"
 #include "ompl/base/ScopedState.h"
-
-// boost stuff for the graph
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/undirected_graph.hpp>
 #include <boost/property_map/property_map.hpp>
-
 #include "dynobench/general_utils.hpp"
-
 #include "dynoplan/dbastar/options.hpp"
 
 namespace dynoplan
@@ -172,19 +158,6 @@ namespace dynoplan
       __x_zero_vel = x;
       robot->set_0_velocity(__x_zero_vel);
 
-      // auto si = robot->getSpaceInformation()->getStateSpace();
-      // const auto &locations = si->getValueLocations();
-      //
-      // DYNO_CHECK_EQ(locations.size(), robot->nx, AT);
-      // DYNO_CHECK_LEQ(robot->nx_pr, locations.size(), AT);
-      //
-      // for (std::size_t i = 0; i < robot->nx_pr; ++i) {
-      //   *si->getValueAddressAtLocation(__x_zero_vel, locations[i]) =
-      //       *si->getValueAddressAtLocation(x, locations[i]);
-      // }
-
-      // NOT_IMPLEMENTED;
-      // refactor this!!
       double pos_h = heuristicCollisionsTree(T_heu.get(), __x_zero_vel, robot,
                                              connect_radius_h);
 
@@ -194,11 +167,6 @@ namespace dynoplan
     }
 
     virtual ~Heu_roadmap() override {
-
-      // robot->getSpaceInformation()->freeState(__x_zero_vel);
-
-      // TODO: memory leak
-      // I have to delete more stuff!!!
     };
   };
 
@@ -304,8 +272,8 @@ namespace dynoplan
                           ompl::NearestNeighbors<_T> *heuristic_nn,
                           const Eigen::VectorXd &goal,
                           bool nn,
-                          double radius = 0.1) // radius for neighbor search
-        : robot(robot), heuristic_nn(heuristic_nn), goal(goal), nn(nn), search_radius(radius)
+                          double distance = 1.0) // distance for neighbor search
+        : robot(robot), heuristic_nn(heuristic_nn), goal(goal), nn(nn), search_distance(distance)
     {
     }
 
@@ -313,7 +281,7 @@ namespace dynoplan
     ompl::NearestNeighbors<_T> *heuristic_nn; // raw pointe
     Eigen::VectorXd goal;
     bool nn;
-    double search_radius; // radius for nearest neighbors
+    double search_distance; // distance for nearest neighbors
 
     void addNode(const _T &node)
     {
@@ -330,7 +298,7 @@ namespace dynoplan
       fake_node->state_eig = x;
       auto nearest_node = heuristic_nn->nearest(fake_node);
       // std::cout << "from N: " << (nearest_node->hScore + robot->lower_bound_time(fake_node->state_eig, nearest_node->state_eig)) << std::endl;
-      if (!nearest_node || robot->distance(fake_node->state_eig, nearest_node->state_eig) > 1.0 /*threshold*/)
+      if (!nearest_node || robot->distance(fake_node->state_eig, nearest_node->state_eig) > search_distance /*threshold*/) // 1.0 - unicycle, 0.5 - single integrator
         return -1.0;
 
       return (nearest_node->hScore + robot->lower_bound_time(fake_node->state_eig, nearest_node->state_eig));

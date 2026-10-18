@@ -315,7 +315,9 @@ namespace dynoplan
       }
       if (add_static_motions)
       {
-        int num_steps = 5; // benchmarking
+        int num_steps = 12; // by default
+        if (robot->name == "Integrator2_2d")
+          num_steps = 5;
         Eigen::VectorXd zero_action(robot->nu);
         zero_action.setZero();
 
