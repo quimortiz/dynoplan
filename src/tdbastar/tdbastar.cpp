@@ -134,7 +134,6 @@ namespace dynoplan
                      bool filterVelocityMagnitude,
                      std::vector<Motion> &motions)
 {
-  double maxVelocityMagnitude = 2.0;
   ompl::NearestNeighbors<Motion *> *T_m = nullptr;
   T_m = nigh_factory_t<Motion *>(robot_name, robot, /*reverse search*/ false);
 
@@ -148,6 +147,7 @@ namespace dynoplan
   // Filter motions whose velocity magnitude exceeds the limit.
   if (filterVelocityMagnitude)
   {
+    const double maxVelocityMagnitude = robot->get_x_ub()(2);
     for (auto &m : motions)
     {
       for (const auto &x : m.traj.states)
