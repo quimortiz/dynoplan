@@ -147,13 +147,17 @@ namespace dynoplan
   // Filter motions whose velocity magnitude exceeds the limit.
   if (filterVelocityMagnitude)
   {
-    const double maxVelocityMagnitude = robot->get_x_ub()(2);
+    const bool singleIntegrator = robot_name == "single_integrator_2d";
+    const double maxVelocityMagnitude =
+        singleIntegrator ? robot->get_u_ub()(0) : robot->get_x_ub()(2);
+    const int velocityOffset = singleIntegrator ? 0 : 2;
     for (auto &m : motions)
     {
-      for (const auto &x : m.traj.states)
+      const auto &velocities = singleIntegrator ? m.traj.actions : m.traj.states;
+      for (const auto &x : velocities)
       {
-        double vx = x(2); // TO DO Akmaral - velocity index for different dynamics
-        double vy = x(3); // TO DO Akmaral - velocity index for different dynamics
+        double vx = x(velocityOffset);
+        double vy = x(velocityOffset + 1);
         double speed = std::hypot(vx, vy);
         if (speed > maxVelocityMagnitude)
         {

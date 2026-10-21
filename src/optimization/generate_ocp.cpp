@@ -1,5 +1,6 @@
 #include "dynoplan/optimization/generate_ocp.hpp"
 #include "dynobench/joint_robot.hpp"
+#include "dynobench/integrator1_2d.hpp"
 #include "dynobench/integrator2_2d.hpp"
 #include "dynobench/quadrotor_payload_n.hpp"
 #include "dynoplan/optimization/croco_models.hpp"
@@ -151,6 +152,14 @@ generate_problem(const Generate_params &gen_args,
       // Robot specific constraints
       for (int r = 0; r < num_robots; ++r) {
 
+        if (robot_name == "Integrator1_2d" && options_trajopt.control_bounds) {
+          auto robot = std::dynamic_pointer_cast<dynobench::Integrator1_2d>(
+              ptr_derived->v_jointRobot.at(r));
+          const int u_offset = r * ptr_derived->nus.front();
+          feats_run.push_back(mk<ControlSphereBounds>(
+              nx, nu, u_offset, u_offset + 1, robot->params.vel_magnitude, 100));
+        }
+
         if (robot_name == "Integrator2_2d") {
           auto robot = std::dynamic_pointer_cast<dynobench::Integrator2_2d>(
               ptr_derived->v_jointRobot.at(r));
@@ -189,7 +198,13 @@ generate_problem(const Generate_params &gen_args,
     }
 
     feats_run.push_back(control_feature);
-    // only for double integrator now
+    if (options_trajopt.control_bounds && gen_args.model_robot->name == "Integrator1_2d") {
+      auto robot = std::dynamic_pointer_cast<dynobench::Integrator1_2d>(
+          gen_args.model_robot);
+      feats_run.push_back(mk<ControlSphereBounds>(
+          nx, nu, 0, 1, robot->params.vel_magnitude, 100));
+    }
+
     if (options_trajopt.control_bounds && gen_args.model_robot->name == "Integrator2_2d"){
         auto ptr_derived = std::dynamic_pointer_cast<dynobench::Integrator2_2d>(
             gen_args.model_robot);
