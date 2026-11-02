@@ -548,8 +548,8 @@ ompl::NearestNeighbors<_T> *nigh_factory2(
                         Eigen::Vector3d(__x(3), __x(4), __x(5)));
     };
 
-    DYNO_CHECK_EQ(w.size(), 2, AT);
-    __SpaceIntegrator2_3d space(w(0), w(1));
+    DYNO_CHECK_EQ(w.size(), 6, AT);
+    __SpaceIntegrator2_3d space(w(0), w(3));
     out =
         new NearestNeighborsNigh<_T, __SpaceIntegrator2_3d>(space, data_to_key);
   }
@@ -773,8 +773,8 @@ ompl::NearestNeighbors<_T> *nigh_factory_t(
                         Eigen::Vector3d(__x(3), __x(4), __x(5)));
     };
 
-    DYNO_CHECK_EQ(w.size(), 2, AT);
-    __SpaceIntegrator2_3d space(w(0), w(1));
+    DYNO_CHECK_EQ(w.size(), 6, AT);
+    __SpaceIntegrator2_3d space(w(0), w(3));
     out =
         new NearestNeighborsNigh<_T, __SpaceIntegrator2_3d>(space, data_to_key);
   }
