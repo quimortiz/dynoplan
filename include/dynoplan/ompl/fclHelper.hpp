@@ -37,7 +37,7 @@ protected:
       if (!obj->isFree()) {
         // std::cout << "tt of " << (obj->getTranslation() + offset).transpose()
         //           << std::endl;
-        obj->setTranslation(obj->getTranslation() + offset);
+        obj->setTranslation(obj->getTransform().translation() + offset);
         obj->computeAABB();
         // assert(node->bv.equal(obj->getAABB()));
         // TODO: ask wolfgang about this. they differ in small decimal
